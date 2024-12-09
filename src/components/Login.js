@@ -14,25 +14,21 @@ const Login = () => {
         body: JSON.stringify({ email, password }),
       });
       const data = await response.json();
-  
+
       if (response.ok) {
-        console.log('Giriş Yanıtı:', data); // Yanıtı kontrol etmek için
+        // Kullanıcı bilgilerini ve tokeni kaydet
         localStorage.setItem('authToken', data.token);
-  
-        if (data.user) {
-          localStorage.setItem('user', JSON.stringify(data.user)); // Kullanıcı bilgisi kaydediliyor
-        } else {
-          console.error('Kullanıcı bilgisi eksik:', data);
-        }
-  
-        // Kullanıcı rolüne göre yönlendirme
-        if (data.role === 'Master Admin') {
-          window.location.href = '/master-admin-dashboard';
-        } else if (data.role === 'Yönetim Kurulu') {
-          window.location.href = '/management-dashboard';
-        } else {
-          window.location.href = '/user-dashboard';
-        }
+        localStorage.setItem('user', JSON.stringify(data.user));
+
+        // Rollere göre yönlendirme
+        const roleRedirects = {
+          'Master Admin': '/master-admin-dashboard',
+          'Yönetim Kurulu': '/management-dashboard',
+          'Şef': '/conductor-dashboard',
+          'Korist': '/user-dashboard',
+        };
+        const redirectPath = roleRedirects[data.user.role] || '/login';
+        window.location.href = redirectPath;
       } else {
         alert(data.message || 'Giriş başarısız!');
       }
@@ -41,7 +37,6 @@ const Login = () => {
       alert('Sunucu hatası oluştu. Lütfen tekrar deneyin.');
     }
   };
-  
 
   return (
     <Box display="flex" flexDirection="column" justifyContent="center" alignItems="center" height="100vh">
