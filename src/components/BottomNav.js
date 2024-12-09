@@ -5,22 +5,62 @@ import HomeIcon from '@mui/icons-material/Home';
 import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import EventNoteIcon from '@mui/icons-material/EventNote';
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 
-const BottomNav = () => {
+const BottomNav = ({ role, viewMode, onSwitchView }) => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const navItems = [
-    { label: 'Ana Sayfa', icon: <HomeIcon />, path: '/user-dashboard' },
-    { label: 'Yoklama', icon: <AssignmentTurnedInIcon />, path: '/my-attendance' },
-    { label: 'Aidat', icon: <AccountBalanceIcon />, path: '/my-fees' },
-    { label: 'Takvim', icon: <EventNoteIcon />, path: '/calendar-view' },
+  // Korist Nav Öğeleri
+  const userNavItems = [
+    { label: null, icon: <HomeIcon />, path: '/user-dashboard' },
+    { label: null, icon: <AssignmentTurnedInIcon />, path: '/my-attendance' },
+    { label: null, icon: <AccountBalanceIcon />, path: '/my-fees' },
+    { label: null, icon: <EventNoteIcon />, path: '/calendar-view' },
   ];
+
+  // Yönetim Görünümü Nav Öğeleri
+  const managementNavItems = [
+    { label: null, icon: <HomeIcon />, path: '/management-dashboard' },
+    { label: null, icon: <AssignmentTurnedInIcon />, path: '/attendance-management' },
+    { label: null, icon: <AccountBalanceIcon />, path: '/fee-management' },
+    { label: null, icon: <EventNoteIcon />, path: '/calendar-management' },
+  ];
+
+  // Master Admin Görünümü Nav Öğeleri
+  const adminNavItems = [
+    { label: null, icon: <HomeIcon />, path: '/master-admin-dashboard' },
+    { label: null, icon: <AssignmentTurnedInIcon />, path: '/attendance-management' },
+    { label: null, icon: <AccountBalanceIcon />, path: '/fee-management' },
+    { label: null, icon: <EventNoteIcon />, path: '/calendar-management' },
+  ];
+
+  // Aktif navItems
+  const navItems =
+    role === 'Master Admin'
+      ? viewMode === 'korist'
+        ? [...userNavItems.slice(0, 2), { label: null, icon: <AdminPanelSettingsIcon />, action: onSwitchView }, ...userNavItems.slice(2)]
+        : [...adminNavItems.slice(0, 2), { label: null, icon: <AdminPanelSettingsIcon />, action: onSwitchView }, ...adminNavItems.slice(2)]
+      : role === 'Yönetim Kurulu'
+      ? viewMode === 'korist'
+        ? [...userNavItems.slice(0, 2), { label: null, icon: <AdminPanelSettingsIcon />, action: onSwitchView }, ...userNavItems.slice(2)]
+        : [...managementNavItems.slice(0, 2), { label: null, icon: <AdminPanelSettingsIcon />, action: onSwitchView }, ...managementNavItems.slice(2)]
+      : userNavItems;
+
+  // Geçerli rota indeksini hesapla
+  const currentValue = navItems.findIndex((item) => item.path === location.pathname);
 
   return (
     <BottomNavigation
-      value={navItems.findIndex((item) => item.path === location.pathname)} // Aktif yolu belirle
-      onChange={(event, newValue) => navigate(navItems[newValue].path)}
+      value={currentValue >= 0 ? currentValue : -1}
+      onChange={(event, newValue) => {
+        const selectedItem = navItems[newValue];
+        if (selectedItem.action) {
+          selectedItem.action(); // Switch için özel işlem
+        } else if (selectedItem.path) {
+          navigate(selectedItem.path);
+        }
+      }}
       showLabels={false}
       style={{
         position: 'fixed',
@@ -34,7 +74,6 @@ const BottomNav = () => {
       {navItems.map((item, index) => (
         <BottomNavigationAction
           key={index}
-          label={item.label}
           icon={item.icon}
           value={index}
           style={{

@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import LoadingScreen from './components/LoadingScreen';
 import Login from './components/Login';
 import MasterAdminDashboard from './components/MasterAdminDashboard';
 import ManagementDashboard from './components/ManagementDashboard';
 import UserDashboard from './components/UserDashboard';
-// import ConductorDashboard from './components/ConductorDashboard'; // Şef için
 import MyAttendance from './components/MyAttendance';
 import MyFees from './components/MyFees';
 import CalendarView from './components/CalendarView';
@@ -18,9 +17,11 @@ import FeeManagement from './components/FeeManagement';
 
 const App = () => {
   const location = useLocation(); // URL değişikliklerini izlemek için
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [userRole, setUserRole] = useState('');
+  const [userRole, setUserRole] = useState(''); // Kullanıcı rolü
+  const [viewMode, setViewMode] = useState('korist'); // Başlangıçta korist görünümü
 
   // Oturum kontrolü ve yönlendirme
   useEffect(() => {
@@ -39,22 +40,56 @@ const App = () => {
     setLoading(false); // Yükleme durumunu kapat
   }, [location]);
 
+  // Switch işlemi sırasında uygun dashboard'a yönlendirme
+  const handleSwitchView = () => {
+    if (viewMode === 'korist') {
+      setViewMode('admin');
+      if (userRole === 'Master Admin') {
+        navigate('/master-admin-dashboard');
+      } else if (userRole === 'Yönetim Kurulu') {
+        navigate('/management-dashboard');
+      }
+    } else {
+      setViewMode('korist');
+      navigate('/user-dashboard');
+    }
+  };
+
   // AppBar ve Alt Menü gösterme kontrolü
   const excludedPaths = ['/login', '/loading']; // Belirli yollar için gizlenecek
   const showAppBar = !excludedPaths.includes(location.pathname);
   const showBottomNav = !excludedPaths.includes(location.pathname);
 
-  // Rol bazlı yönlendirme
-  const getDashboardByRole = () => {
-    switch (userRole) {
-      case 'Master Admin':
-        return <Navigate to="/master-admin-dashboard" />;
-      case 'Yönetim Kurulu':
-        return <Navigate to="/management-dashboard" />;
-      case 'Korist':
-        return <Navigate to="/user-dashboard" />;
-      default:
-        return <Navigate to="/login" />;
+  // Rol bazlı yönlendirme (dashboard'lar arasında geçiş)
+  const renderRoutes = () => {
+    if (viewMode === 'korist') {
+      return (
+        <>
+          <Route path="/user-dashboard" element={<UserDashboard />} />
+          <Route path="/my-attendance" element={<MyAttendance />} />
+          <Route path="/my-fees" element={<MyFees />} />
+          <Route path="/calendar-view" element={<CalendarView />} />
+        </>
+      );
+    } else if (userRole === 'Master Admin') {
+      return (
+        <>
+          <Route path="/master-admin-dashboard" element={<MasterAdminDashboard />} />
+          <Route path="/attendance-management" element={<AttendanceManagement />} />
+          <Route path="/calendar-management" element={<CalendarManagement />} />
+          <Route path="/fee-management" element={<FeeManagement />} />
+          <Route path="/users" element={<UserManagement />} />
+        </>
+      );
+    } else if (userRole === 'Yönetim Kurulu') {
+      return (
+        <>
+          <Route path="/management-dashboard" element={<ManagementDashboard />} />
+          <Route path="/attendance-management" element={<AttendanceManagement />} />
+          <Route path="/calendar-management" element={<CalendarManagement />} />
+          <Route path="/fee-management" element={<FeeManagement />} />
+        </>
+      );
     }
   };
 
@@ -64,22 +99,18 @@ const App = () => {
         <LoadingScreen />
       ) : isLoggedIn ? (
         <>
-          {showAppBar && <CustomAppBar userName={JSON.parse(localStorage.getItem('user'))?.name} />}
+          {showAppBar && (
+            <CustomAppBar
+              userName={JSON.parse(localStorage.getItem('user'))?.name}
+              onSwitchView={handleSwitchView} // Switch butonu
+              viewMode={viewMode}
+            />
+          )}
           <Routes>
-            <Route path="/" element={getDashboardByRole()} /> {/* Ana rota */}
-            <Route path="/master-admin-dashboard" element={<MasterAdminDashboard />} />
-            <Route path="/management-dashboard" element={<ManagementDashboard />} />
-            <Route path="/user-dashboard" element={<UserDashboard />} />
-            <Route path="/my-attendance" element={<MyAttendance />} />
-            <Route path="/my-fees" element={<MyFees />} />
-            <Route path="/calendar-view" element={<CalendarView />} />
-            <Route path="/users" element={<UserManagement />} />
-            <Route path="/attendance-management" element={<AttendanceManagement />} />
-            <Route path="/calendar-management" element={<CalendarManagement />} />
-            <Route path="/fee-management" element={<FeeManagement />} />
-            <Route path="*" element={<Navigate to="/" />} /> {/* Tanımsız rotalar */}
+            {renderRoutes()}
+            <Route path="*" element={<Navigate to={viewMode === 'korist' ? '/user-dashboard' : userRole === 'Master Admin' ? '/master-admin-dashboard' : '/management-dashboard'} />} />
           </Routes>
-          {showBottomNav && <BottomNav />}
+          {showBottomNav && <BottomNav role={userRole} viewMode={viewMode} onSwitchView={handleSwitchView} />}
         </>
       ) : (
         <Login onLoginSuccess={() => setIsLoggedIn(true)} />

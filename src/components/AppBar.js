@@ -23,7 +23,7 @@ const CustomAppBar = ({ userName }) => {
   return (
     <AppBar position="sticky" color="default">
       <Toolbar>
-        <Typography variant="h6" style={{ flexGrow: 1 }}>
+        <Typography variant="h9" style={{ flexGrow: 1 }}>
           Hoş Geldin, {userName || 'Misafir'}
         </Typography>
         <IconButton color="inherit">
