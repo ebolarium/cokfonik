@@ -6,9 +6,9 @@ const ManagementDashboard = () => {
   const navigate = useNavigate();
 
   const dashboardItems = [
-    { title: 'Devamsızlık Yönetimi', description: 'Devamsızlık işlemleri yapın', path: '/attendance' },
-    { title: 'Aidat Yönetimi', description: 'Aidat durumlarını görüntüleyin ve işleyin', path: '/fees' },
-    { title: 'Takvim Yönetimi', description: 'Etkinlik ekleyin, düzenleyin veya silin', path: '/calendar' },
+    { title: 'Aidat Durumu', description: 'Aidat ödemelerini görüntüle', path: '/fee-management' },
+    { title: 'Devamsızlık Durumu', description: 'Korist devamsızlıklarını işle', path: '/attendance-management' },
+    { title: 'Konser ve Prova Takvimi', description: 'Etkinlik tarihlerini düzenle', path: '/calendar-management' },
   ];
 
   return (
