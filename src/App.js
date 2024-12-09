@@ -11,6 +11,10 @@ import MyFees from './components/MyFees';
 import CalendarView from './components/CalendarView';
 import CustomAppBar from './components/AppBar';
 import BottomNav from './components/BottomNav'; // Alt Menü
+import UserManagement from './components/UserManagement';
+import AttendanceManagement from './components/AttendanceManagement';
+import CalendarManagement from './components/CalendarManagement';
+import FeeManagement from './components/FeeManagement';
 
 const App = () => {
   const location = useLocation(); // URL değişikliklerini izlemek için
@@ -47,8 +51,6 @@ const App = () => {
         return <Navigate to="/master-admin-dashboard" />;
       case 'Yönetim Kurulu':
         return <Navigate to="/management-dashboard" />;
-     // case 'Şef':
-       // return <Navigate to="/conductor-dashboard" />;
       case 'Korist':
         return <Navigate to="/user-dashboard" />;
       default:
@@ -64,14 +66,18 @@ const App = () => {
         <>
           {showAppBar && <CustomAppBar userName={JSON.parse(localStorage.getItem('user'))?.name} />}
           <Routes>
+            <Route path="/" element={getDashboardByRole()} /> {/* Ana rota */}
             <Route path="/master-admin-dashboard" element={<MasterAdminDashboard />} />
             <Route path="/management-dashboard" element={<ManagementDashboard />} />
-            {/*  <Route path="/conductor-dashboard" element={<ConductorDashboard />} /> Şef Sayfası */}
             <Route path="/user-dashboard" element={<UserDashboard />} />
             <Route path="/my-attendance" element={<MyAttendance />} />
             <Route path="/my-fees" element={<MyFees />} />
             <Route path="/calendar-view" element={<CalendarView />} />
-            <Route path="*" element={getDashboardByRole()} /> {/* Rol bazlı yönlendirme */}
+            <Route path="/users" element={<UserManagement />} />
+            <Route path="/attendance-management" element={<AttendanceManagement />} />
+            <Route path="/calendar-management" element={<CalendarManagement />} />
+            <Route path="/fee-management" element={<FeeManagement />} />
+            <Route path="*" element={<Navigate to="/" />} /> {/* Tanımsız rotalar */}
           </Routes>
           {showBottomNav && <BottomNav />}
         </>

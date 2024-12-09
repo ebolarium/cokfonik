@@ -10,7 +10,7 @@ const FeeManagement = () => {
     try {
       const response = await fetch('http://localhost:5000/api/fees/last-six-months');
       const data = await response.json();
-
+      console.log('Fees Data:', data); // API'den gelen veriyi kontrol edin
       if (Array.isArray(data)) {
         setFees(data);
       } else {
@@ -25,7 +25,7 @@ const FeeManagement = () => {
     try {
       const response = await fetch('http://localhost:5000/api/users');
       const data = await response.json();
-
+      console.log('Users Data:', data); // API'den gelen veriyi kontrol edin
       if (Array.isArray(data)) {
         setUsers(data);
       } else {
@@ -59,7 +59,7 @@ const FeeManagement = () => {
     return Array.from({ length: 6 }, (_, i) => {
       const date = new Date();
       date.setMonth(now.getMonth() - i);
-      return date.toLocaleString('default', { month: 'long', year: 'numeric' });
+      return date.toLocaleString('tr-TR', { month: 'long', year: 'numeric' }); // Türkçe ay adları
     }).reverse();
   };
 
@@ -70,6 +70,7 @@ const FeeManagement = () => {
     margin: '0 5px',
     borderRadius: 5,
     cursor: isInactive ? 'default' : 'pointer',
+    border: '1px solid black', // Görünürlük testi için
     ':hover': {
       opacity: isInactive ? 1 : 0.8,
     },
@@ -80,12 +81,12 @@ const FeeManagement = () => {
       <Typography variant="h4" gutterBottom>Aidat Yönetimi</Typography>
       <Box>
         {users.map((user) => {
-          const userFees = fees.filter((fee) => fee.userId._id === user._id);
+          const userFees = fees.filter((fee) => fee.userId?._id === user._id);
 
           return (
             <Box key={user._id} display="flex" alignItems="center" mb={2}>
               <Typography variant="body1" style={{ width: '200px' }}>
-                {user.name} ({user.part})
+                {user.name} ({user.part || 'Belirtilmemiş'}) {/* Varsayılan değer */}
               </Typography>
               <Box display="flex" style={{ gap: '5px' }}>
                 {getLastSixMonths().map((monthYear, index) => {

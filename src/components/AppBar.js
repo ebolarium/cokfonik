@@ -14,11 +14,17 @@ const CustomAppBar = ({ userName }) => {
     setAnchorEl(null);
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('user');
+    window.location.href = '/login';
+  };
+
   return (
     <AppBar position="sticky" color="default">
       <Toolbar>
         <Typography variant="h6" style={{ flexGrow: 1 }}>
-          Hoş Geldin, {userName || 'Korist Adı'}
+          Hoş Geldin, {userName || 'Misafir'}
         </Typography>
         <IconButton color="inherit">
           <Badge badgeContent={1} color="error">
@@ -32,14 +38,7 @@ const CustomAppBar = ({ userName }) => {
       <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
         <MenuItem onClick={handleMenuClose}>Profil</MenuItem>
         <MenuItem onClick={handleMenuClose}>Ayarlar</MenuItem>
-        <MenuItem
-          onClick={() => {
-            localStorage.clear();
-            window.location.href = '/login';
-          }}
-        >
-          Çıkış Yap
-        </MenuItem>
+        <MenuItem onClick={handleLogout}>Çıkış Yap</MenuItem>
       </Menu>
     </AppBar>
   );

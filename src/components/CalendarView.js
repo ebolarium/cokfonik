@@ -14,8 +14,9 @@ const CalendarView = () => {
         setEvents(
           data.map((event) => ({
             title: event.title,
-            description: event.description,
+            description: event.details, // Detaylar için doğru alan
             date: new Date(event.date),
+            type: event.type, // Etkinlik tipi
           }))
         );
       } catch (error) {
@@ -108,7 +109,11 @@ const CalendarView = () => {
               key={index}
               onClick={() => handleDayClick(day)}
               style={{
-                backgroundColor: day.hasEvent ? '#e6ffe6' : '#f9f9f9',
+                backgroundColor: day.hasEvent
+                  ? day.event.type === 'Konser'
+                    ? '#ffe6e6' // Konser için kırmızımsı renk
+                    : '#e6ffe6' // Diğer etkinlikler için yeşilimsi renk
+                  : '#f9f9f9',
                 color: day.hasEvent ? '#000' : '#ccc',
                 border: '1px solid #ddd',
                 borderRadius: '8px',
@@ -126,30 +131,47 @@ const CalendarView = () => {
 
       {/* Sonraki 4 Etkinlik */}
       <Card style={{ padding: '15px', textAlign: 'center' }}>
-        <Typography variant="h6" gutterBottom>
-          Sonraki Etkinlikler
-        </Typography>
-        <List dense>
-          {upcomingEvents.map((event, index) => (
-            <ListItem
-              key={index}
-              button
-              onClick={() => handleEventClick(event)}
-              style={{ padding: '5px 10px' }}
-            >
-              <ListItemText
-                primary={event.title}
-                secondary={`Tarih: ${event.date.toLocaleDateString('tr-TR')}`}
-              />
-            </ListItem>
-          ))}
-          {upcomingEvents.length === 0 && (
-            <Typography variant="body2" color="textSecondary">
-              Yaklaşan etkinlik bulunmamaktadır.
-            </Typography>
-          )}
-        </List>
-      </Card>
+  <Typography variant="h6" gutterBottom>
+    Sonraki Etkinlikler
+  </Typography>
+  <List dense>
+    {upcomingEvents.map((event, index) => (
+      <ListItem
+        key={index}
+        button
+        onClick={() => handleEventClick(event)}
+        sx={{
+          padding: '4px 8px', // Varsayılan padding azaltıldı
+          marginBottom: '0', // Alt boşluk tamamen kaldırıldı
+          lineHeight: 1.2, // Satır yüksekliği azaltıldı
+          '&.MuiListItem-root': {
+            minHeight: 'unset', // Varsayılan minimum yükseklik kaldırıldı
+          },
+        }}
+        className="custom-list-item"
+      >
+        <ListItemText
+          primary={event.title}
+          secondary={`Tarih: ${event.date.toLocaleDateString('tr-TR')}`}
+          primaryTypographyProps={{
+            style: { fontSize: '0.9rem', lineHeight: 1.2 }, // Yazı boyutu küçültüldü
+          }}
+          secondaryTypographyProps={{
+            style: { fontSize: '0.8rem', color: '#666', lineHeight: 1.2 }, // Alt yazı boyutu ve satır yüksekliği
+          }}
+          className="custom-list-item-text"
+        />
+      </ListItem>
+    ))}
+    {upcomingEvents.length === 0 && (
+      <Typography variant="body2" color="textSecondary">
+        Yaklaşan etkinlik bulunmamaktadır.
+      </Typography>
+    )}
+  </List>
+</Card>
+
+
 
       {/* Modal */}
       <Modal

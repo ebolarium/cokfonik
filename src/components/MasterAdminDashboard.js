@@ -1,12 +1,15 @@
 import React from 'react';
 import { Box, Typography, Card, CardContent, Grid } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
 
 const MasterAdminDashboard = () => {
+  const navigate = useNavigate();
+
   const dashboardItems = [
     { title: 'Kullanıcı Yönetimi', description: 'Kullanıcı ekle, düzenle, sil', path: '/users' },
-    { title: 'Aidat Durumu', description: 'Aidat ödemelerini görüntüle', path: '/fees' },
-    { title: 'Devamsızlık Durumu', description: 'Korist devamsızlıklarını işle', path: '/attendance' },
-    { title: 'Konser ve Prova Takvimi', description: 'Etkinlik tarihlerini düzenle', path: '/calendar' },
+    { title: 'Aidat Durumu', description: 'Aidat ödemelerini görüntüle', path: '/fee-management' },
+    { title: 'Devamsızlık Durumu', description: 'Korist devamsızlıklarını işle', path: '/attendance-management' },
+    { title: 'Konser ve Prova Takvimi', description: 'Etkinlik tarihlerini düzenle', path: '/calendar-management' },
   ];
 
   return (
@@ -24,7 +27,7 @@ const MasterAdminDashboard = () => {
                 boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
                 cursor: 'pointer',
               }}
-              onClick={() => window.location.href = item.path}
+              onClick={() => navigate(item.path)} // React Router yönlendirmesi
             >
               <CardContent>
                 <Typography variant="h6">{item.title}</Typography>

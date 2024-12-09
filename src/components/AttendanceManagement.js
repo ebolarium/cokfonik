@@ -89,7 +89,9 @@ const AttendanceManagement = () => {
                 <TableCell>{user.name}</TableCell>
                 <TableCell>{user.part || 'Belirtilmemiş'}</TableCell> {/* Partisyon bilgisi */}
                 <TableCell>{`${cameCount}/${userAttendances.length}`}</TableCell>
-                <TableCell style={{ display: 'flex', gap: '5px' }}>{renderAttendanceGrid(user._id)}</TableCell>
+                <TableCell>
+                  <Box display="flex" gap={1}>{renderAttendanceGrid(user._id)}</Box>
+                </TableCell>
               </TableRow>
             );
           })}

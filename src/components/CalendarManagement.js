@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import FullCalendar from '@fullcalendar/react';
-import dayGridPlugin from '@fullcalendar/daygrid';
-import interactionPlugin from '@fullcalendar/interaction';
-import { Box, Typography, Dialog, DialogTitle, DialogContent, TextField, Button, Select, MenuItem } from '@mui/material';
+import { Box, Typography, Modal, Backdrop, Fade, TextField, Button, Select, MenuItem } from '@mui/material';
 
 const CalendarManagement = () => {
   const [events, setEvents] = useState([]);
-  const [open, setOpen] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [openModal, setOpenModal] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     date: '',
@@ -17,104 +15,242 @@ const CalendarManagement = () => {
 
   // Etkinlikleri Getir
   const fetchEvents = async () => {
-    const response = await fetch('http://localhost:5000/api/events');
-    const data = await response.json();
-    setEvents(data.map(event => ({
-      id: event._id,
-      title: event.title,
-      date: event.date,
-      backgroundColor: event.type === 'Prova' ? '#ffc107' : '#007bff', // Farklı renkler
-    })));
+    try {
+      const response = await fetch('http://localhost:5000/api/events');
+      const data = await response.json();
+      setEvents(data.map(event => ({
+        id: event._id,
+        title: event.title,
+        date: new Date(event.date),
+        type: event.type,
+        location: event.location,
+        details: event.details,
+      })));
+    } catch (error) {
+      console.error('Etkinlikler yüklenemedi:', error);
+    }
   };
 
   useEffect(() => {
     fetchEvents();
   }, []);
 
-  // Yeni Etkinlik Ekle
-  const handleAddEvent = async (e) => {
-    e.preventDefault();
+  // Yeni Etkinlik Ekleme veya Güncelleme
+  const handleSaveEvent = async () => {
+    const method = selectedEvent ? 'PUT' : 'POST';
+    const endpoint = selectedEvent
+      ? `http://localhost:5000/api/events/${selectedEvent.id}`
+      : 'http://localhost:5000/api/events';
+
     try {
-      await fetch('http://localhost:5000/api/events', {
-        method: 'POST',
+      await fetch(endpoint, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
       });
       fetchEvents();
-      setOpen(false);
+      handleCloseModal();
     } catch (error) {
-      console.error(error);
+      console.error('Etkinlik kaydedilemedi:', error);
     }
   };
 
-  return (
-    <Box p={3}>
-      <Typography variant="h4" gutterBottom>Takvim Yönetimi</Typography>
-      <Button variant="contained" color="primary" onClick={() => setOpen(true)}>
-        Yeni Etkinlik Ekle
-      </Button>
-      <FullCalendar
-        plugins={[dayGridPlugin, interactionPlugin]}
-        initialView="dayGridMonth"
-        events={events}
-        editable={true}
-        eventClick={(info) => alert(`Etkinlik: ${info.event.title}`)}
-      />
+  // Etkinlik Silme
+  const handleDeleteEvent = async (id) => {
+    try {
+      await fetch(`http://localhost:5000/api/events/${id}`, { method: 'DELETE' });
+      fetchEvents();
+    } catch (error) {
+      console.error('Etkinlik silinemedi:', error);
+    }
+  };
 
-      <Dialog open={open} onClose={() => setOpen(false)}>
-        <DialogTitle>Yeni Etkinlik</DialogTitle>
-        <DialogContent>
-          <form onSubmit={handleAddEvent}>
+  const formatDateToInput = (date) => {
+    const d = new Date(date);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+  
+  const handleOpenModal = (event = null, date = null) => {
+    setSelectedEvent(event);
+  
+    const initialDate = event
+      ? formatDateToInput(event.date) // Etkinlik tarihi
+      : date
+      ? formatDateToInput(date) // Tıklanan tarih
+      : '';
+  
+    setFormData({
+      title: event?.title || '',
+      date: initialDate,
+      type: event?.type || 'Prova',
+      location: event?.location || '',
+      details: event?.details || '',
+    });
+    setOpenModal(true);
+  };
+  
+
+  const handleCloseModal = () => {
+    setSelectedEvent(null);
+    setOpenModal(false);
+  };
+
+  const daysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
+
+  const generateCalendarDays = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const days = [];
+    const totalDays = daysInMonth(year, month);
+
+    for (let day = 1; day <= totalDays; day++) {
+      const currentDate = new Date(year, month, day);
+      const event = events.find(e => e.date.toDateString() === currentDate.toDateString());
+
+      days.push({
+        date: currentDate,
+        hasEvent: !!event,
+        event,
+      });
+    }
+
+    return days;
+  };
+
+  const days = generateCalendarDays();
+
+  return (
+    <Box minHeight="100vh" bgcolor="#f9f9f9" p={3}>
+      <Typography variant="h4" gutterBottom>Takvim Yönetimi</Typography>
+      <Box
+        display="grid"
+        gridTemplateColumns="repeat(7, 1fr)"
+        gap={1}
+        style={{ marginTop: '15px' }}
+      >
+        {['Pzr', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'].map((day, index) => (
+          <Typography
+            key={index}
+            variant="body2"
+            style={{
+              textAlign: 'center',
+              fontWeight: 'bold',
+              fontSize: '0.85rem',
+            }}
+          >
+            {day}
+          </Typography>
+        ))}
+        {days.map((day, index) => (
+          <Box
+            key={index}
+            onClick={() => handleOpenModal(day.event, day.date)}
+            style={{
+              backgroundColor: day.event
+                ? day.event.type === 'Konser'
+                  ? '#ffe6e6' // Konser için farklı renk
+                  : '#e6ffe6' // Diğer etkinlikler
+                : '#f9f9f9',
+              color: day.hasEvent ? '#000' : '#ccc',
+              border: '1px solid #ddd',
+              borderRadius: '8px',
+              padding: '8px',
+              textAlign: 'center',
+              fontSize: '0.9rem',
+              cursor: 'pointer',
+            }}
+          >
+            {day.date.getDate()}
+          </Box>
+        ))}
+      </Box>
+
+      {/* Modal */}
+      <Modal
+        open={openModal}
+        onClose={handleCloseModal}
+        closeAfterTransition
+        BackdropComponent={Backdrop}
+        BackdropProps={{ timeout: 500 }}
+      >
+        <Fade in={openModal}>
+          <Box
+            style={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              backgroundColor: 'white',
+              borderRadius: '8px',
+              boxShadow: '0 4px 8px rgba(0,0,0,0.2)',
+              padding: '20px',
+              width: '400px',
+            }}
+          >
+            <Typography variant="h6" gutterBottom>
+              {selectedEvent ? 'Etkinliği Düzenle' : 'Yeni Etkinlik'}
+            </Typography>
             <TextField
               label="Başlık"
-              name="title"
               fullWidth
               margin="normal"
-              required
+              value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
             />
             <TextField
               label="Tarih"
               type="date"
-              name="date"
               fullWidth
               margin="normal"
-              required
               InputLabelProps={{ shrink: true }}
+              value={formData.date}
               onChange={(e) => setFormData({ ...formData, date: e.target.value })}
             />
             <Select
-              label="Tür"
-              name="type"
               fullWidth
+              margin="normal"
               value={formData.type}
               onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-              margin="normal"
             >
               <MenuItem value="Prova">Prova</MenuItem>
               <MenuItem value="Konser">Konser</MenuItem>
             </Select>
             <TextField
               label="Yer"
-              name="location"
               fullWidth
               margin="normal"
+              value={formData.location}
               onChange={(e) => setFormData({ ...formData, location: e.target.value })}
             />
             <TextField
               label="Detaylar"
-              name="details"
               fullWidth
               margin="normal"
               multiline
+              value={formData.details}
               onChange={(e) => setFormData({ ...formData, details: e.target.value })}
             />
-            <Button type="submit" variant="contained" color="primary">
-              Kaydet
-            </Button>
-          </form>
-        </DialogContent>
-      </Dialog>
+            <Box mt={2} display="flex" justifyContent="space-between">
+              {selectedEvent && (
+                <Button
+                  color="secondary"
+                  variant="contained"
+                  onClick={() => handleDeleteEvent(selectedEvent.id)}
+                >
+                  Sil
+                </Button>
+              )}
+              <Button color="primary" variant="contained" onClick={handleSaveEvent}>
+                Kaydet
+              </Button>
+            </Box>
+          </Box>
+        </Fade>
+      </Modal>
     </Box>
   );
 };

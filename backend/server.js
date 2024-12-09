@@ -7,6 +7,7 @@ const User = require('./models/User'); // Modelin doğru yolu
 
 
 
+
 dotenv.config();
 
 const app = express();
@@ -34,6 +35,11 @@ app.use('/api/events', eventRoutes);
 
 
 // Login Route
+const bcrypt = require('bcryptjs');
+
+// Login Route
+
+
 app.post('/api/login', async (req, res) => {
   const { email, password } = req.body;
 
@@ -43,13 +49,14 @@ app.post('/api/login', async (req, res) => {
       return res.status(401).json({ message: 'Kullanıcı bulunamadı.' });
     }
 
-    if (password !== user.password) { // Şifre kontrolü
+    // Şifre kontrolü (düz metin)
+    if (password !== user.password) {
       return res.status(401).json({ message: 'Hatalı şifre.' });
     }
 
     res.status(200).json({
       message: 'Giriş başarılı!',
-      user: { // Kullanıcı bilgisi
+      user: {
         _id: user._id,
         name: user.name,
         role: user.role,
@@ -60,6 +67,8 @@ app.post('/api/login', async (req, res) => {
     res.status(500).json({ message: 'Sunucu hatası oluştu.' });
   }
 });
+
+
 
 
   

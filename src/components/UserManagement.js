@@ -15,8 +15,22 @@ const UserManagement = () => {
   };
 
   useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/users');
+        if (!response.ok) {
+          throw new Error(`API Error: ${response.status}`);
+        }
+        const data = await response.json();
+        setUsers(data);
+      } catch (error) {
+        console.error('Kullanıcılar yüklenirken hata:', error);
+      }
+    };
+  
     fetchUsers();
   }, []);
+  
 
   // Form Verisini Güncelle
   const handleChange = (e) => {
