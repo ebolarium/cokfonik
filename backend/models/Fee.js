@@ -5,6 +5,9 @@ const FeeSchema = new mongoose.Schema({
   month: { type: String, required: true },
   year: { type: Number, required: true },
   isPaid: { type: Boolean, default: false },
-}, { timestamps: true }); // createdAt ve updatedAt alanlarını otomatik ekler
+}, { 
+  timestamps: true, // createdAt ve updatedAt alanlarını otomatik ekler
+  collection: 'fees' // Koleksiyon adını açıkça belirtir
+});
 
 module.exports = mongoose.model('Fee', FeeSchema);

@@ -2,6 +2,19 @@ import React, { useEffect, useState } from 'react';
 import { Box, Typography, Tooltip } from '@mui/material';
 import { styled } from '@mui/system';
 
+const FeeBox = styled('div')(({ isPaid, isInactive }) => ({
+  width: 30,
+  height: 30,
+  backgroundColor: isInactive ? 'grey' : isPaid ? 'green' : 'red',
+  margin: '2px',
+  borderRadius: 5,
+  cursor: isInactive ? 'default' : 'pointer',
+  border: '1px solid black',
+  ':hover': {
+    opacity: isInactive ? 1 : 0.8,
+  },
+}));
+
 const FeeManagement = () => {
   const [fees, setFees] = useState([]);
   const [users, setUsers] = useState([]);
@@ -10,14 +23,13 @@ const FeeManagement = () => {
     try {
       const response = await fetch('http://localhost:5000/api/fees/last-six-months');
       const data = await response.json();
-      console.log('Fees Data:', data); // API'den gelen veriyi kontrol edin
       if (Array.isArray(data)) {
         setFees(data);
       } else {
-        console.error('Beklenmeyen API yanıtı:', data);
+        console.error('Unexpected API response for fees:', data);
       }
     } catch (error) {
-      console.error('Aidatlar yüklenirken hata:', error);
+      console.error('Error fetching fees:', error);
     }
   };
 
@@ -25,14 +37,13 @@ const FeeManagement = () => {
     try {
       const response = await fetch('http://localhost:5000/api/users');
       const data = await response.json();
-      console.log('Users Data:', data); // API'den gelen veriyi kontrol edin
       if (Array.isArray(data)) {
         setUsers(data);
       } else {
-        console.error('Beklenmeyen API yanıtı:', data);
+        console.error('Unexpected API response for users:', data);
       }
     } catch (error) {
-      console.error('Kullanıcılar yüklenirken hata:', error);
+      console.error('Error fetching users:', error);
     }
   };
 
@@ -50,31 +61,22 @@ const FeeManagement = () => {
       });
       fetchFees();
     } catch (error) {
-      console.error('Aidat durumu güncellenemedi:', error);
+      console.error('Error toggling fee status:', error);
     }
   };
 
   const getLastSixMonths = () => {
     const now = new Date();
-    return Array.from({ length: 6 }, (_, i) => {
+    const months = Array.from({ length: 6 }, (_, i) => {
       const date = new Date();
       date.setMonth(now.getMonth() - i);
-      return date.toLocaleString('tr-TR', { month: 'long', year: 'numeric' }); // Türkçe ay adları
+      return {
+        month: date.toLocaleString('tr-TR', { month: 'long' }).toLowerCase(), // Normalize month to lowercase
+        year: date.getFullYear(),
+      };
     }).reverse();
+    return months;
   };
-
-  const FeeBox = styled('div')(({ isPaid, isInactive }) => ({
-    width: 30,
-    height: 30,
-    backgroundColor: isInactive ? 'grey' : isPaid ? 'green' : 'red',
-    margin: '0 5px',
-    borderRadius: 5,
-    cursor: isInactive ? 'default' : 'pointer',
-    border: '1px solid black', // Görünürlük testi için
-    ':hover': {
-      opacity: isInactive ? 1 : 0.8,
-    },
-  }));
 
   return (
     <Box p={3}>
@@ -84,17 +86,19 @@ const FeeManagement = () => {
           const userFees = fees.filter((fee) => fee.userId?._id === user._id);
 
           return (
-            <Box key={user._id} display="flex" alignItems="center" mb={2}>
-              <Typography variant="body1" style={{ width: '200px' }}>
-                {user.name} ({user.part || 'Belirtilmemiş'}) {/* Varsayılan değer */}
+            <Box key={user._id} mb={3}>
+              <Typography variant="body1" style={{ marginBottom: '8px' }}>
+                {user.name} ({user.part || 'Belirtilmemiş'})
               </Typography>
-              <Box display="flex" style={{ gap: '5px' }}>
+              <Box display="flex" gap={1} flexWrap="nowrap">
                 {getLastSixMonths().map((monthYear, index) => {
                   const fee = userFees.find(
-                    (f) => `${f.month} ${f.year}` === monthYear
+                    (f) =>
+                      f.month.toLowerCase() === monthYear.month &&
+                      f.year === monthYear.year
                   );
                   return (
-                    <Tooltip title={monthYear} key={index}>
+                    <Tooltip title={`${monthYear.month} ${monthYear.year}`} key={index}>
                       <FeeBox
                         isPaid={fee?.isPaid || false}
                         isInactive={!fee}

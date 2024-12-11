@@ -9,7 +9,7 @@ const router = express.Router();
 // Yardımcı Fonksiyon: Güncel Ay ve Yıl Bilgisi
 const getCurrentMonthAndYear = () => {
   const now = new Date();
-  return { month: now.toLocaleString('default', { month: 'long' }), year: now.getFullYear() };
+  return { month: now.toLocaleString('tr-TR', { month: 'long' }), year: now.getFullYear() };
 };
 
 // Yardımcı Fonksiyon: Gelecekteki Tüm Provalar İçin Devamsızlık Kaydı Oluştur
