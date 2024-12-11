@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Typography, Modal, Backdrop, Fade, TextField, Button, Select, MenuItem } from '@mui/material';
 
-
 const CalendarManagement = () => {
   const [events, setEvents] = useState([]);
   const [selectedEvent, setSelectedEvent] = useState(null);
@@ -14,7 +13,6 @@ const CalendarManagement = () => {
     details: '',
   });
 
-  // Etkinlikleri Getir
   const fetchEvents = async () => {
     try {
       const response = await fetch('http://localhost:5000/api/events');
@@ -36,39 +34,37 @@ const CalendarManagement = () => {
     fetchEvents();
   }, []);
 
-  // Yeni Etkinlik Ekleme veya Güncelleme
   const handleSaveEvent = async () => {
     const method = selectedEvent ? 'PUT' : 'POST';
     const endpoint = selectedEvent
       ? `http://localhost:5000/api/events/${selectedEvent.id}`
       : 'http://localhost:5000/api/events';
-  
+
     try {
       const response = await fetch(endpoint, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
       });
-  
+
       if (!response.ok) {
         const errorText = await response.text();
         console.error('Sunucu Hatası:', errorText);
         throw new Error(`Sunucu yanıtı: ${response.status} - ${errorText}`);
       }
-  
+
       await fetchEvents();
       handleCloseModal();
     } catch (error) {
       console.error('Hata:', error.message);
     }
   };
-  
-  // Etkinlik Silme
+
   const handleDeleteEvent = async (id) => {
     try {
       await fetch(`http://localhost:5000/api/events/${id}`, { method: 'DELETE' });
       fetchEvents();
-      handleCloseModal(); // Modalı kapat
+      handleCloseModal();
     } catch (error) {
       console.error('Etkinlik silinemedi:', error);
     }
@@ -81,16 +77,16 @@ const CalendarManagement = () => {
     const day = String(d.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
   };
-  
+
   const handleOpenModal = (event = null, date = null) => {
     setSelectedEvent(event);
-  
+
     const initialDate = event
-      ? formatDateToInput(event.date) // Etkinlik tarihi
+      ? formatDateToInput(event.date)
       : date
-      ? formatDateToInput(date) // Tıklanan tarih
+      ? formatDateToInput(date)
       : '';
-  
+
     setFormData({
       title: event?.title || '',
       date: initialDate,
@@ -100,7 +96,6 @@ const CalendarManagement = () => {
     });
     setOpenModal(true);
   };
-  
 
   const handleCloseModal = () => {
     setSelectedEvent(null);
@@ -127,55 +122,76 @@ const CalendarManagement = () => {
       });
     }
 
-    return days;
+    return { days, month, year };
   };
 
-  const days = generateCalendarDays();
+  const { days, month, year } = generateCalendarDays();
+
+  const monthNames = [
+    'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
+    'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık',
+  ];
 
   return (
     <Box minHeight="100vh" bgcolor="#f9f9f9" p={3}>
       <Typography variant="h4" gutterBottom>Takvim Yönetimi</Typography>
-      <Box
-        display="grid"
-        gridTemplateColumns="repeat(7, 1fr)"
-        gap={1}
-        style={{ marginTop: '15px' }}
+      <Typography
+        variant="h5"
+        sx={{ textAlign: 'center', marginBottom: '20px', color: '#333', fontWeight: 'bold' }}
       >
-        {['Pzr', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'].map((day, index) => (
-          <Typography
-            key={index}
-            variant="body2"
-            style={{
-              textAlign: 'center',
-              fontWeight: 'bold',
-              fontSize: '0.85rem',
-            }}
-          >
-            {day}
-          </Typography>
-        ))}
-        {days.map((day, index) => (
-          <Box
-            key={index}
-            onClick={() => handleOpenModal(day.event, day.date)}
-            style={{
-              backgroundColor: day.event
-                ? day.event.type === 'Konser'
-                  ? '#ffe6e6' // Konser için farklı renk
-                  : '#e6ffe6' // Diğer etkinlikler
-                : '#f9f9f9',
-              color: day.hasEvent ? '#000' : '#ccc',
-              border: '1px solid #ddd',
-              borderRadius: '8px',
-              padding: '8px',
-              textAlign: 'center',
-              fontSize: '0.9rem',
-              cursor: 'pointer',
-            }}
-          >
-            {day.date.getDate()}
-          </Box>
-        ))}
+        {monthNames[month]} {year}
+      </Typography>
+      <Box
+        sx={{
+          border: '2px solid #ddd',
+          borderRadius: '8px',
+          padding: '10px',
+          maxWidth: '350px',
+          margin: '0 auto',
+        }}
+      >
+        <Box
+          display="grid"
+          gridTemplateColumns="repeat(7, 1fr)"
+          gap={1}
+          style={{ marginTop: '15px' }}
+        >
+          {['Pzr', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'].map((day, index) => (
+            <Typography
+              key={index}
+              variant="body2"
+              style={{
+                textAlign: 'center',
+                fontWeight: 'bold',
+                fontSize: '0.85rem',
+              }}
+            >
+              {day}
+            </Typography>
+          ))}
+          {days.map((day, index) => (
+            <Box
+              key={index}
+              onClick={() => handleOpenModal(day.event, day.date)}
+              style={{
+                backgroundColor: day.event
+                  ? day.event.type === 'Konser'
+                    ? '#ffe6e6'
+                    : '#e6ffe6'
+                  : '#f9f9f9',
+                color: day.hasEvent ? '#000' : '#ccc',
+                border: '1px solid #ddd',
+                borderRadius: '8px',
+                padding: '8px',
+                textAlign: 'center',
+                fontSize: '0.9rem',
+                cursor: 'pointer',
+              }}
+            >
+              {day.date.getDate()}
+            </Box>
+          ))}
+        </Box>
       </Box>
 
       {/* Modal */}
