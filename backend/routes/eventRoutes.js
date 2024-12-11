@@ -54,8 +54,17 @@ router.put('/:id', async (req, res) => {
 // Etkinlik Sil
 router.delete('/:id', async (req, res) => {
   try {
-    await Event.findByIdAndDelete(req.params.id);
-    res.json({ message: 'Etkinlik silindi' });
+    // İlgili Etkinliği Sil
+    const deletedEvent = await Event.findByIdAndDelete(req.params.id);
+
+    if (!deletedEvent) {
+      return res.status(404).json({ message: 'Etkinlik bulunamadı' });
+    }
+
+    // İlgili Etkinlik için Yoklama Kayıtlarını Sil
+    await Attendance.deleteMany({ date: deletedEvent.date });
+
+    res.json({ message: 'Etkinlik ve ilgili yoklama kayıtları silindi' });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

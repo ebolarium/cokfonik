@@ -67,6 +67,7 @@ const CalendarManagement = () => {
     try {
       await fetch(`http://localhost:5000/api/events/${id}`, { method: 'DELETE' });
       fetchEvents();
+      handleCloseModal(); // Modalı kapat
     } catch (error) {
       console.error('Etkinlik silinemedi:', error);
     }
