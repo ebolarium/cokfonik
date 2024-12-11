@@ -1,5 +1,21 @@
-import React, { useEffect, useState } from 'react';
-import { Box, Typography, Table, TableBody, TableCell, TableHead, TableRow, Tooltip, Modal, Backdrop, Fade, IconButton, List, ListItem, ListItemText } from '@mui/material';
+import React, { useEffect, useState, useRef } from 'react';
+import {
+  Box,
+  Typography,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
+  Tooltip,
+  Modal,
+  Backdrop,
+  Fade,
+  IconButton,
+  List,
+  ListItem,
+  ListItemText,
+} from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { styled } from '@mui/system';
 
@@ -27,12 +43,7 @@ const AttendanceManagement = () => {
   const [events, setEvents] = useState([]);
   const [openModal, setOpenModal] = useState(false);
   const [selectedUserAttendances, setSelectedUserAttendances] = useState([]);
-
-  useEffect(() => {
-    fetchAttendances();
-    fetchUsers();
-    fetchEvents();
-  }, []);
+  const scrollContainerRef = useRef(null);
 
   const fetchAttendances = async () => {
     try {
@@ -80,6 +91,12 @@ const AttendanceManagement = () => {
     }
   };
 
+  useEffect(() => {
+    fetchAttendances();
+    fetchUsers();
+    fetchEvents();
+  }, []);
+
   const handleOpenModal = (userId) => {
     const userAttendances = attendances.filter((a) => a.userId?._id === userId);
     setSelectedUserAttendances(userAttendances);
@@ -97,16 +114,33 @@ const AttendanceManagement = () => {
   };
 
   const renderAttendanceGrid = (userId) => {
-    const userAttendances = attendances.filter((a) => a.userId?._id === userId);
+    const userAttendances = attendances
+      .filter((a) => a.userId?._id === userId && new Date(a.date) < new Date())
+      .sort((a, b) => new Date(a.date) - new Date(b.date)) // Sıralamayı en eski solda olacak şekilde değiştirdik
+      .slice(0, 10);
 
-    return userAttendances.map((attendance) => (
-      <Tooltip title={new Date(attendance.date).toLocaleDateString()} key={attendance._id}>
-        <AttendanceBox
-          status={attendance.status}
-          onClick={() => toggleAttendanceStatus(attendance._id, attendance.status)}
-        />
-      </Tooltip>
-    ));
+    return (
+      <Box
+        ref={scrollContainerRef}
+        display="flex"
+        gap={0.5}
+        flexWrap="nowrap"
+        sx={{
+          overflowX: 'auto',
+          paddingBottom: '8px',
+          '::-webkit-scrollbar': { display: 'none' },
+        }}
+      >
+        {userAttendances.map((attendance) => (
+          <Tooltip title={new Date(attendance.date).toLocaleDateString()} key={attendance._id}>
+            <AttendanceBox
+              status={attendance.status}
+              onClick={() => toggleAttendanceStatus(attendance._id, attendance.status)}
+            />
+          </Tooltip>
+        ))}
+      </Box>
+    );
   };
 
   return (
@@ -176,9 +210,7 @@ const AttendanceManagement = () => {
                 </TableRow>
                 <TableRow>
                   <TableCell colSpan={3} sx={{ paddingTop: '2px', paddingBottom: '2px' }}>
-                    <Box display="flex" gap={1} flexWrap="nowrap">
-                      {renderAttendanceGrid(user._id)}
-                    </Box>
+                    {renderAttendanceGrid(user._id)}
                   </TableCell>
                 </TableRow>
               </React.Fragment>
