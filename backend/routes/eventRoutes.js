@@ -2,6 +2,9 @@ const express = require('express');
 const Event = require('../models/Event');
 
 const router = express.Router();
+const User = require('../models/User'); // User modelini eklemeyi unutmuş olabilirsiniz
+const Attendance = require('../models/Attendance');
+
 
 // Tüm Etkinlikleri Getir
 router.get('/', async (req, res) => {
@@ -20,11 +23,23 @@ router.post('/', async (req, res) => {
   try {
     const newEvent = new Event({ title, date, type, location, details });
     await newEvent.save();
+
+    if (type === 'Prova') {
+      const users = await User.find();
+      const attendanceRecords = users.map(user => ({
+        userId: user._id,
+        date: newEvent.date,
+        status: 'Gelmedi',
+      }));
+      await Attendance.insertMany(attendanceRecords);
+    }
+
     res.status(201).json(newEvent);
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
 });
+
 
 // Etkinlik Güncelle
 router.put('/:id', async (req, res) => {

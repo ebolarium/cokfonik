@@ -41,20 +41,27 @@ const CalendarManagement = () => {
     const endpoint = selectedEvent
       ? `http://localhost:5000/api/events/${selectedEvent.id}`
       : 'http://localhost:5000/api/events';
-
+  
     try {
-      await fetch(endpoint, {
+      const response = await fetch(endpoint, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
       });
-      fetchEvents();
+  
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Sunucu Hatası:', errorText);
+        throw new Error(`Sunucu yanıtı: ${response.status} - ${errorText}`);
+      }
+  
+      await fetchEvents();
       handleCloseModal();
     } catch (error) {
-      console.error('Etkinlik kaydedilemedi:', error);
+      console.error('Hata:', error.message);
     }
   };
-
+  
   // Etkinlik Silme
   const handleDeleteEvent = async (id) => {
     try {
