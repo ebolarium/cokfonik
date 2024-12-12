@@ -23,26 +23,75 @@ const createDefaultAttendance = async (userId) => {
   await Attendance.insertMany(attendanceRecords);
 };
 
-// Kullanıcı Ekleme
-router.post('/', async (req, res) => {
-  const { name, email, password, role, part } = req.body; // Partisyon bilgisi ekliyoruz
+// Kullanıcı kaydı
+router.post('/register', async (req, res) => {
+  const { name, surname, email, password, birthDate, phone, part } = req.body;
   try {
-    const newUser = new User({ name, email, password, role, part });
+    const newUser = new User({
+      name,
+      surname,
+      email,
+      password,
+      birthDate,
+      phone,
+      part,
+      approved: false, // Varsayılan olarak onaylanmamış
+      frozen: false, // Varsayılan olarak aktif
+    });
+
     await newUser.save();
 
-    // Aidat ve devamsızlık işlemleri aynı kalıyor
+    // Aidat ve devamsızlık işlemleri
     const { month, year } = getCurrentMonthAndYear();
     const fee = new Fee({ userId: newUser._id, month, year });
     await fee.save();
 
     await createDefaultAttendance(newUser._id);
 
-    res.status(201).json({ message: 'Kullanıcı eklendi', user: newUser });
+    res.status(201).json({ message: 'Kullanıcı başarıyla kaydedildi.', user: newUser });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
 });
 
+// Admin onayı
+router.put('/:id/approve', async (req, res) => {
+  try {
+    const user = await User.findByIdAndUpdate(req.params.id, { approved: true }, { new: true });
+    if (!user) {
+      return res.status(404).json({ message: 'Kullanıcı bulunamadı.' });
+    }
+    res.json({ message: 'Kullanıcı onaylandı.', user });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+// Kullanıcı dondurma
+router.put('/:id/freeze', async (req, res) => {
+  try {
+    const user = await User.findByIdAndUpdate(req.params.id, { frozen: true }, { new: true });
+    if (!user) {
+      return res.status(404).json({ message: 'Kullanıcı bulunamadı.' });
+    }
+    res.json({ message: 'Kullanıcı donduruldu.', user });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+// Kullanıcı dondurmayı kaldırma
+router.put('/:id/unfreeze', async (req, res) => {
+  try {
+    const user = await User.findByIdAndUpdate(req.params.id, { frozen: false }, { new: true });
+    if (!user) {
+      return res.status(404).json({ message: 'Kullanıcı bulunamadı.' });
+    }
+    res.json({ message: 'Kullanıcı aktif hale getirildi.', user });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
 
 // Tüm Kullanıcıları Getir
 router.get('/', async (req, res) => {
@@ -79,6 +128,5 @@ router.put('/:id', async (req, res) => {
     res.status(400).json({ message: error.message });
   }
 });
-
 
 module.exports = router;

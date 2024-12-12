@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { TextField, Button, Box, Tabs, Tab, MenuItem, InputAdornment } from '@mui/material';
+import { TextField, Button, Box, Tabs, Tab, MenuItem, InputAdornment, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import logo from '../assets/Cokfonik_Logo_Siyah.png';
 
 const Login = () => {
@@ -12,10 +12,21 @@ const Login = () => {
     birthDate: '',
     part: '',
     phone: '',
+    email: '',
+    password: '',
     confirmPassword: ''
   });
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalMessage, setModalMessage] = useState('');
 
-  const handleSubmit = async (e) => {
+  const handleModalClose = () => {
+    setModalOpen(false);
+    if (activeTab === 1) {
+      setActiveTab(0);
+    }
+  };
+
+  const handleLogin = async (e) => {
     e.preventDefault();
     try {
       const response = await fetch('http://localhost:5000/api/login', {
@@ -26,23 +37,59 @@ const Login = () => {
       const data = await response.json();
 
       if (response.ok) {
-        localStorage.setItem('authToken', data.token);
-        localStorage.setItem('user', JSON.stringify(data.user));
+        if (!data.user.approved) {
+          setModalMessage('Hesabınız henüz onaylanmamış. Lütfen yönetici onayını bekleyin.');
+          setModalOpen(true);
+        } else {
+          localStorage.setItem('authToken', data.token);
+          localStorage.setItem('user', JSON.stringify(data.user));
 
-        const roleRedirects = {
-          'Master Admin': '/master-admin-dashboard',
-          'Yönetim Kurulu': '/management-dashboard',
-          'Şef': '/conductor-dashboard',
-          'Korist': '/user-dashboard',
-        };
-        const redirectPath = roleRedirects[data.user.role] || '/login';
-        window.location.href = redirectPath;
+          const roleRedirects = {
+            'Master Admin': '/master-admin-dashboard',
+            'Yönetim Kurulu': '/management-dashboard',
+            'Şef': '/conductor-dashboard',
+            'Korist': '/user-dashboard',
+          };
+          const redirectPath = roleRedirects[data.user.role] || '/login';
+          window.location.href = redirectPath;
+        }
       } else {
-        alert(data.message || 'Giriş başarısız!');
+        setModalMessage(data.message || 'Giriş başarısız!');
+        setModalOpen(true);
       }
     } catch (error) {
       console.error('Login Error:', error);
-      alert('Sunucu hatası oluştu. Lütfen tekrar deneyin.');
+      setModalMessage('Sunucu hatası oluştu. Lütfen tekrar deneyin.');
+      setModalOpen(true);
+    }
+  };
+
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    if (formData.password !== formData.confirmPassword) {
+      setModalMessage('Şifreler eşleşmiyor.');
+      setModalOpen(true);
+      return;
+    }
+    try {
+      const response = await fetch('http://localhost:5000/api/users/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+      const data = await response.json();
+
+      if (response.ok) {
+        setModalMessage('Kayıt başarılı! Yönetici onayını bekleyin.');
+        setModalOpen(true);
+      } else {
+        setModalMessage(data.message || 'Kayıt başarısız!');
+        setModalOpen(true);
+      }
+    } catch (error) {
+      console.error('Register Error:', error);
+      setModalMessage('Sunucu hatası oluştu. Lütfen tekrar deneyin.');
+      setModalOpen(true);
     }
   };
 
@@ -57,7 +104,7 @@ const Login = () => {
 
   const formatPhoneNumber = (value) => {
     const cleaned = value.replace(/\D/g, '');
-    const match = cleaned.match(/^(‌‌\d{0,3})(‌‌\d{0,3})(‌‌\d{0,2})(‌‌\d{0,2})$/);
+    const match = cleaned.match(/^(\d{0,3})(\d{0,3})(\d{0,2})(\d{0,2})$/);
     if (match) {
       return [match[1], match[2], match[3], match[4]].filter(Boolean).join(' ');
     }
@@ -76,7 +123,7 @@ const Login = () => {
         </Tabs>
         {activeTab === 0 && (
           <Box mt={3}>
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={handleLogin}>
               <Box mb={2}>
                 <TextField
                   label="Email"
@@ -105,7 +152,7 @@ const Login = () => {
         )}
         {activeTab === 1 && (
           <Box mt={3}>
-            <form>
+            <form onSubmit={handleRegister}>
               <Box mb={1}>
                 <TextField
                   label="İsim"
@@ -213,6 +260,18 @@ const Login = () => {
           </Box>
         )}
       </Box>
+
+      <Dialog open={modalOpen} onClose={handleModalClose}>
+        <DialogTitle>Bilgilendirme</DialogTitle>
+        <DialogContent>
+          <p>{modalMessage}</p>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleModalClose} color="primary">
+            Kapat
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };
