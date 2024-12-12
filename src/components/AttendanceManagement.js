@@ -15,6 +15,7 @@ import {
   List,
   ListItem,
   ListItemText,
+  TableSortLabel,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { styled } from '@mui/system';
@@ -44,6 +45,8 @@ const AttendanceManagement = () => {
   const [openModal, setOpenModal] = useState(false);
   const [selectedUserAttendances, setSelectedUserAttendances] = useState([]);
   const scrollContainerRef = useRef(null);
+  const [order, setOrder] = useState('asc');
+  const [orderBy, setOrderBy] = useState('name');
 
   const fetchAttendances = async () => {
     try {
@@ -64,6 +67,27 @@ const AttendanceManagement = () => {
       console.error('Kullanıcı verileri alınırken hata oluştu:', error);
     }
   };
+
+  const handleRequestSort = (property) => {
+    const isAsc = orderBy === property && order === 'asc';
+    setOrder(isAsc ? 'desc' : 'asc');
+    setOrderBy(property);
+  };
+
+  const sortedUsers = [...users].sort((a, b) => {
+    if (orderBy === 'name') {
+      return order === 'asc'
+        ? a.name.localeCompare(b.name)
+        : b.name.localeCompare(a.name);
+    } else if (orderBy === 'part') {
+      const partA = a.part || '';
+      const partB = b.part || '';
+      return order === 'asc'
+        ? partA.localeCompare(partB)
+        : partB.localeCompare(partA);
+    }
+    return 0;
+  });
 
   const fetchEvents = async () => {
     try {
@@ -145,79 +169,94 @@ const AttendanceManagement = () => {
 
   return (
     <Box
-      sx={{
-        p: 2,
-        height: '100vh',
-        overflowY: 'auto',
-        display: 'flex',
-        flexDirection: 'column',
-      }}
-    >
-      <Typography variant="h5" sx={{ mb: 2, textAlign: 'center' }}>
-        Devamsızlık Yönetimi
-      </Typography>
-      <Table sx={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse' }}>
-        <TableHead>
-          <TableRow>
-            <TableCell sx={{ fontWeight: 'bold', fontSize: '0.9rem', width: '50%' }}>Korist</TableCell>
-            <TableCell
-              sx={{
-                fontWeight: 'bold',
-                fontSize: '0.9rem',
-                textAlign: 'right',
-                width: '25%',
-              }}
+    sx={{
+      p: 2,
+      height: '100vh',
+      overflowY: 'auto',
+      display: 'flex',
+      flexDirection: 'column',
+    }}
+  >
+    <Typography variant="h5" sx={{ mb: 2, textAlign: 'center' }}>
+      Devamsızlık Yönetimi
+    </Typography>
+    <Table sx={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse' }}>
+      <TableHead>
+        <TableRow>
+          <TableCell sx={{ fontWeight: 'bold', fontSize: '0.9rem', width: '50%' }}>
+            <TableSortLabel
+              active={orderBy === 'name'}
+              direction={orderBy === 'name' ? order : 'asc'}
+              onClick={() => handleRequestSort('name')}
+            >
+              Korist
+            </TableSortLabel>
+          </TableCell>
+          <TableCell
+            sx={{
+              fontWeight: 'bold',
+              fontSize: '0.9rem',
+              textAlign: 'right',
+              width: '25%',
+            }}
+          >
+            <TableSortLabel
+              active={orderBy === 'part'}
+              direction={orderBy === 'part' ? order : 'asc'}
+              onClick={() => handleRequestSort('part')}
             >
               Part.
-            </TableCell>
-            <TableCell
-              sx={{
-                fontWeight: 'bold',
-                fontSize: '0.9rem',
-                textAlign: 'right',
-                width: '25%',
-              }}
-            >
-              Durum
-            </TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {users.map((user) => {
-            const userAttendances = attendances.filter((a) => a.userId?._id === user._id);
-            const cameCount = userAttendances.filter((a) => a.status === 'GELDI').length;
+            </TableSortLabel>
+          </TableCell>
+          <TableCell
+            sx={{
+              fontWeight: 'bold',
+              fontSize: '0.9rem',
+              textAlign: 'right',
+              width: '25%',
+            }}
+          >
+            Durum
+          </TableCell>
+        </TableRow>
+      </TableHead>
+      <TableBody>
+        {sortedUsers.map((user) => {
+          const userAttendances = attendances.filter((a) => a.userId?._id === user._id);
+          const cameCount = userAttendances.filter((a) => a.status === 'GELDI').length;
 
-            return (
-              <React.Fragment key={user._id}>
-                <TableRow
-                  sx={{
-                    borderBottom: 'none',
-                    height: '40px',
-                  }}
+          return (
+            <React.Fragment key={user._id}>
+              <TableRow
+                sx={{
+                  borderBottom: 'none',
+                  height: '40px',
+                }}
+              >
+                <TableCell
+                  sx={{ fontSize: '0.85rem', verticalAlign: 'middle', padding: '4px 8px', cursor: 'pointer' }}
+                  onClick={() => handleOpenModal(user._id)}
                 >
-                  <TableCell
-                    sx={{ fontSize: '0.85rem', verticalAlign: 'middle', padding: '4px 8px', cursor: 'pointer' }}
-                    onClick={() => handleOpenModal(user._id)}
-                  >
-                    {user.name}
-                  </TableCell>
-                  <TableCell sx={{ fontSize: '0.85rem', textAlign: 'right', padding: '4px 8px' }}>
-                    {user.part || '-'}
-                  </TableCell>
-                  <TableCell sx={{ fontSize: '0.85rem', textAlign: 'right', padding: '4px 8px' }}>
-                    {`${cameCount}/${userAttendances.length}`}
-                  </TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell colSpan={3} sx={{ paddingTop: '2px', paddingBottom: '2px' }}>
-                    {renderAttendanceGrid(user._id)}
-                  </TableCell>
-                </TableRow>
-              </React.Fragment>
-            );
-          })}
-        </TableBody>
-      </Table>
+                  {user.name}
+                </TableCell>
+                <TableCell sx={{ fontSize: '0.85rem', textAlign: 'right', padding: '4px 8px' }}>
+                  {user.part || '-'}
+                </TableCell>
+                <TableCell sx={{ fontSize: '0.85rem', textAlign: 'right', padding: '4px 8px' }}>
+                  {`${cameCount}/${userAttendances.length}`}
+                </TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell colSpan={3} sx={{ paddingTop: '2px', paddingBottom: '2px' }}>
+                  {renderAttendanceGrid(user._id)}
+                </TableCell>
+              </TableRow>
+            </React.Fragment>
+          );
+        })}
+      </TableBody>
+    </Table>
+
 
       {/* Modal */}
       <Modal
