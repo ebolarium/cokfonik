@@ -23,6 +23,9 @@ const App = () => {
   const [userRole, setUserRole] = useState(''); // Kullanıcı rolü
   const [viewMode, setViewMode] = useState('korist'); // Başlangıçta korist görünümü
 
+  const [showLoadingOnStart, setShowLoadingOnStart] = useState(true);
+
+
   // Oturum kontrolü ve yönlendirme
   useEffect(() => {
     const token = localStorage.getItem('authToken');
@@ -37,8 +40,20 @@ const App = () => {
       setIsLoggedIn(true);
       setUserRole(user.role); // Kullanıcı rolünü ayarla
     }
-    setLoading(false); // Yükleme durumunu kapat
-  }, [location]);
+
+        // Yalnızca girişte gösterilecek
+        if (showLoadingOnStart) {
+          const timer = setTimeout(() => {
+            setLoading(false);
+            setShowLoadingOnStart(false); // Tekrar loading göstermesin
+          }, 4000);
+    
+          return () => clearTimeout(timer);
+        } else {
+          setLoading(false); // Sonraki sayfalarda loading'i kapat
+        }
+      }, [location, navigate, showLoadingOnStart]);
+
 
   // Switch işlemi sırasında uygun dashboard'a yönlendirme
   const handleSwitchView = () => {

@@ -1,11 +1,21 @@
 import React from 'react';
-import logo from '../assets/Cokfonik_Logo_Siyah.png';
+import Lottie from 'react-lottie';
+import animationData from '../assets/Loading_Animation.json'; // Lottie animasyon dosyası
 
 const LoadingScreen = () => {
+  const defaultOptions = {
+    loop: true,
+    autoplay: true,
+    animationData: animationData,
+    rendererSettings: {
+      preserveAspectRatio: 'xMidYMid slice'
+    }
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100vh', backgroundColor: '#FFFFFF' }}>
-      <img src={logo} alt="Çokfonik Logo" style={{ width: '200px', marginBottom: '20px' }} />
-      <div>Uygulama Yükleniyor...</div>
+      <Lottie options={defaultOptions} height={200} width={200} />
+      <div>Yükleniyor...</div>
     </div>
   );
 };
