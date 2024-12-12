@@ -96,12 +96,13 @@ router.put('/:id/unfreeze', async (req, res) => {
 // Tüm Kullanıcıları Getir
 router.get('/', async (req, res) => {
   try {
-    const users = await User.find();
+    const users = await User.find().select('-password'); // Şifreyi hariç tutar
     res.json(users);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 });
+
 
 // Kullanıcı Silme
 router.delete('/:id', async (req, res) => {
