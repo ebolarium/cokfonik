@@ -14,7 +14,7 @@ const UserManagement = () => {
 
   // Kullanıcıları Getir
   const fetchUsers = async () => {
-    const response = await fetch('http://localhost:5000/api/users');
+    const response = await fetch(`${process.env.REACT_APP_API_URL}/users`);
     const data = await response.json();
     setUsers(data);
   };
@@ -22,7 +22,7 @@ const UserManagement = () => {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/users');
+        const response = await fetch(`${process.env.REACT_APP_API_URL}/users`);
         if (!response.ok) {
           throw new Error(`API Error: ${response.status}`);
         }
@@ -46,7 +46,7 @@ const UserManagement = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch('http://localhost:5000/api/users/register', {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/users/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
@@ -69,7 +69,7 @@ const UserManagement = () => {
   // Kullanıcı Sil
   const handleDeleteUser = async (id) => {
     try {
-      await fetch(`http://localhost:5000/api/users/${id}`, {
+      await fetch(`${process.env.REACT_APP_API_URL}/users/${id}`, {
         method: 'DELETE',
       });
       fetchUsers();
@@ -82,7 +82,7 @@ const UserManagement = () => {
   const handleEditSubmit = async (e) => {
     e.preventDefault();
     try {
-      await fetch(`http://localhost:5000/api/users/${editUser._id}`, {
+      await fetch(`${process.env.REACT_APP_API_URL}/users/${editUser._id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(editUser),

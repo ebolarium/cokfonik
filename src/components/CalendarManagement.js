@@ -15,7 +15,7 @@ const CalendarManagement = () => {
 
   const fetchEvents = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/events');
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/events`);
       const data = await response.json();
       setEvents(data.map(event => ({
         id: event._id,
@@ -37,8 +37,8 @@ const CalendarManagement = () => {
   const handleSaveEvent = async () => {
     const method = selectedEvent ? 'PUT' : 'POST';
     const endpoint = selectedEvent
-      ? `http://localhost:5000/api/events/${selectedEvent.id}`
-      : 'http://localhost:5000/api/events';
+      ? `${process.env.REACT_APP_API_URL}/events/${selectedEvent.id}`
+      : `${process.env.REACT_APP_API_URL}/events`;
 
     try {
       const response = await fetch(endpoint, {
@@ -62,7 +62,7 @@ const CalendarManagement = () => {
 
   const handleDeleteEvent = async (id) => {
     try {
-      await fetch(`http://localhost:5000/api/events/${id}`, { method: 'DELETE' });
+      await fetch(`${process.env.REACT_APP_API_URL}/events/${id}`, { method: 'DELETE' });
       fetchEvents();
       handleCloseModal();
     } catch (error) {

@@ -4,6 +4,7 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const cron = require('node-cron');
 const User = require('./models/User'); // Modelin doğru yolu
+require('dotenv').config({ path: '../.env' }); // Üst klasöre çıkıp .env'yi yükle
 
 
 

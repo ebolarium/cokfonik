@@ -14,7 +14,7 @@ const MyFees = () => {
 
     const fetchMyFees = async () => {
       try {
-        const response = await fetch(`http://localhost:5000/api/fees/${user._id}`); // Kullanıcıya özel endpoint
+        const response = await fetch(`${process.env.REACT_APP_API_URL}/fees/${user._id}`); // Kullanıcıya özel endpoint
         const data = await response.json();
         setFees(data);
       } catch (error) {

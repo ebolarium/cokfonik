@@ -38,7 +38,7 @@ const FeeManagement = () => {
 
   const fetchFees = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/fees/last-six-months');
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/fees/last-six-months`);
       const data = await response.json();
       if (Array.isArray(data)) {
         setFees(data);
@@ -52,7 +52,7 @@ const FeeManagement = () => {
 
   const fetchUsers = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/users');
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/users`);
       const data = await response.json();
       if (Array.isArray(data)) {
         setUsers(data);
@@ -94,7 +94,7 @@ const FeeManagement = () => {
 
   const toggleFeeStatus = async (feeId, isPaid) => {
     try {
-      await fetch(`http://localhost:5000/api/fees/${feeId}`, {
+      await fetch(`${process.env.REACT_APP_API_URL}/fees/${feeId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isPaid: !isPaid }),

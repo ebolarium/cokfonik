@@ -14,7 +14,7 @@ const MyAttendance = () => {
 
     const fetchMyAttendance = async () => {
       try {
-        const response = await fetch(`http://localhost:5000/api/attendance/${user._id}`);
+        const response = await fetch(`${process.env.REACT_APP_API_URL}/attendance/${user._id}`);
         const data = await response.json();
 
         if (Array.isArray(data)) {
