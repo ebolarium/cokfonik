@@ -4,9 +4,9 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const cron = require('node-cron');
 const path = require('path');
-const User = require('./models/User'); // Modelin doğru yolu
-const Fee = require('./models/Fee'); // Aidat için eksik model eklenmiş varsayılıyor
-require('dotenv').config({ path: '../.env' }); // Üst klasöre çıkıp .env'yi yükle
+const User = require('./models/User'); // User modeli
+const Fee = require('./models/Fee'); // Aidat modeli
+require('dotenv').config({ path: '../.env' }); // Üst klasördeki .env dosyasını yükle
 
 dotenv.config();
 
@@ -39,7 +39,7 @@ app.post('/api/login', async (req, res) => {
       return res.status(401).json({ message: 'Kullanıcı bulunamadı.' });
     }
 
-    // Şifre kontrolü (Düz metin kontrol)
+    // Şifre kontrolü (Düz metin karşılaştırma)
     if (password !== user.password) {
       return res.status(401).json({ message: 'Hatalı şifre.' });
     }
@@ -80,7 +80,7 @@ cron.schedule('0 0 1 * *', async () => {
   }
 });
 
-// React Build Dosyalarını Sun
+// React Build Dosyalarını Sun (Bu kısım API rotalarından sonra gelmelidir)
 app.use(express.static(path.join(__dirname, '../frontend/build')));
 
 // React ve API Rotalarını Ayır
