@@ -233,12 +233,13 @@ const AttendanceManagement = () => {
                   height: '40px',
                 }}
               >
-                <TableCell
-                  sx={{ fontSize: '0.85rem', verticalAlign: 'middle', padding: '4px 8px', cursor: 'pointer' }}
-                  onClick={() => handleOpenModal(user._id)}
-                >
-                  {user.name}
-                </TableCell>
+<TableCell
+  sx={{ fontSize: '0.85rem', verticalAlign: 'middle', padding: '4px 8px', cursor: 'pointer' }}
+  onClick={() => handleOpenModal(user._id)}
+>
+  {`${user.name} ${user.surname}`}
+</TableCell>
+
                 <TableCell sx={{ fontSize: '0.85rem', textAlign: 'right', padding: '4px 8px' }}>
                   {user.part || '-'}
                 </TableCell>

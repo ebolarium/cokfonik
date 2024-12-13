@@ -3,6 +3,8 @@ import {
   Box, Typography, Button, Table, TableBody, TableCell, TableHead, TableRow, 
   Dialog, DialogTitle, DialogContent, TextField, TableContainer, Paper 
 } from '@mui/material';
+import { Delete, Edit } from '@mui/icons-material'; // İkonlar için gerekli import
+
 
 const UserManagement = () => {
   const [users, setUsers] = useState([]);
@@ -93,53 +95,49 @@ const UserManagement = () => {
   };
 
   return (
-    <Box p={3}>
-      <Typography variant="h4" gutterBottom>Kullanıcı Yönetimi</Typography>
+    <Box p={2}>
+      <Typography variant="h5" gutterBottom align='center'>Kullanıcı Yönetimi</Typography>
       <Button variant="contained" color="primary" onClick={() => setOpen(true)}>
         Yeni Kullanıcı Ekle
       </Button>
-      <TableContainer component={Paper} sx={{ mt: 2, overflowX: 'auto' }}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Ad</TableCell>
-              <TableCell>Email</TableCell>
-              <TableCell>Partisyon</TableCell>
-              <TableCell>Rol</TableCell>
-              <TableCell>Durum</TableCell>
-              <TableCell>Aksiyon</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {users.map((user) => (
-              <TableRow key={user._id}>
-                <TableCell>{user.name}</TableCell>
-                <TableCell>{user.email}</TableCell>
-                <TableCell>{user.part}</TableCell>
-                <TableCell>{user.role}</TableCell>
-                <TableCell>{user.isActive ? 'Aktif' : 'Pasif'}</TableCell>
-                <TableCell>
-                  <Button
-                    variant="contained"
-                    color="error"
-                    onClick={() => handleDeleteUser(user._id)}
-                    sx={{ mr: 1 }}
-                  >
-                    Sil
-                  </Button>
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    onClick={() => setEditUser(user)}
-                  >
-                    Düzenle
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
+      <TableContainer component={Paper} sx={{ mt: 1, overflowX: 'auto' }}>
+  <Table>
+    <TableHead>
+      <TableRow>
+        <TableCell sx={{ padding: '4px 4px',fontWeight: 'bold' }}>İsim</TableCell>
+        <TableCell sx={{ padding: '4px 4px',fontWeight: 'bold' }}>Part</TableCell>
+        <TableCell sx={{ padding: '4px 4px',fontWeight: 'bold' }}>Rol</TableCell>
+        <TableCell sx={{ padding: '4px 4px',fontWeight: 'bold' }}>Durum</TableCell>
+        <TableCell sx={{ padding: '4px 4px', textAlign: 'center' }}></TableCell>
+      </TableRow>
+    </TableHead>
+    <TableBody>
+      {users.map((user) => (
+        <TableRow key={user._id}>
+          <TableCell sx={{ padding: '4px 8px' }}>{user.name}</TableCell>
+          <TableCell sx={{ padding: '4px 8px' }}>{user.part}</TableCell>
+          <TableCell sx={{ padding: '4px 8px' }}>{user.role}</TableCell>
+          <TableCell sx={{ padding: '4px 8px' }}>{user.isActive ? 'Aktif' : 'Pasif'}</TableCell>
+          <TableCell sx={{ padding: '2px 4px', textAlign: 'center' }}>
+            <Button
+              onClick={() => handleDeleteUser(user._id)}
+              sx={{ minWidth: 0, padding: 0 }}
+            >
+              <Delete color="error" />
+            </Button>
+            <Button
+              onClick={() => setEditUser(user)}
+              sx={{ minWidth: 0, padding: 0, marginLeft: 1 }}
+            >
+              <Edit color="primary" />
+            </Button>
+          </TableCell>
+        </TableRow>
+      ))}
+    </TableBody>
+  </Table>
+</TableContainer>
+
 
     {/* Yeni Kullanıcı Modal'ı */}
     <Dialog open={open} onClose={() => setOpen(false)} fullWidth maxWidth="sm">

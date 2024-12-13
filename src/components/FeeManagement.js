@@ -183,8 +183,8 @@ const FeeManagement = () => {
                   sx={{ fontSize: '0.9rem', lineHeight: 1.2, cursor: 'pointer' }}
                   onClick={() => handleOpenModal(user._id)}
                 >
-                  {user.name}
-                </Typography>
+  {`${user.name} ${user.surname}`}
+  </Typography>
               </Grid>
               <Grid item xs={6} style={{ textAlign: 'right' }}>
                 <Typography
