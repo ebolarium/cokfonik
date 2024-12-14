@@ -20,24 +20,32 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-// Profil Fotoğrafı Yükleme
 router.post('/:id/upload-photo', upload.single('profilePhoto'), async (req, res) => {
   try {
-    const user = await User.findById(req.params.id);
+    const userId = req.params.id;
+
+    // Kullanıcıyı bul
+    const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ message: 'Kullanıcı bulunamadı.' });
     }
 
-    // Kullanıcının profil fotoğrafı yolunu güncelle
-    user.profilePhoto = `/uploads/profile_photos/${req.file.filename}`;
+    // Profil fotoğrafı yolunu güncelle
+    const filePath = `/uploads/profile_photos/${req.file.filename}`;
+    user.profilePhoto = filePath; // Fotoğraf yolu kaydedilir
     await user.save();
 
-    res.status(200).json({ message: 'Fotoğraf başarıyla yüklendi.', photoPath: user.profilePhoto });
+    res.status(200).json({
+      message: 'Fotoğraf başarıyla yüklendi.',
+      photoPath: filePath, // Frontend için dönen fotoğraf yolu
+    });
   } catch (error) {
     console.error('Fotoğraf yüklenirken hata:', error);
-    res.status(500).json({ message: 'Fotoğraf yüklenirken bir hata oluştu.' });
+    res.status(400).json({ message: 'Fotoğraf yüklenirken bir hata oluştu.' });
   }
 });
+
+
 
 
 
@@ -182,14 +190,25 @@ router.delete('/:id', async (req, res) => {
 // Kullanıcıyı Güncelle
 router.put('/:id', async (req, res) => {
   try {
-    const updatedUser = await User.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const userId = req.params.id;
+
+    // Kullanıcıyı bul ve gönderilen verilerle güncelle
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { $set: req.body }, // Sadece gönderilen alanları günceller
+      { new: true, runValidators: true, omitUndefined: true } // Valide et, undefined değerleri yok say
+    );
+
     if (!updatedUser) {
       return res.status(404).json({ message: 'Kullanıcı bulunamadı' });
     }
+
     res.json(updatedUser);
   } catch (error) {
+    console.error('Kullanıcı güncellenirken hata:', error);
     res.status(400).json({ message: error.message });
   }
 });
+
 
 module.exports = router;

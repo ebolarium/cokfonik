@@ -3,7 +3,7 @@ import { AppBar, Toolbar, Typography, IconButton, Menu, MenuItem, Badge } from '
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import MenuIcon from '@mui/icons-material/Menu';
 
-const CustomAppBar = ({ userName }) => {
+const CustomAppBar = ({ userName, viewMode }) => {
   const [anchorEl, setAnchorEl] = useState(null);
 
   const handleMenuOpen = (event) => {
@@ -21,9 +21,21 @@ const CustomAppBar = ({ userName }) => {
   };
 
   return (
-    <AppBar position="sticky" color="default">
+    <AppBar
+      position="sticky"
+      sx={{
+        backgroundColor: viewMode === 'korist' ? '#ff5722' : '#283593', // Korist için turuncu, Yönetici için lacivert
+        boxShadow: viewMode === 'korist'
+          ? '0 4px 15px rgba(255, 87, 34, 0.8)' // Korist için turuncu gölge
+          : '0 4px 15px rgba(40, 53, 147, 0.8)', // Yönetici için lacivert gölge
+        borderBottom: viewMode === 'korist'
+          ? '4px solid #bf360c' // Korist için koyu turuncu çerçeve
+          : '4px solid #1a237e', // Yönetici için koyu lacivert çerçeve
+        transition: 'all 0.3s ease', // Yumuşak geçiş efekti
+      }}
+    >
       <Toolbar>
-        <Typography variant="h9" style={{ flexGrow: 1 }}>
+        <Typography variant="h6" sx={{ flexGrow: 1 }}>
           Hoş Geldin, {userName || 'Misafir'}
         </Typography>
         <IconButton color="inherit">
@@ -36,9 +48,8 @@ const CustomAppBar = ({ userName }) => {
         </IconButton>
       </Toolbar>
       <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
-        <MenuItem onClick={handleMenuClose}>Profil</MenuItem>
-        <MenuItem onClick={handleMenuClose}>Ayarlar</MenuItem>
         <MenuItem onClick={() => (window.location.href = '/profile')}>Profil</MenuItem>
+        <MenuItem onClick={handleMenuClose}>Ayarlar</MenuItem>
         <MenuItem onClick={handleLogout}>Çıkış Yap</MenuItem>
       </Menu>
     </AppBar>

@@ -39,49 +39,73 @@ const BottomNav = ({ role, viewMode, onSwitchView }) => {
   const navItems =
     role === 'Master Admin'
       ? viewMode === 'korist'
-        ? [...userNavItems.slice(0, 2), { label: null, icon: <AdminPanelSettingsIcon />, action: onSwitchView }, ...userNavItems.slice(2)]
-        : [...adminNavItems.slice(0, 2), { label: null, icon: <AdminPanelSettingsIcon />, action: onSwitchView }, ...adminNavItems.slice(2)]
+        ? [...userNavItems.slice(0, 2), { label: null, icon: (
+            <AdminPanelSettingsIcon
+              sx={{ color: '#ffffff' }} // Beyaz switch rengi
+            />
+          ), action: onSwitchView }, ...userNavItems.slice(2)]
+        : [...adminNavItems.slice(0, 2), { label: null, icon: (
+            <AdminPanelSettingsIcon
+              sx={{ color: '#000000' }} // Siyah switch rengi
+            />
+          ), action: onSwitchView }, ...adminNavItems.slice(2)]
       : role === 'Yönetim Kurulu'
       ? viewMode === 'korist'
-        ? [...userNavItems.slice(0, 2), { label: null, icon: <AdminPanelSettingsIcon />, action: onSwitchView }, ...userNavItems.slice(2)]
-        : [...managementNavItems.slice(0, 2), { label: null, icon: <AdminPanelSettingsIcon />, action: onSwitchView }, ...managementNavItems.slice(2)]
+        ? [...userNavItems.slice(0, 2), { label: null, icon: (
+            <AdminPanelSettingsIcon
+              sx={{ color: '#ffffff' }}
+            />
+          ), action: onSwitchView }, ...userNavItems.slice(2)]
+        : [...managementNavItems.slice(0, 2), { label: null, icon: (
+            <AdminPanelSettingsIcon
+              sx={{ color: '#000000' }}
+            />
+          ), action: onSwitchView }, ...managementNavItems.slice(2)]
       : userNavItems;
 
   // Geçerli rota indeksini hesapla
   const currentValue = navItems.findIndex((item) => item.path === location.pathname);
 
   return (
-<BottomNavigation
-  value={currentValue >= 0 ? currentValue : -1}
-  onChange={(event, newValue) => {
-    const selectedItem = navItems[newValue];
-    if (selectedItem.action) {
-      selectedItem.action(); // Switch için özel işlem
-    } else if (selectedItem.path) {
-      navigate(selectedItem.path);
-    }
-  }}
-  showLabels={false}
-  sx={{
-    position: 'fixed', // Sabit konumda tutar
-    bottom: 0, // Sayfanın altına sabitler
-    width: '100%', // Ekranın genişliğine %100 oturur
-    zIndex: 1000, // Diğer içeriklerin üstünde görünmesini sağlar
-    backgroundColor: '#fff', // Arkaplan rengi
-    boxShadow: '0 -2px 6px rgba(0, 0, 0, 0.1)', // Hafif bir gölge ekler
-    paddingX: { xs: 1, sm: 2 }, // Küçük ve büyük ekranlarda yan boşluklar
-    height: { xs: '56px', sm: '64px' }, // Navbar yüksekliği cihaz ekranına göre değişir
-  }}
->
+    <BottomNavigation
+      value={currentValue >= 0 ? currentValue : -1}
+      onChange={(event, newValue) => {
+        const selectedItem = navItems[newValue];
+        if (selectedItem.action) {
+          selectedItem.action(); // Switch için özel işlem
+        } else if (selectedItem.path) {
+          navigate(selectedItem.path);
+        }
+      }}
+      sx={{
+        position: 'fixed',
+        bottom: 0,
+        width: '100%',
+        zIndex: 1000,
+        backgroundColor: viewMode === 'korist'
+          ? '#ff5722' // Korist görünümü için turuncu
+          : '#283593', // Admin görünümü için lacivert
+        color: '#ffffff',
+        boxShadow: viewMode === 'korist'
+          ? '0 -4px 15px rgba(255, 87, 34, 0.8)' // Turuncu gölge
+          : '0 -4px 15px rgba(40, 53, 147, 0.8)', // Lacivert gölge
+        borderTop: viewMode === 'korist'
+          ? '4px solid #bf360c' // Korist görünümü için koyu turuncu çerçeve
+          : '4px solid #1a237e', // Admin görünümü için koyu lacivert çerçeve
+        transition: 'all 0.3s ease', // Geçiş animasyonu
+      }}
+    >
       {navItems.map((item, index) => (
         <BottomNavigationAction
           key={index}
           icon={item.icon}
           value={index}
-          style={{
-            color: location.pathname === item.path ? '#1976d2' : '#666',
-            minWidth: 'auto', // Eylem butonlarının genişliğini içeriğe göre ayarlar
-
+          sx={{
+            color: location.pathname === item.path
+              ? viewMode === 'korist'
+                ? '#ffffff' // Aktif ikon rengi (korist modu)
+                : '#000000' // Aktif ikon rengi (admin modu)
+              : '#cccccc', // Pasif ikon rengi
           }}
         />
       ))}

@@ -49,16 +49,23 @@ const Profile = () => {
   };
 
   const handleSave = async () => {
+    const updatedData = Object.keys(formData).reduce((acc, key) => {
+      if (formData[key] !== '') { // Sadece dolu alanları ekler
+        acc[key] = formData[key];
+      }
+      return acc;
+    }, {});
+  
     try {
       const response = await fetch(`${process.env.REACT_APP_API_URL}/users/${user._id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(updatedData),
       });
+  
       const updatedUser = await response.json();
       if (response.ok) {
         setUser(updatedUser);
-        localStorage.setItem('user', JSON.stringify(updatedUser));
         setModalMessage('Profil başarıyla güncellendi!');
         setModalOpen(true);
       } else {
@@ -71,6 +78,7 @@ const Profile = () => {
       setModalOpen(true);
     }
   };
+  
 
   const handlePasswordSave = async () => {
     if (passwordData.newPassword !== passwordData.confirmPassword) {
@@ -206,8 +214,16 @@ const Profile = () => {
         {/* Profil Fotoğrafı Yükleme */}
         <Typography variant="h6">Profil Fotoğrafı</Typography>
         <Box display="flex" alignItems="center" gap={2}>
-          <Avatar src={profilePhoto ? URL.createObjectURL(profilePhoto) : null} sx={{ width: 64, height: 64 }} />
-          <Button variant="outlined" component="label">
+        <Avatar
+  src={
+    profilePhoto
+      ? URL.createObjectURL(profilePhoto) // Yeni seçilen fotoğrafı göster
+      : user.profilePhoto // Daha önce yüklenen fotoğraf
+      ? `${process.env.REACT_APP_API_URL}${user.profilePhoto}` // Sunucudaki fotoğraf
+      : null // Henüz bir fotoğraf yoksa varsayılan (placeholder)
+  }
+  sx={{ width: 64, height: 64 }}
+/>          <Button variant="outlined" component="label">
             Fotoğraf Yükle
             <input type="file" hidden onChange={handleProfilePhotoChange} />
           </Button>
