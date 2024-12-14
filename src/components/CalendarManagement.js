@@ -150,12 +150,16 @@ const CalendarManagement = () => {
           margin: '0 auto',
         }}
       >
-        <Box
-          display="grid"
-          gridTemplateColumns="repeat(7, 1fr)"
-          gap={1}
-          style={{ marginTop: '15px' }}
-        >
+<Box
+  display="grid"
+  sx={{
+    gridTemplateColumns: 'repeat(7, 1fr)', // 7 sütunlu düzen
+    gap: 1, // Hücreler arası boşluk
+    marginTop: '15px', // Yukarıdan boşluk
+    overflowX: 'auto', // Yatay taşma için kaydırma
+  }}
+>
+
           {['Pzr', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'].map((day, index) => (
             <Typography
               key={index}
@@ -203,19 +207,22 @@ const CalendarManagement = () => {
         BackdropProps={{ timeout: 500 }}
       >
         <Fade in={openModal}>
-          <Box
-            style={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              backgroundColor: 'white',
-              borderRadius: '8px',
-              boxShadow: '0 4px 8px rgba(0,0,0,0.2)',
-              padding: '20px',
-              width: '400px',
-            }}
-          >
+        <Box
+      sx={{
+        position: 'absolute',
+        top: '50%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)', // Ortalar
+        width: { xs: '90%', sm: '80%', md: '60%' }, // Responsive genişlik
+        maxWidth: '600px', // Maksimum genişlik sınırı
+        bgcolor: 'background.paper', // Tema ile uyumlu arka plan
+        borderRadius: '8px', // Köşeleri yuvarlatır
+        boxShadow: 24, // Hafif gölge
+        p: 4, // İç boşluk
+        overflowY: 'auto', // İçerik taşarsa kaydırma
+        maxHeight: '80vh', // Modal ekranın %80'ini geçmez
+      }}
+    >
             <Typography variant="h6" gutterBottom>
               {selectedEvent ? 'Etkinliği Düzenle' : 'Yeni Etkinlik'}
             </Typography>
