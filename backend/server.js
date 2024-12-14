@@ -39,7 +39,6 @@ app.post('/api/login', async (req, res) => {
       return res.status(401).json({ message: 'Kullanıcı bulunamadı.' });
     }
 
-    // Şifre kontrolü (Düz metin karşılaştırma)
     if (password !== user.password) {
       return res.status(401).json({ message: 'Hatalı şifre.' });
     }
@@ -80,12 +79,11 @@ cron.schedule('0 0 1 * *', async () => {
   }
 });
 
-// React Build Dosyalarını Sun (Bu kısım API rotalarından sonra gelmelidir)
-app.use(express.static(path.join(__dirname, '../frontend/build')));
+// React Build Dosyalarını Sun (Backend klasöründen bir üst dizindeki build klasörüne erişiyoruz)
+app.use(express.static(path.join(__dirname, '../build')));
 
-// React ve API Rotalarını Ayır
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../frontend/build', 'index.html'));
+  res.sendFile(path.join(__dirname, '../build', 'index.html'));
 });
 
 // Sunucuyu Dinleme
