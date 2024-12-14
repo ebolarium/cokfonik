@@ -14,8 +14,8 @@ const MasterAdminDashboard = () => {
 
   return (
     <Box p={3} bgcolor="#f5f5f5" minHeight="100vh">
-      <Typography variant="h4" gutterBottom>
-        Master Admin Paneli
+      <Typography variant="h5" gutterBottom align='center'>
+        Admin Panel
       </Typography>
       <Grid container spacing={3}>
         {dashboardItems.map((item, index) => (

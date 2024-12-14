@@ -27,7 +27,7 @@ const MyFees = () => {
 
   return (
     <Box p={3}>
-      <Typography variant="h4" gutterBottom>Aidat Durumu</Typography>
+      <Typography variant="h5" gutterBottom>Aidat Durumum</Typography>
       <Table>
         <TableHead>
           <TableRow>

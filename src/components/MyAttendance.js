@@ -32,7 +32,7 @@ const MyAttendance = () => {
 
   return (
     <Box p={3}>
-      <Typography variant="h4" gutterBottom>Devamsızlık Durumu</Typography>
+      <Typography variant="h5" gutterBottom>Devamsızlık Durumum</Typography>
       <Table>
         <TableHead>
           <TableRow>
