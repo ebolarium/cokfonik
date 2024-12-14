@@ -3,8 +3,43 @@ const User = require('../models/User');
 const Fee = require('../models/Fee');
 const Attendance = require('../models/Attendance');
 const Event = require('../models/Event');
+const multer = require('multer');
+const path = require('path');
 
 const router = express.Router();
+
+// Multer Konfigürasyonu
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/profile_photos'); // Fotoğraflar bu dizinde tutulacak
+  },
+  filename: (req, file, cb) => {
+    cb(null, `${req.params.id}_${Date.now()}${path.extname(file.originalname)}`); // Benzersiz dosya adı
+  },
+});
+
+const upload = multer({ storage });
+
+// Profil Fotoğrafı Yükleme
+router.post('/:id/upload-photo', upload.single('profilePhoto'), async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({ message: 'Kullanıcı bulunamadı.' });
+    }
+
+    // Kullanıcının profil fotoğrafı yolunu güncelle
+    user.profilePhoto = `/uploads/profile_photos/${req.file.filename}`;
+    await user.save();
+
+    res.status(200).json({ message: 'Fotoğraf başarıyla yüklendi.', photoPath: user.profilePhoto });
+  } catch (error) {
+    console.error('Fotoğraf yüklenirken hata:', error);
+    res.status(500).json({ message: 'Fotoğraf yüklenirken bir hata oluştu.' });
+  }
+});
+
+
 
 // Yardımcı Fonksiyon: Güncel Ay ve Yıl Bilgisi
 const getCurrentMonthAndYear = () => {
@@ -51,6 +86,34 @@ router.post('/register', async (req, res) => {
     res.status(201).json({ message: 'Kullanıcı başarıyla kaydedildi.', user: newUser });
   } catch (error) {
     res.status(400).json({ message: error.message });
+  }
+});
+
+// Şifre Güncelleme
+router.post('/:id/change-password', async (req, res) => {
+  const { id } = req.params;
+  const { currentPassword, newPassword } = req.body;
+
+  try {
+    // Kullanıcıyı bul
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({ message: 'Kullanıcı bulunamadı.' });
+    }
+
+    // Mevcut şifreyi kontrol et
+    if (user.password !== currentPassword) {
+      return res.status(400).json({ message: 'Mevcut şifre yanlış.' });
+    }
+
+    // Yeni şifreyi kaydet
+    user.password = newPassword;
+    await user.save();
+
+    res.status(200).json({ message: 'Şifre başarıyla güncellendi.' });
+  } catch (error) {
+    console.error('Şifre güncellenirken hata:', error);
+    res.status(500).json({ message: 'Şifre güncellenirken bir hata oluştu.' });
   }
 });
 
@@ -102,7 +165,6 @@ router.get('/', async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 });
-
 
 // Kullanıcı Silme
 router.delete('/:id', async (req, res) => {

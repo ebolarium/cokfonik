@@ -12,6 +12,8 @@ const UserSchema = new mongoose.Schema({
   part: { type: String, enum: ['Soprano', 'Alto', 'Tenor', 'Bas'], default: 'Soprano' },
   approved: { type: Boolean, default: false }, // Admin onayı
   frozen: { type: Boolean, default: false }, // Dondurma durumu
+  profilePhoto: { type: String, default: null }, // Profil fotoğrafı için alan
+
 });
 
 module.exports = mongoose.model('User', UserSchema);

@@ -38,6 +38,7 @@ const CustomAppBar = ({ userName }) => {
       <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
         <MenuItem onClick={handleMenuClose}>Profil</MenuItem>
         <MenuItem onClick={handleMenuClose}>Ayarlar</MenuItem>
+        <MenuItem onClick={() => (window.location.href = '/profile')}>Profil</MenuItem>
         <MenuItem onClick={handleLogout}>Çıkış Yap</MenuItem>
       </Menu>
     </AppBar>

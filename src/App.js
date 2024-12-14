@@ -14,6 +14,8 @@ import UserManagement from './components/UserManagement';
 import AttendanceManagement from './components/AttendanceManagement';
 import CalendarManagement from './components/CalendarManagement';
 import FeeManagement from './components/FeeManagement';
+import Profile from './components/Profile';
+
 
 const App = () => {
   const location = useLocation(); // URL değişikliklerini izlemek için
@@ -84,6 +86,7 @@ const App = () => {
           <Route path="/my-attendance" element={<MyAttendance />} />
           <Route path="/my-fees" element={<MyFees />} />
           <Route path="/calendar-view" element={<CalendarView />} />
+          <Route path="/profile" element={<Profile />} />
         </>
       );
     } else if (userRole === 'Master Admin') {
@@ -94,6 +97,7 @@ const App = () => {
           <Route path="/calendar-management" element={<CalendarManagement />} />
           <Route path="/fee-management" element={<FeeManagement />} />
           <Route path="/users" element={<UserManagement />} />
+          <Route path="/profile" element={<Profile />} />
         </>
       );
     } else if (userRole === 'Yönetim Kurulu') {
@@ -103,6 +107,7 @@ const App = () => {
           <Route path="/attendance-management" element={<AttendanceManagement />} />
           <Route path="/calendar-management" element={<CalendarManagement />} />
           <Route path="/fee-management" element={<FeeManagement />} />
+          <Route path="/profile" element={<Profile />} />
         </>
       );
     }

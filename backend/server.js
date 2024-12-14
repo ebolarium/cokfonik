@@ -6,6 +6,7 @@ const cron = require('node-cron');
 const path = require('path');
 const User = require('./models/User'); // User modeli
 const Fee = require('./models/Fee'); // Aidat modeli
+
 require('dotenv').config({ path: '../.env' }); // Üst klasördeki .env dosyasını yükle
 
 dotenv.config();
@@ -28,6 +29,8 @@ const attendanceRoutes = require('./routes/attendanceRoutes');
 app.use('/api/attendance', attendanceRoutes);
 const eventRoutes = require('./routes/eventRoutes');
 app.use('/api/events', eventRoutes);
+// Statik Dosya Yolu
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Login Endpoint
 app.post('/api/login', async (req, res) => {
@@ -78,6 +81,8 @@ cron.schedule('0 0 1 * *', async () => {
     console.error('Aidat kayıtları oluşturulurken hata:', error.message);
   }
 });
+
+
 
 // React Build Dosyalarını Sun (Backend klasöründen bir üst dizindeki build klasörüne erişiyoruz)
 app.use(express.static(path.join(__dirname, '../build')));
