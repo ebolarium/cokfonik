@@ -30,9 +30,16 @@ const MyAttendance = () => {
     fetchMyAttendance();
   }, [user]);
 
+  // Geçmiş ve bugünkü tarihler için filtreleme
+  const pastAndTodayAttendances = attendances.filter((attendance) => {
+    const attendanceDate = new Date(attendance.date);
+    const today = new Date();
+    return attendanceDate <= today; // Yalnızca bugüne kadar olan tarihleri göster
+  });
+
   return (
     <Box p={3}>
-      <Typography variant="h5" gutterBottom>Devamsızlık Durumum</Typography>
+      <Typography variant="h5" gutterBottom>Katılım Geçmişim</Typography>
       <Table>
         <TableHead>
           <TableRow>
@@ -41,8 +48,8 @@ const MyAttendance = () => {
           </TableRow>
         </TableHead>
         <TableBody>
-          {Array.isArray(attendances) && attendances.length > 0 ? (
-            attendances.map((attendance) => (
+          {Array.isArray(pastAndTodayAttendances) && pastAndTodayAttendances.length > 0 ? (
+            pastAndTodayAttendances.map((attendance) => (
               <TableRow key={attendance._id}>
                 <TableCell>{new Date(attendance.date).toLocaleDateString()}</TableCell>
                 <TableCell>{attendance.status}</TableCell>
