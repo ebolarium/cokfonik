@@ -82,17 +82,12 @@ const BottomNav = ({ role, viewMode, onSwitchView }) => {
         bottom: 0,
         width: '100%',
         zIndex: 1000,
-        backgroundColor: viewMode === 'korist'
-          ? '#ff5722' // Korist görünümü için turuncu
-          : '#283593', // Admin görünümü için lacivert
+        backgroundColor: viewMode === 'korist' ? '#ff5722' : '#283593',
         color: '#ffffff',
-        boxShadow: viewMode === 'korist'
-          ? '0 -4px 15px rgba(255, 87, 34, 0.8)' // Turuncu gölge
-          : '0 -4px 15px rgba(40, 53, 147, 0.8)', // Lacivert gölge
-        borderTop: viewMode === 'korist'
-          ? '4px solid #bf360c' // Korist görünümü için koyu turuncu çerçeve
-          : '4px solid #1a237e', // Admin görünümü için koyu lacivert çerçeve
-        transition: 'all 0.3s ease', // Geçiş animasyonu
+        borderTop: viewMode === 'korist' ? '4px solid #bf360c' : '4px solid #1a237e',
+        paddingX: { xs: 1, sm: 2 }, // Yan boşluklar eklendi
+        height: { xs: '56px', sm: '64px' }, // Ekran boyutuna göre yükseklik
+        transition: 'all 0.3s ease', // Animasyon
       }}
     >
       {navItems.map((item, index) => (

@@ -25,10 +25,7 @@ const CustomAppBar = ({ userName, viewMode }) => {
       position="sticky"
       sx={{
         backgroundColor: viewMode === 'korist' ? '#ff5722' : '#283593', // Korist için turuncu, Yönetici için lacivert
-        boxShadow: viewMode === 'korist'
-          ? '0 4px 15px rgba(255, 87, 34, 0.8)' // Korist için turuncu gölge
-          : '0 4px 15px rgba(40, 53, 147, 0.8)', // Yönetici için lacivert gölge
-        borderBottom: viewMode === 'korist'
+         borderBottom: viewMode === 'korist'
           ? '4px solid #bf360c' // Korist için koyu turuncu çerçeve
           : '4px solid #1a237e', // Yönetici için koyu lacivert çerçeve
         transition: 'all 0.3s ease', // Yumuşak geçiş efekti
