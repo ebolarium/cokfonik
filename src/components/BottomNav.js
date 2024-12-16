@@ -80,7 +80,7 @@ const BottomNav = ({ role, viewMode, onSwitchView }) => {
   sx={{
     position: 'fixed', // Sabit konumda tutar
     bottom: 0, // Sayfanın altına sabitler
-    width: '100%', // Ekranın genişliğine %100 oturur
+    width: '100vw', // Ekranın genişliğine %100 oturur
     zIndex: 1000, // Diğer içeriklerin üstünde görünmesini sağlar
     backgroundColor: viewMode === 'korist' ? '#ff5722' : '#283593', // Renk ayarı
     color: '#ffffff', // Yazı ve ikon rengi
@@ -99,6 +99,8 @@ const BottomNav = ({ role, viewMode, onSwitchView }) => {
         color: location.pathname === item.path
           ? viewMode === 'korist' ? '#ffffff' : '#000000' // Aktif ikon rengi
           : '#cccccc', // Pasif ikon rengi
+          marginX: '0px', // Butonlar arasında yatay boşluk
+
       }}
     />
   ))}
