@@ -97,9 +97,13 @@ const BottomNav = ({ role, viewMode, onSwitchView }) => {
       value={index}
       sx={{
         color: location.pathname === item.path
+        
           ? viewMode === 'korist' ? '#ffffff' : '#000000' // Aktif ikon rengi
           : '#cccccc', // Pasif ikon rengi
           marginX: '0px', // Butonlar arasında yatay boşluk
+          flex: 1, // Tüm butonları eşit genişlikte yapar
+          minWidth: 0, // Gereksiz minimum genişlik kısıtlamalarını kaldırır
+          padding: 0, // İç kenar boşluklarını sıfırlar
 
       }}
     />
