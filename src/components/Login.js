@@ -37,7 +37,7 @@ const Login = () => {
       const data = await response.json();
 
       if (response.ok) {
-        if (data.user?.approved === false) {
+        if (!data.user?.approved) {
           setModalMessage('Hesabınız henüz onaylanmamış. Lütfen yönetici onayını bekleyin.');
           setModalOpen(true);
         } else {

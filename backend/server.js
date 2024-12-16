@@ -52,6 +52,8 @@ app.post('/api/login', async (req, res) => {
         _id: user._id,
         name: user.name,
         role: user.role,
+        approved: user.approved, // Bu alanın eklendiğinden emin olun
+
       },
     });
   } catch (error) {
