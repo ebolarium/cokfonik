@@ -68,43 +68,42 @@ const BottomNav = ({ role, viewMode, onSwitchView }) => {
 
   return (
     <BottomNavigation
-      value={currentValue >= 0 ? currentValue : -1}
-      onChange={(event, newValue) => {
-        const selectedItem = navItems[newValue];
-        if (selectedItem.action) {
-          selectedItem.action(); // Switch için özel işlem
-        } else if (selectedItem.path) {
-          navigate(selectedItem.path);
-        }
-      }}
+  value={currentValue >= 0 ? currentValue : -1}
+  onChange={(event, newValue) => {
+    const selectedItem = navItems[newValue];
+    if (selectedItem.action) {
+      selectedItem.action(); // Switch için özel işlem
+    } else if (selectedItem.path) {
+      navigate(selectedItem.path);
+    }
+  }}
+  sx={{
+    position: 'fixed', // Sabit konumda tutar
+    bottom: 0, // Sayfanın altına sabitler
+    width: '100%', // Ekranın genişliğine %100 oturur
+    zIndex: 1000, // Diğer içeriklerin üstünde görünmesini sağlar
+    backgroundColor: viewMode === 'korist' ? '#ff5722' : '#283593', // Renk ayarı
+    color: '#ffffff', // Yazı ve ikon rengi
+    borderTop: viewMode === 'korist' ? '4px solid #bf360c' : '4px solid #1a237e', // Çerçeve
+    height: { xs: '56px', sm: '64px' }, // Yükseklik
+    transition: 'all 0.3s ease', // Geçiş animasyonu
+    boxShadow: '0 -2px 6px rgba(0, 0, 0, 0.1)', // Hafif gölge
+  }}
+>
+  {navItems.map((item, index) => (
+    <BottomNavigationAction
+      key={index}
+      icon={item.icon}
+      value={index}
       sx={{
-        position: 'fixed',
-        bottom: 0,
-        width: '100%',
-        zIndex: 1000,
-        backgroundColor: viewMode === 'korist' ? '#ff5722' : '#283593',
-        color: '#ffffff',
-        borderTop: viewMode === 'korist' ? '4px solid #bf360c' : '4px solid #1a237e',
-        paddingX: { xs: 1, sm: 2 }, // Yan boşluklar eklendi
-        height: { xs: '56px', sm: '64px' }, // Ekran boyutuna göre yükseklik
-        transition: 'all 0.3s ease', // Animasyon
+        color: location.pathname === item.path
+          ? viewMode === 'korist' ? '#ffffff' : '#000000' // Aktif ikon rengi
+          : '#cccccc', // Pasif ikon rengi
       }}
-    >
-      {navItems.map((item, index) => (
-        <BottomNavigationAction
-          key={index}
-          icon={item.icon}
-          value={index}
-          sx={{
-            color: location.pathname === item.path
-              ? viewMode === 'korist'
-                ? '#ffffff' // Aktif ikon rengi (korist modu)
-                : '#000000' // Aktif ikon rengi (admin modu)
-              : '#cccccc', // Pasif ikon rengi
-          }}
-        />
-      ))}
-    </BottomNavigation>
+    />
+  ))}
+</BottomNavigation>
+
   );
 };
 
