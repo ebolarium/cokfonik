@@ -1,37 +1,51 @@
-import React, { useState, useEffect } from 'react';
-import { Box, TextField, Button, Typography, Avatar, Modal } from '@mui/material';
+import React, { useState } from 'react';
+import { Box, Typography, Avatar, Button, Divider, IconButton, TextField, Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material';
+import EditIcon from '@mui/icons-material/Edit';
 
 const Profile = () => {
-  const [user, setUser] = useState({});
-  const [formData, setFormData] = useState({
-    name: '',
-    surname: '',
-    email: '',
+  const [profilePhoto, setProfilePhoto] = useState(null);
+  const [user, setUser] = useState({
+    name: 'Ad',
+    surname: 'Soyad',
+    part: 'Soprano',
+    absenteeism: 2,
+    missingFees: 2,
+    email: 'example@example.com',
+    phone: '0555 555 55 55',
   });
   const [passwordData, setPasswordData] = useState({
-    currentPassword: '',
     newPassword: '',
     confirmPassword: '',
   });
-  const [profilePhoto, setProfilePhoto] = useState(null);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [modalMessage, setModalMessage] = useState('');
+  const [editField, setEditField] = useState(null); // Düzenlenen alan
+  const [editedValue, setEditedValue] = useState(''); // Düzenleme için yeni değer
+  const [error, setError] = useState('');
+  const [open, setOpen] = useState(false); // Dialog açık mı?
 
-  useEffect(() => {
-    const storedUser = JSON.parse(localStorage.getItem('user'));
-    if (storedUser) {
-      setUser(storedUser);
-      setFormData({
-        name: storedUser.name || '',
-        surname: storedUser.surname || '',
-        email: storedUser.email || '',
-      });
+  const handleProfilePhotoChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setProfilePhoto(URL.createObjectURL(file));
     }
-  }, []);
+  };
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+  const handleOpenEdit = (field) => {
+    setEditField(field); // Düzenlenen alanı belirle
+    setEditedValue(user[field]); // Şu anki değeri inputa koy
+    setOpen(true); // Dialog'u aç
+  };
+
+  const handleSaveEdit = () => {
+    if (editedValue.trim() === '') {
+      alert('Alan boş bırakılamaz.');
+      return;
+    }
+    setUser({ ...user, [editField]: editedValue }); // Değeri kaydet
+    setOpen(false); // Dialog'u kapat
+  };
+
+  const handleCloseDialog = () => {
+    setOpen(false); // Dialog'u kapat
   };
 
   const handlePasswordChange = (e) => {
@@ -39,158 +53,143 @@ const Profile = () => {
     setPasswordData({ ...passwordData, [name]: value });
   };
 
-  const handleProfilePhotoChange = (e) => {
-    const file = e.target.files[0];
-    setProfilePhoto(file);
-  };
-
-  const handleModalClose = () => {
-    setModalOpen(false);
-  };
-
-  const handleSave = async () => {
-    const updatedData = Object.keys(formData).reduce((acc, key) => {
-      if (formData[key] !== '') { // Sadece dolu alanları ekler
-        acc[key] = formData[key];
-      }
-      return acc;
-    }, {});
-  
-    try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/users/${user._id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedData),
-      });
-  
-      const updatedUser = await response.json();
-      if (response.ok) {
-        setUser(updatedUser);
-        setModalMessage('Profil başarıyla güncellendi!');
-        setModalOpen(true);
-      } else {
-        setModalMessage('Profil güncellenirken hata oluştu!');
-        setModalOpen(true);
-      }
-    } catch (error) {
-      console.error('Error updating profile:', error);
-      setModalMessage('Sunucu hatası oluştu. Lütfen tekrar deneyin.');
-      setModalOpen(true);
-    }
-  };
-  
-
-  const handlePasswordSave = async () => {
+  const handlePasswordUpdate = () => {
     if (passwordData.newPassword !== passwordData.confirmPassword) {
-      setModalMessage('Yeni şifreler eşleşmiyor!');
-      setModalOpen(true);
+      setError('Şifreler eşleşmiyor!');
       return;
     }
-
-    try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/users/${user._id}/change-password`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(passwordData),
-      });
-      if (response.ok) {
-        setModalMessage('Şifre başarıyla güncellendi!');
-        setModalOpen(true);
-        setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
-      } else {
-        const errorMessage = await response.json();
-        setModalMessage(errorMessage.message || 'Şifre güncellenirken hata oluştu!');
-        setModalOpen(true);
-      }
-    } catch (error) {
-      console.error('Error updating password:', error);
-      setModalMessage('Sunucu hatası oluştu. Lütfen tekrar deneyin.');
-      setModalOpen(true);
-    }
-  };
-
-  const handlePhotoUpload = async () => {
-    if (!profilePhoto) {
-      setModalMessage('Lütfen bir fotoğraf seçin!');
-      setModalOpen(true);
+    if (passwordData.newPassword.length < 6) {
+      setError('Şifre en az 6 karakter olmalıdır!');
       return;
     }
-  
-    const formData = new FormData();
-    formData.append('profilePhoto', profilePhoto);
-  
-    try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/users/${user._id}/upload-photo`, {
-        method: 'POST',
-        body: formData,
-      });
-  
-      const data = await response.json();
-  
-      if (response.ok) {
-        setModalMessage('Profil fotoğrafı başarıyla yüklendi!');
-        setUser((prev) => ({ ...prev, profilePhoto: data.photoPath }));
-        setModalOpen(true);
-      } else {
-        setModalMessage(data.message || 'Fotoğraf yüklenirken hata oluştu!');
-        setModalOpen(true);
-      }
-    } catch (error) {
-      console.error('Error uploading profile photo:', error);
-      setModalMessage('Sunucu hatası oluştu. Lütfen tekrar deneyin.');
-      setModalOpen(true);
-    }
+    setError('');
+    alert('Şifre başarıyla güncellendi!');
+    setPasswordData({ newPassword: '', confirmPassword: '' });
   };
+
   return (
-    <Box p={3}>
-      <Typography variant="h5" gutterBottom>Profil Bilgilerim</Typography>
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '16px',
+        padding: '16px',
+        backgroundColor: '#f5f5f5',
+        borderRadius: '8px',
+        maxWidth: '400px',
+        margin: '0 auto',
+        boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.1)',
+      }}
+    >
+      {/* Profil Kartı */}
       <Box
-        component="form"
         sx={{
           display: 'flex',
-          flexDirection: 'column',
-          gap: 2,
-          maxWidth: '400px',
-          margin: '0 auto',
+          alignItems: 'center',
         }}
       >
-        {/* Profil Bilgileri */}
-        <TextField
-          label="Ad"
-          name="name"
-          value={formData.name}
-          onChange={handleChange}
-          fullWidth
-        />
-        <TextField
-          label="Soyad"
-          name="surname"
-          value={formData.surname}
-          onChange={handleChange}
-          fullWidth
-        />
-        <TextField
-          label="Email"
-          name="email"
-          type="email"
-          value={formData.email}
-          onChange={handleChange}
-          fullWidth
-        />
-        <Button variant="contained" color="primary" onClick={handleSave}>
-          Kaydet
-        </Button>
+        <Box
+          sx={{
+            position: 'relative',
+            cursor: 'pointer',
+          }}
+        >
+          <Avatar
+            src={profilePhoto || '/placeholder-profile.png'}
+            alt="Profil Fotoğrafı"
+            sx={{
+              width: '64px',
+              height: '64px',
+              border: '2px solid #1976d2',
+            }}
+          />
+          <Button
+            component="label"
+            sx={{
+              position: 'absolute',
+              bottom: 0,
+              right: 0,
+              backgroundColor: '#1976d2',
+              color: '#fff',
+              borderRadius: '50%',
+              width: '20px',
+              height: '20px',
+              minWidth: 0,
+              padding: 0,
+              fontSize: '14px',
+              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
+              '&:hover': {
+                backgroundColor: '#115293',
+              },
+            }}
+          >
+            +
+            <input type="file" hidden accept="image/*" onChange={handleProfilePhotoChange} />
+          </Button>
+        </Box>
 
-        {/* Şifre Güncelleme */}
-        <Typography variant="h6">Şifre Güncelle</Typography>
-        <TextField
-          label="Mevcut Şifre"
-          name="currentPassword"
-          type="password"
-          value={passwordData.currentPassword}
-          onChange={handlePasswordChange}
-          fullWidth
-        />
+        <Box sx={{ marginLeft: '16px' }}>
+          <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+            {user.name} {user.surname}
+          </Typography>
+          <Typography variant="body2" sx={{ color: '#666' }}>
+            Partisyon: {user.part}
+          </Typography>
+          <Typography variant="body2" sx={{ color: '#666', marginTop: '4px' }}>
+            Devamsızlık: {user.absenteeism} gün
+          </Typography>
+          <Typography variant="body2" sx={{ color: '#666', marginTop: '4px' }}>
+            Eksik Aidat: {user.missingFees} ay
+          </Typography>
+        </Box>
+      </Box>
+
+      <Divider />
+
+      {/* İletişim Bilgileri Kartı */}
+      <Box
+        sx={{
+          padding: '16px',
+          backgroundColor: '#fff',
+          borderRadius: '8px',
+          boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
+        }}
+      >
+        <Typography variant="h6" sx={{ fontWeight: 'bold', marginBottom: '8px' }}>
+          İletişim Bilgileri
+        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
+          <Typography variant="body2" sx={{ color: '#666', flexGrow: 1 }}>
+            <strong>E-posta:</strong> {user.email}
+          </Typography>
+          <IconButton size="small" onClick={() => handleOpenEdit('email')}>
+            <EditIcon fontSize="small" />
+          </IconButton>
+        </Box>
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <Typography variant="body2" sx={{ color: '#666', flexGrow: 1 }}>
+            <strong>Telefon:</strong> {user.phone}
+          </Typography>
+          <IconButton size="small" onClick={() => handleOpenEdit('phone')}>
+            <EditIcon fontSize="small" />
+          </IconButton>
+        </Box>
+      </Box>
+
+      <Divider />
+
+      {/* Şifre Güncelleme Kartı */}
+      <Box
+        sx={{
+          padding: '16px',
+          backgroundColor: '#fff',
+          borderRadius: '8px',
+          boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
+        }}
+      >
+        <Typography variant="h6" sx={{ fontWeight: 'bold', marginBottom: '8px' }}>
+          Şifre Güncelle
+        </Typography>
         <TextField
           label="Yeni Şifre"
           name="newPassword"
@@ -198,69 +197,56 @@ const Profile = () => {
           value={passwordData.newPassword}
           onChange={handlePasswordChange}
           fullWidth
+          margin="dense"
+          size="small"
         />
         <TextField
-          label="Yeni Şifre (Tekrar)"
+          label="Şifreyi Onayla"
           name="confirmPassword"
           type="password"
           value={passwordData.confirmPassword}
           onChange={handlePasswordChange}
           fullWidth
+          margin="dense"
+          size="small"
         />
-        <Button variant="contained" color="primary" onClick={handlePasswordSave}>
-          Şifreyi Güncelle
-        </Button>
-
-        {/* Profil Fotoğrafı Yükleme */}
-        <Typography variant="h6">Profil Fotoğrafı</Typography>
-        <Box display="flex" alignItems="center" gap={2}>
-        <Avatar
-  src={
-    profilePhoto
-      ? URL.createObjectURL(profilePhoto) // Yeni seçilen fotoğrafı göster
-      : user.profilePhoto // Daha önce yüklenen fotoğraf
-      ? `${process.env.REACT_APP_API_URL}${user.profilePhoto}` // Sunucudaki fotoğraf
-      : null // Henüz bir fotoğraf yoksa varsayılan (placeholder)
-  }
-  sx={{ width: 64, height: 64 }}
-/>          <Button variant="outlined" component="label">
-            Fotoğraf Yükle
-            <input type="file" hidden onChange={handleProfilePhotoChange} />
-          </Button>
-        </Box>
-        <Button variant="contained" color="primary" onClick={handlePhotoUpload}>
-          Fotoğrafı Kaydet
-        </Button>
-
-        <Button variant="outlined" color="secondary" onClick={() => window.history.back()}>
-          Geri Dön
+        {error && (
+          <Typography variant="body2" color="error" sx={{ marginTop: '8px' }}>
+            {error}
+          </Typography>
+        )}
+        <Button
+          variant="contained"
+          color="primary"
+          fullWidth
+          sx={{ marginTop: '16px', padding: '8px 0', fontSize: '14px' }}
+          onClick={handlePasswordUpdate}
+        >
+          Güncelle
         </Button>
       </Box>
 
-      {/* Bilgi Modalı */}
-      <Modal open={modalOpen} onClose={handleModalClose}>
-        <Box
-          sx={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            width: 300,
-            bgcolor: 'background.paper',
-            border: '2px solid #000',
-            boxShadow: 24,
-            p: 4,
-          }}
-        >
-          <Typography variant="h6" gutterBottom>
-            Bilgi
-          </Typography>
-          <Typography variant="body1">{modalMessage}</Typography>
-          <Button variant="contained" color="primary" onClick={handleModalClose} sx={{ mt: 2 }}>
-            Kapat
+      {/* Düzenleme Dialog'u */}
+      <Dialog open={open} onClose={handleCloseDialog} fullWidth maxWidth="sm">
+        <DialogTitle>{editField === 'email' ? 'E-posta Düzenle' : 'Telefon Düzenle'}</DialogTitle>
+        <DialogContent>
+          <TextField
+            label={editField === 'email' ? 'Yeni E-posta' : 'Yeni Telefon'}
+            value={editedValue}
+            onChange={(e) => setEditedValue(e.target.value)}
+            fullWidth
+            margin="normal"
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDialog} color="secondary">
+            İptal
           </Button>
-        </Box>
-      </Modal>
+          <Button onClick={handleSaveEdit} color="primary">
+            Kaydet
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

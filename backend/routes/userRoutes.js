@@ -20,34 +20,27 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
+// Profil Fotoğrafı Yükleme
 router.post('/:id/upload-photo', upload.single('profilePhoto'), async (req, res) => {
   try {
     const userId = req.params.id;
 
-    // Kullanıcıyı bul
     const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ message: 'Kullanıcı bulunamadı.' });
-    }
+    if (!user) return res.status(404).json({ message: 'Kullanıcı bulunamadı.' });
 
-    // Profil fotoğrafı yolunu güncelle
     const filePath = `/uploads/profile_photos/${req.file.filename}`;
     user.profilePhoto = filePath; // Fotoğraf yolu kaydedilir
     await user.save();
 
     res.status(200).json({
       message: 'Fotoğraf başarıyla yüklendi.',
-      photoPath: filePath, // Frontend için dönen fotoğraf yolu
+      photoPath: filePath,
     });
   } catch (error) {
     console.error('Fotoğraf yüklenirken hata:', error);
     res.status(400).json({ message: 'Fotoğraf yüklenirken bir hata oluştu.' });
   }
 });
-
-
-
-
 
 // Yardımcı Fonksiyon: Güncel Ay ve Yıl Bilgisi
 const getCurrentMonthAndYear = () => {
@@ -66,7 +59,7 @@ const createDefaultAttendance = async (userId) => {
   await Attendance.insertMany(attendanceRecords);
 };
 
-// Kullanıcı kaydı
+// Kullanıcı Kaydı
 router.post('/register', async (req, res) => {
   const { name, surname, email, password, birthDate, phone, part } = req.body;
   try {
@@ -78,13 +71,13 @@ router.post('/register', async (req, res) => {
       birthDate,
       phone,
       part,
-      approved: false, // Varsayılan olarak onaylanmamış
-      frozen: false, // Varsayılan olarak aktif
+      approved: false,
+      frozen: false,
     });
 
     await newUser.save();
 
-    // Aidat ve devamsızlık işlemleri
+    // Aidat ve devamsızlık kayıtları
     const { month, year } = getCurrentMonthAndYear();
     const fee = new Fee({ userId: newUser._id, month, year });
     await fee.save();
@@ -99,78 +92,50 @@ router.post('/register', async (req, res) => {
 
 // Şifre Güncelleme
 router.post('/:id/change-password', async (req, res) => {
-  const { id } = req.params;
   const { currentPassword, newPassword } = req.body;
 
   try {
-    // Kullanıcıyı bul
-    const user = await User.findById(id);
-    if (!user) {
-      return res.status(404).json({ message: 'Kullanıcı bulunamadı.' });
-    }
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: 'Kullanıcı bulunamadı.' });
 
-    // Mevcut şifreyi kontrol et
     if (user.password !== currentPassword) {
       return res.status(400).json({ message: 'Mevcut şifre yanlış.' });
     }
 
-    // Yeni şifreyi kaydet
     user.password = newPassword;
     await user.save();
 
     res.status(200).json({ message: 'Şifre başarıyla güncellendi.' });
   } catch (error) {
-    console.error('Şifre güncellenirken hata:', error);
-    res.status(500).json({ message: 'Şifre güncellenirken bir hata oluştu.' });
+    res.status(500).json({ message: 'Şifre güncellenirken hata oluştu.' });
   }
 });
 
-// Admin onayı
-router.put('/:id/approve', async (req, res) => {
+// Kullanıcı Bilgilerini Getir
+router.get('/:id', async (req, res) => {
   try {
-    const user = await User.findByIdAndUpdate(req.params.id, { approved: true }, { new: true });
-    if (!user) {
-      return res.status(404).json({ message: 'Kullanıcı bulunamadı.' });
-    }
-    res.json({ message: 'Kullanıcı onaylandı.', user });
+    const user = await User.findById(req.params.id).select('-password');
+    if (!user) return res.status(404).json({ message: 'Kullanıcı bulunamadı.' });
+    res.json(user);
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    res.status(500).json({ message: 'Sunucu hatası.' });
   }
 });
 
-// Kullanıcı dondurma
-router.put('/:id/freeze', async (req, res) => {
+// Kullanıcı Bilgilerini Güncelle
+router.put('/:id', async (req, res) => {
   try {
-    const user = await User.findByIdAndUpdate(req.params.id, { frozen: true }, { new: true });
-    if (!user) {
-      return res.status(404).json({ message: 'Kullanıcı bulunamadı.' });
-    }
-    res.json({ message: 'Kullanıcı donduruldu.', user });
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-});
+    const updatedUser = await User.findByIdAndUpdate(
+      req.params.id,
+      { $set: req.body },
+      { new: true, runValidators: true, omitUndefined: true }
+    );
 
-// Kullanıcı dondurmayı kaldırma
-router.put('/:id/unfreeze', async (req, res) => {
-  try {
-    const user = await User.findByIdAndUpdate(req.params.id, { frozen: false }, { new: true });
-    if (!user) {
-      return res.status(404).json({ message: 'Kullanıcı bulunamadı.' });
-    }
-    res.json({ message: 'Kullanıcı aktif hale getirildi.', user });
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-});
+    if (!updatedUser) return res.status(404).json({ message: 'Kullanıcı bulunamadı.' });
 
-// Tüm Kullanıcıları Getir
-router.get('/', async (req, res) => {
-  try {
-    const users = await User.find().select('-password'); // Şifreyi hariç tutar
-    res.json(users);
+    res.json(updatedUser);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(400).json({ message: 'Güncelleme sırasında hata oluştu.' });
   }
 });
 
@@ -178,37 +143,11 @@ router.get('/', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   try {
     const user = await User.findByIdAndDelete(req.params.id);
-    if (!user) {
-      return res.status(404).json({ message: 'Kullanıcı bulunamadı' });
-    }
-    res.json({ message: 'Kullanıcı silindi' });
+    if (!user) return res.status(404).json({ message: 'Kullanıcı bulunamadı.' });
+    res.json({ message: 'Kullanıcı silindi.' });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'Sunucu hatası oluştu.' });
   }
 });
-
-// Kullanıcıyı Güncelle
-router.put('/:id', async (req, res) => {
-  try {
-    const userId = req.params.id;
-
-    // Kullanıcıyı bul ve gönderilen verilerle güncelle
-    const updatedUser = await User.findByIdAndUpdate(
-      userId,
-      { $set: req.body }, // Sadece gönderilen alanları günceller
-      { new: true, runValidators: true, omitUndefined: true } // Valide et, undefined değerleri yok say
-    );
-
-    if (!updatedUser) {
-      return res.status(404).json({ message: 'Kullanıcı bulunamadı' });
-    }
-
-    res.json(updatedUser);
-  } catch (error) {
-    console.error('Kullanıcı güncellenirken hata:', error);
-    res.status(400).json({ message: error.message });
-  }
-});
-
 
 module.exports = router;
