@@ -223,5 +223,19 @@ router.put('/:id', async (req, res) => {
   }
 });
 
+router.get('/:id/profile', async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id); // ID'ye göre kullanıcıyı bul
+    if (!user) {
+      return res.status(404).json({ message: 'Kullanıcı bulunamadı' });
+    }
+    res.json(user);
+  } catch (error) {
+    console.error('Profil bilgileri alınırken hata:', error);
+    res.status(500).json({ message: 'Bir hata oluştu' });
+  }
+});
+
+
 
 module.exports = router;

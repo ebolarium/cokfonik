@@ -43,27 +43,27 @@ const Profile = () => {
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const userData = JSON.parse(localStorage.getItem('user'));
-        if (!userData) {
+        const userData = JSON.parse(localStorage.getItem('user')); // Kullanıcı verisi localStorage’dan alınır
+        if (!userData || !userData._id) {
           setError('Kullanıcı bilgisi bulunamadı!');
           setLoading(false);
           return;
         }
-
+  
         // Backend'den kullanıcı bilgisi çek
-        const response = await fetch(`${process.env.REACT_APP_API_URL}/users/profile?email=${userData.email}`);
+        const response = await fetch(`${process.env.REACT_APP_API_URL}/users/${userData._id}/profile`);
         const result = await response.json();
-
+  
         if (!response.ok) {
           setError(result.message || 'Kullanıcı bilgileri alınamadı!');
           setLoading(false);
           return;
         }
-
+  
         // State ve localStorage güncelle
         setUser(result);
         setProfilePhoto(result.profilePhoto);
-        localStorage.setItem('user', JSON.stringify(result)); // LocalStorage'ı güncelle
+        localStorage.setItem('user', JSON.stringify(result));
       } catch (error) {
         console.error('Kullanıcı verisi alınırken hata:', error);
         setError('Kullanıcı bilgileri alınırken bir hata oluştu.');
@@ -71,9 +71,10 @@ const Profile = () => {
         setLoading(false);
       }
     };
-
+  
     fetchUserData();
   }, []);
+  
 
   const handleProfilePhotoChange = async (e) => {
     const file = e.target.files[0];
