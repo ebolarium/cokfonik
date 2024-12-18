@@ -11,7 +11,7 @@ const router = express.Router();
 // Multer Konfigürasyonu
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'uploads/profile_photos'); // Fotoğraflar bu dizinde tutulacak
+    cb(null, '/uploads'); // Fotoğraflar bu dizinde tutulacak
   },
   filename: (req, file, cb) => {
     cb(null, `${req.params.id}_${Date.now()}${path.extname(file.originalname)}`); // Benzersiz dosya adı
@@ -235,6 +235,7 @@ router.get('/:id/profile', async (req, res) => {
     res.status(500).json({ message: 'Bir hata oluştu' });
   }
 });
+
 
 
 
