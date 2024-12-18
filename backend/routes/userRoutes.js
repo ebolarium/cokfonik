@@ -46,6 +46,22 @@ router.post('/:id/upload-photo', upload.single('profilePhoto'), async (req, res)
 });
 
 
+// Kullanıcı Profilini Getir (token veya id üzerinden)
+router.get('/profile', async (req, res) => {
+  try {
+    const { email } = req.query; // Kullanıcının email adresini al
+    const user = await User.findOne({ email }).select('-password'); // Şifre hariç kullanıcıyı getir
+
+    if (!user) {
+      return res.status(404).json({ message: 'Kullanıcı bulunamadı.' });
+    }
+
+    res.status(200).json(user);
+  } catch (error) {
+    console.error('Kullanıcı profili alınırken hata:', error);
+    res.status(500).json({ message: 'Sunucu hatası oluştu.' });
+  }
+});
 
 
 

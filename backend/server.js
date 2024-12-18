@@ -48,13 +48,7 @@ app.post('/api/login', async (req, res) => {
 
     res.status(200).json({
       message: 'Giriş başarılı!',
-      user: {
-        _id: user._id,
-        name: user.name,
-        role: user.role,
-        approved: user.approved, // Bu alanın eklendiğinden emin olun
-
-      },
+      user: user,
     });
   } catch (error) {
     console.error('Login endpoint error:', error);

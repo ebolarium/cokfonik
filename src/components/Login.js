@@ -44,6 +44,9 @@ const Login = () => {
           localStorage.setItem('authToken', data.token);
           localStorage.setItem('user', JSON.stringify(data.user));
 
+          console.log('Giriş Yapılan Kullanıcı:', data.user);
+
+
           const roleRedirects = {
             'Master Admin': '/master-admin-dashboard',
             'Yönetim Kurulu': '/management-dashboard',

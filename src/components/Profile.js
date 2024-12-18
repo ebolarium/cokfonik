@@ -1,26 +1,50 @@
-import React, { useState } from 'react';
-import { Box, Typography, Avatar, Button, Divider, IconButton, TextField, Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material';
+import React, { useState, useEffect } from 'react';
+import {
+  Box,
+  Typography,
+  Avatar,
+  Button,
+  Divider,
+  IconButton,
+  TextField,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+} from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 
 const Profile = () => {
   const [profilePhoto, setProfilePhoto] = useState(null);
   const [user, setUser] = useState({
-    name: 'Ad',
-    surname: 'Soyad',
-    part: 'Soprano',
-    absenteeism: 2,
-    missingFees: 2,
-    email: 'example@example.com',
-    phone: '0555 555 55 55',
+    name: '',
+    surname: '',
+    part: '',
+    email: '',
+    phone: '',
   });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [passwordData, setPasswordData] = useState({
     newPassword: '',
     confirmPassword: '',
   });
-  const [editField, setEditField] = useState(null); // Düzenlenen alan
-  const [editedValue, setEditedValue] = useState(''); // Düzenleme için yeni değer
-  const [error, setError] = useState('');
-  const [open, setOpen] = useState(false); // Dialog açık mı?
+  const [editField, setEditField] = useState(null);
+  const [editedValue, setEditedValue] = useState('');
+  const [open, setOpen] = useState(false);
+
+  // Backend'den kullanıcı verisini çek
+  useEffect(() => {
+    // localStorage'dan kullanıcı bilgisi al
+    const userData = JSON.parse(localStorage.getItem('user'));
+    if (userData) {
+      setUser(userData); // Kullanıcı bilgilerini state'e yükle
+      setProfilePhoto(userData.profilePhoto); // Profil fotoğrafını state'e yükle
+    } else {
+      setError('Kullanıcı bilgisi bulunamadı!');
+    }
+    setLoading(false);
+  }, []);
 
   const handleProfilePhotoChange = (e) => {
     const file = e.target.files[0];
@@ -30,9 +54,9 @@ const Profile = () => {
   };
 
   const handleOpenEdit = (field) => {
-    setEditField(field); // Düzenlenen alanı belirle
-    setEditedValue(user[field]); // Şu anki değeri inputa koy
-    setOpen(true); // Dialog'u aç
+    setEditField(field);
+    setEditedValue(user[field]);
+    setOpen(true);
   };
 
   const handleSaveEdit = () => {
@@ -40,12 +64,12 @@ const Profile = () => {
       alert('Alan boş bırakılamaz.');
       return;
     }
-    setUser({ ...user, [editField]: editedValue }); // Değeri kaydet
-    setOpen(false); // Dialog'u kapat
+    setUser({ ...user, [editField]: editedValue });
+    setOpen(false);
   };
 
   const handleCloseDialog = () => {
-    setOpen(false); // Dialog'u kapat
+    setOpen(false);
   };
 
   const handlePasswordChange = (e) => {
@@ -66,6 +90,9 @@ const Profile = () => {
     alert('Şifre başarıyla güncellendi!');
     setPasswordData({ newPassword: '', confirmPassword: '' });
   };
+
+  if (loading) return <div>Yükleniyor...</div>;
+  if (error) return <div>{error}</div>;
 
   return (
     <Box
@@ -88,12 +115,7 @@ const Profile = () => {
           alignItems: 'center',
         }}
       >
-        <Box
-          sx={{
-            position: 'relative',
-            cursor: 'pointer',
-          }}
-        >
+        <Box sx={{ position: 'relative', cursor: 'pointer' }}>
           <Avatar
             src={profilePhoto || '/placeholder-profile.png'}
             alt="Profil Fotoğrafı"
@@ -118,9 +140,7 @@ const Profile = () => {
               padding: 0,
               fontSize: '14px',
               boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
-              '&:hover': {
-                backgroundColor: '#115293',
-              },
+              '&:hover': { backgroundColor: '#115293' },
             }}
           >
             +
@@ -135,18 +155,12 @@ const Profile = () => {
           <Typography variant="body2" sx={{ color: '#666' }}>
             Partisyon: {user.part}
           </Typography>
-          <Typography variant="body2" sx={{ color: '#666', marginTop: '4px' }}>
-            Devamsızlık: {user.absenteeism} gün
-          </Typography>
-          <Typography variant="body2" sx={{ color: '#666', marginTop: '4px' }}>
-            Eksik Aidat: {user.missingFees} ay
-          </Typography>
         </Box>
       </Box>
 
       <Divider />
 
-      {/* İletişim Bilgileri Kartı */}
+      {/* İletişim Bilgileri */}
       <Box
         sx={{
           padding: '16px',
@@ -160,7 +174,7 @@ const Profile = () => {
         </Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
           <Typography variant="body2" sx={{ color: '#666', flexGrow: 1 }}>
-            <strong>E-posta:</strong> {user.email}
+            <strong>Email:</strong> {user.email}
           </Typography>
           <IconButton size="small" onClick={() => handleOpenEdit('email')}>
             <EditIcon fontSize="small" />
@@ -178,15 +192,8 @@ const Profile = () => {
 
       <Divider />
 
-      {/* Şifre Güncelleme Kartı */}
-      <Box
-        sx={{
-          padding: '16px',
-          backgroundColor: '#fff',
-          borderRadius: '8px',
-          boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
-        }}
-      >
+      {/* Şifre Güncelle */}
+      <Box sx={{ padding: '16px', backgroundColor: '#fff', borderRadius: '8px' }}>
         <Typography variant="h6" sx={{ fontWeight: 'bold', marginBottom: '8px' }}>
           Şifre Güncelle
         </Typography>
@@ -210,41 +217,32 @@ const Profile = () => {
           margin="dense"
           size="small"
         />
-        {error && (
-          <Typography variant="body2" color="error" sx={{ marginTop: '8px' }}>
-            {error}
-          </Typography>
-        )}
+        {error && <Typography color="error">{error}</Typography>}
         <Button
           variant="contained"
           color="primary"
           fullWidth
-          sx={{ marginTop: '16px', padding: '8px 0', fontSize: '14px' }}
+          sx={{ marginTop: '16px' }}
           onClick={handlePasswordUpdate}
         >
           Güncelle
         </Button>
       </Box>
 
-      {/* Düzenleme Dialog'u */}
-      <Dialog open={open} onClose={handleCloseDialog} fullWidth maxWidth="sm">
-        <DialogTitle>{editField === 'email' ? 'E-posta Düzenle' : 'Telefon Düzenle'}</DialogTitle>
+      {/* Dialog */}
+      <Dialog open={open} onClose={handleCloseDialog}>
+        <DialogTitle>Düzenle</DialogTitle>
         <DialogContent>
           <TextField
-            label={editField === 'email' ? 'Yeni E-posta' : 'Yeni Telefon'}
+            label="Yeni Değer"
             value={editedValue}
             onChange={(e) => setEditedValue(e.target.value)}
             fullWidth
-            margin="normal"
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseDialog} color="secondary">
-            İptal
-          </Button>
-          <Button onClick={handleSaveEdit} color="primary">
-            Kaydet
-          </Button>
+          <Button onClick={handleCloseDialog}>İptal</Button>
+          <Button onClick={handleSaveEdit}>Kaydet</Button>
         </DialogActions>
       </Dialog>
     </Box>

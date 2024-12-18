@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -13,6 +14,12 @@ import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
 
 const UserDashboard = () => {
   const navigate = useNavigate();
+
+
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem('user')); // localStorage'dan kullanıcıyı al
+    console.log('Dashboard Kullanıcı Bilgisi:', user); // Konsola yazdır
+  }, []);
 
   const dashboardItems = [
     {
