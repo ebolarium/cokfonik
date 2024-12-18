@@ -32,24 +32,81 @@ const Profile = () => {
   const [editField, setEditField] = useState(null);
   const [editedValue, setEditedValue] = useState('');
   const [open, setOpen] = useState(false);
+  const [successModalOpen, setSuccessModalOpen] = useState(false);
+  const [successMessage, setSuccessMessage] = useState(''); // Dinamik modal mesajı için
+
+  const handleSuccessModalClose = () => {
+    setSuccessModalOpen(false);
+  };
 
   // Backend'den kullanıcı verisini çek
   useEffect(() => {
-    // localStorage'dan kullanıcı bilgisi al
-    const userData = JSON.parse(localStorage.getItem('user'));
-    if (userData) {
-      setUser(userData); // Kullanıcı bilgilerini state'e yükle
-      setProfilePhoto(userData.profilePhoto); // Profil fotoğrafını state'e yükle
-    } else {
-      setError('Kullanıcı bilgisi bulunamadı!');
-    }
-    setLoading(false);
+    const fetchUserData = async () => {
+      try {
+        const userData = JSON.parse(localStorage.getItem('user'));
+        if (!userData) {
+          setError('Kullanıcı bilgisi bulunamadı!');
+          setLoading(false);
+          return;
+        }
+
+        // Backend'den kullanıcı bilgisi çek
+        const response = await fetch(`${process.env.REACT_APP_API_URL}/users/profile?email=${userData.email}`);
+        const result = await response.json();
+
+        if (!response.ok) {
+          setError(result.message || 'Kullanıcı bilgileri alınamadı!');
+          setLoading(false);
+          return;
+        }
+
+        // State ve localStorage güncelle
+        setUser(result);
+        setProfilePhoto(result.profilePhoto);
+        localStorage.setItem('user', JSON.stringify(result)); // LocalStorage'ı güncelle
+      } catch (error) {
+        console.error('Kullanıcı verisi alınırken hata:', error);
+        setError('Kullanıcı bilgileri alınırken bir hata oluştu.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserData();
   }, []);
 
-  const handleProfilePhotoChange = (e) => {
+  const handleProfilePhotoChange = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      setProfilePhoto(URL.createObjectURL(file));
+      try {
+        const formData = new FormData();
+        formData.append('profilePhoto', file);
+
+        const userData = JSON.parse(localStorage.getItem('user'));
+        const response = await fetch(`${process.env.REACT_APP_API_URL}/users/${userData._id}/upload-photo`, {
+          method: 'POST',
+          body: formData,
+        });
+
+        const result = await response.json();
+        if (!response.ok) {
+          setError(result.message);
+          return;
+        }
+
+        // Kullanıcı state ve localStorage güncelle
+        const updatedUser = { ...userData, profilePhoto: result.photoPath };
+        setUser(updatedUser);
+        setProfilePhoto(result.photoPath);
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+
+        // Başarı mesajını modal ile göster
+        setSuccessMessage('Profil fotoğrafı başarıyla güncellendi!');
+        setSuccessModalOpen(true);
+      } catch (error) {
+        console.error('Fotoğraf yüklenirken hata:', error);
+        setError('Fotoğraf yüklenirken bir hata oluştu.');
+      }
     }
   };
 
@@ -59,17 +116,42 @@ const Profile = () => {
     setOpen(true);
   };
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (editedValue.trim() === '') {
-      alert('Alan boş bırakılamaz.');
+      setError('Alan boş bırakılamaz.');
       return;
     }
-    setUser({ ...user, [editField]: editedValue });
-    setOpen(false);
-  };
 
-  const handleCloseDialog = () => {
-    setOpen(false);
+    try {
+      const userData = JSON.parse(localStorage.getItem('user'));
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/users/${userData._id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ [editField]: editedValue }),
+      });
+
+      const result = await response.json();
+      if (!response.ok) {
+        setError(result.message || 'Bilgi güncellenemedi.');
+        return;
+      }
+
+      // Kullanıcı state ve localStorage güncelle
+      const updatedUser = { ...user, [editField]: editedValue };
+      setUser(updatedUser);
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+
+      // Başarı mesajını modal ile göster
+      setSuccessMessage(`${editField === 'email' ? 'Email' : 'Telefon'} başarıyla güncellendi!`);
+      setSuccessModalOpen(true);
+    } catch (error) {
+      console.error('Bilgi güncellenirken hata:', error);
+      setError('Bilgi güncellenirken bir hata oluştu.');
+    } finally {
+      setOpen(false);
+    }
   };
 
   const handlePasswordChange = (e) => {
@@ -77,7 +159,7 @@ const Profile = () => {
     setPasswordData({ ...passwordData, [name]: value });
   };
 
-  const handlePasswordUpdate = () => {
+  const handlePasswordUpdate = async () => {
     if (passwordData.newPassword !== passwordData.confirmPassword) {
       setError('Şifreler eşleşmiyor!');
       return;
@@ -86,9 +168,38 @@ const Profile = () => {
       setError('Şifre en az 6 karakter olmalıdır!');
       return;
     }
-    setError('');
-    alert('Şifre başarıyla güncellendi!');
-    setPasswordData({ newPassword: '', confirmPassword: '' });
+
+    try {
+      const userData = JSON.parse(localStorage.getItem('user'));
+      const response = await fetch(
+        `${process.env.REACT_APP_API_URL}/users/${userData._id}/change-password`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            newPassword: passwordData.newPassword,
+          }),
+        }
+      );
+      const result = await response.json();
+      if (!response.ok) {
+        setError(result.message);
+        return;
+      }
+
+      setPasswordData({ newPassword: '', confirmPassword: '' });
+      setSuccessMessage('Şifre başarıyla güncellendi!');
+      setSuccessModalOpen(true);
+    } catch (error) {
+      console.error('Şifre güncellenirken hata:', error);
+      setError('Sunucuya bağlanılamadı.');
+    }
+  };
+
+  const handleCloseDialog = () => {
+    setOpen(false);
   };
 
   if (loading) return <div>Yükleniyor...</div>;
@@ -109,12 +220,7 @@ const Profile = () => {
       }}
     >
       {/* Profil Kartı */}
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-        }}
-      >
+      <Box sx={{ display: 'flex', alignItems: 'center' }}>
         <Box sx={{ position: 'relative', cursor: 'pointer' }}>
           <Avatar
             src={profilePhoto || '/placeholder-profile.png'}
@@ -147,7 +253,6 @@ const Profile = () => {
             <input type="file" hidden accept="image/*" onChange={handleProfilePhotoChange} />
           </Button>
         </Box>
-
         <Box sx={{ marginLeft: '16px' }}>
           <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
             {user.name} {user.surname}
@@ -228,6 +333,19 @@ const Profile = () => {
           Güncelle
         </Button>
       </Box>
+
+      {/* Genel Başarı Modali */}
+      <Dialog open={successModalOpen} onClose={handleSuccessModalClose}>
+        <DialogTitle>Güncelleme Başarılı</DialogTitle>
+        <DialogContent>
+          <Typography>{successMessage}</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleSuccessModalClose} color="primary">
+            Tamam
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Dialog */}
       <Dialog open={open} onClose={handleCloseDialog}>

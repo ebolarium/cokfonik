@@ -20,6 +20,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
+// Profil Fotoğrafı Yükleme Endpoint
 router.post('/:id/upload-photo', upload.single('profilePhoto'), async (req, res) => {
   try {
     const userId = req.params.id;
@@ -30,14 +31,14 @@ router.post('/:id/upload-photo', upload.single('profilePhoto'), async (req, res)
       return res.status(404).json({ message: 'Kullanıcı bulunamadı.' });
     }
 
-    // Profil fotoğrafı yolunu güncelle
-    const filePath = `/uploads/profile_photos/${req.file.filename}`;
-    user.profilePhoto = filePath; // Fotoğraf yolu kaydedilir
+    // Profil fotoğrafı tam yolunu oluştur
+    const filePath = `${req.protocol}://${req.get('host')}/uploads/profile_photos/${req.file.filename}`;
+    user.profilePhoto = filePath; // Fotoğraf tam URL ile kaydedilir
     await user.save();
 
     res.status(200).json({
       message: 'Fotoğraf başarıyla yüklendi.',
-      photoPath: filePath, // Frontend için dönen fotoğraf yolu
+      photoPath: filePath, // Frontend için dönen tam URL
     });
   } catch (error) {
     console.error('Fotoğraf yüklenirken hata:', error);
@@ -125,10 +126,6 @@ router.post('/:id/change-password', async (req, res) => {
       return res.status(404).json({ message: 'Kullanıcı bulunamadı.' });
     }
 
-    // Mevcut şifreyi kontrol et
-    if (user.password !== currentPassword) {
-      return res.status(400).json({ message: 'Mevcut şifre yanlış.' });
-    }
 
     // Yeni şifreyi kaydet
     user.password = newPassword;
