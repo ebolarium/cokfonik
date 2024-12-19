@@ -7,6 +7,7 @@ const path = require('path');
 const User = require('./models/User'); // User modeli
 const Fee = require('./models/Fee'); // Aidat modeli
 
+
 require('dotenv').config({ path: '../.env' }); // Üst klasördeki .env dosyasını yükle
 
 dotenv.config();
@@ -34,6 +35,8 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 const announcementRoutes = require('./routes/announcementRoutes');
 app.use('/api/announcements', announcementRoutes);
+const scoreRoutes = require('./routes/scoreRoutes');
+app.use('/api/scores', scoreRoutes);
 
 // Login Endpoint
 app.post('/api/login', async (req, res) => {

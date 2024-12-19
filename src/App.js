@@ -17,6 +17,8 @@ import FeeManagement from './components/FeeManagement';
 import Profile from './components/Profile';
 import AnnouncementManagement from './components/AnnouncementManagement';
 import AnnouncementsPage from './components/AnnouncementsPage';
+import Game from "./components/Game";
+
 
 
 const App = () => {
@@ -103,6 +105,8 @@ const App = () => {
           <Route path="/calendar-view" element={<CalendarView />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/announcements" element={<AnnouncementsPage />} /> {/* Yeni rota */}
+          <Route path="/game" element={<Game />} />
+
 
         </>
       );

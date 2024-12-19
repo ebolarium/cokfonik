@@ -17,7 +17,8 @@ import EventNoteIcon from '@mui/icons-material/EventNote';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
 import NotificationsIcon from '@mui/icons-material/Notifications';
-import DeleteIcon from '@mui/icons-material/Delete';
+import MusicNoteIcon from '@mui/icons-material/MusicNote';
+
 
 const UserDashboard = () => {
   const navigate = useNavigate();
@@ -123,6 +124,12 @@ const UserDashboard = () => {
         </Badge>
       ),
       bgColor: '#fff8dc',
+    },
+    {
+      title: 'Oyun',
+      path: '/game',
+      icon: <MusicNoteIcon style={{ fontSize: 50 }} />,
+      bgColor: '#e6f7ff', // Farklı bir renk ekledim
     }
 
 
@@ -131,10 +138,10 @@ const UserDashboard = () => {
   return (
 <Box minHeight="100vh" bgcolor="#f9f9f9">
       <Box p={3}>
-        <Grid container spacing={1}>
+        <Grid container spacing={3}>
           {dashboardItems.map((item, index) => (
-            <Grid item xs={6} key={index} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-              <Card
+            <Grid item xs={6} key={index} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: '16px' }}>
+            <Card
                 style={{
                   width: '85%',
                   aspectRatio: '1/1',
