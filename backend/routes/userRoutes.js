@@ -8,10 +8,22 @@ const path = require('path');
 
 const router = express.Router();
 
+
+
+const fs = require('fs');
+
+// Uploads dizininin varlığını kontrol edin
+const uploadDir = path.join(__dirname, '../uploads');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+
+
 // Multer Konfigürasyonu
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, '/uploads'); // Fotoğraflar bu dizinde tutulacak
+    cb(null, path.join(__dirname, '../uploads'));
   },
   filename: (req, file, cb) => {
     cb(null, `${req.params.id}_${Date.now()}${path.extname(file.originalname)}`); // Benzersiz dosya adı
@@ -32,7 +44,7 @@ router.post('/:id/upload-photo', upload.single('profilePhoto'), async (req, res)
     }
 
     // Profil fotoğrafı tam yolunu oluştur
-    const filePath = `${req.protocol}://${req.get('host')}/uploads/profile_photos/${req.file.filename}`;
+    const filePath = `${process.env.BASE_URL}/uploads/${req.file.filename}`;
     user.profilePhoto = filePath; // Fotoğraf tam URL ile kaydedilir
     await user.save();
 
