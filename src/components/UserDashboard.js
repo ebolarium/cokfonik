@@ -114,7 +114,18 @@ const UserDashboard = () => {
     { title: 'Yoklama', path: '/my-attendance', icon: <AssignmentTurnedInIcon style={{ fontSize: 50 }} />, bgColor: '#f0f8ff' },
     { title: 'Aidat', path: '/my-fees', icon: <AccountBalanceIcon style={{ fontSize: 50 }} />, bgColor: '#e6ffe6' },
     { title: 'Takvim', path: '/calendar-view', icon: <EventNoteIcon style={{ fontSize: 50 }} />, bgColor: '#ffe6e6' },
-    { title: 'Duyurular', path: '/announcements', icon: <NotificationsIcon style={{ fontSize: 50 }} />, bgColor: '#fff8dc' },
+    {
+      title: 'Duyurular',
+      path: '/announcements',
+      icon: (
+        <Badge badgeContent={unreadCount} color="error">
+          <NotificationsIcon style={{ fontSize: 50 }} />
+        </Badge>
+      ),
+      bgColor: '#fff8dc',
+    }
+
+
   ];
 
   return (
@@ -148,66 +159,7 @@ const UserDashboard = () => {
           ))}
         </Grid>
 
-        {/* Duyurular Kartı */}
-        <Card
-          sx={{
-            marginTop: 4,
-            borderRadius: 2,
-            boxShadow: '0px 4px 10px rgba(0,0,0,0.1)',
-            padding: 2,
-            maxHeight: 300, // Scrollbar için maksimum yükseklik
-            overflowY: 'auto', // Scrollbar ekleme
-          }}
-        >
-          <CardContent>
-            <Typography
-              variant="h6"
-              sx={{ display: 'flex', alignItems: 'center', marginBottom: 2, color: '#333', fontWeight: 'bold' }}
-            >
-              <Badge badgeContent={unreadCount} color="error">
-                <NotificationsIcon sx={{ marginRight: 1, color: '#ff5722' }} />
-              </Badge>
-              Duyurular
-            </Typography>
-            {announcements.length > 0 ? (
-              announcements.map((announcement) => (
-                <Card
-                  key={announcement._id}
-                  sx={{
-                    marginBottom: 2,
-                    padding: 2,
-                    borderRadius: 2,
-                    boxShadow: '0px 2px 5px rgba(0,0,0,0.1)',
-                    cursor: 'pointer',
-                    backgroundColor: announcement.readBy.includes(JSON.parse(localStorage.getItem('user'))?._id)
-                      ? '#f0f0f0'
-                      : '#ffffff',
-                  }}
-                  onClick={() => handleOpen(announcement)}
-                >
-                  <Typography variant="subtitle1" fontWeight="bold">{announcement.title}</Typography>
-                  <Typography variant="body2">{announcement.content}</Typography>
-                  <IconButton
-                    color="error"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      hideAnnouncement(announcement._id);
-                    }}
-                  >
-                    <DeleteIcon />
-                  </IconButton>
-                </Card>
-              ))
-            ) : (
-              <Typography
-                variant="body2"
-                sx={{ color: '#888', fontStyle: 'italic', textAlign: 'center' }}
-              >
-                Henüz duyuru bulunmamaktadır.
-              </Typography>
-            )}
-          </CardContent>
-        </Card>
+
 
         {/* Modal */}
         <Modal open={open} onClose={handleClose} closeAfterTransition BackdropComponent={Backdrop} BackdropProps={{ timeout: 500 }}>
