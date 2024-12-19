@@ -1,5 +1,4 @@
-import React, { useEffect } from 'react';
-
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -7,81 +6,238 @@ import {
   Grid,
   Card,
   CardContent,
+  Modal,
+  Backdrop,
+  Fade,
+  Button,
+  IconButton,
+  Badge,
 } from '@mui/material';
 import EventNoteIcon from '@mui/icons-material/EventNote';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
+import NotificationsIcon from '@mui/icons-material/Notifications';
+import DeleteIcon from '@mui/icons-material/Delete';
 
 const UserDashboard = () => {
   const navigate = useNavigate();
-
+  const [announcements, setAnnouncements] = useState([]);
+  const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
+  const [open, setOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem('user')); // localStorage'dan kullanıcıyı al
-    console.log('Dashboard Kullanıcı Bilgisi:', user); // Konsola yazdır
+    const fetchAnnouncements = async () => {
+      try {
+        const response = await fetch(`${process.env.REACT_APP_API_URL}/announcements`);
+        const data = await response.json();
+
+        const userId = JSON.parse(localStorage.getItem('user'))?._id;
+        if (!userId) throw new Error('User ID not found in localStorage');
+
+        const visibleAnnouncements = data.filter(
+          (announcement) => !announcement.hiddenBy?.includes(userId)
+        );
+
+        const unreadAnnouncements = visibleAnnouncements.filter(
+          (announcement) => !announcement.readBy.includes(userId)
+        );
+
+        setAnnouncements(visibleAnnouncements);
+        setUnreadCount(unreadAnnouncements.length);
+      } catch (error) {
+        console.error('Duyurular yüklenemedi:', error);
+      }
+    };
+
+    fetchAnnouncements();
   }, []);
 
+  const markAsRead = async (id) => {
+    const userId = JSON.parse(localStorage.getItem('user'))?._id;
+    try {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/announcements/${id}/read`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
+      });
+
+      if (response.ok) {
+        const updatedAnnouncements = announcements.map((announcement) =>
+          announcement._id === id
+            ? { ...announcement, readBy: [...announcement.readBy, userId] }
+            : announcement
+        );
+        setAnnouncements(updatedAnnouncements);
+        setUnreadCount((prev) => prev - 1);
+      } else {
+        console.error('Duyuru okundu olarak işaretlenemedi.');
+      }
+    } catch (error) {
+      console.error('Duyuru okundu olarak işaretlenirken hata:', error);
+    }
+  };
+
+  const hideAnnouncement = async (id) => {
+    const userId = JSON.parse(localStorage.getItem('user'))?._id;
+    try {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/announcements/${id}/hide`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
+      });
+
+      if (response.ok) {
+        setAnnouncements((prev) => prev.filter((announcement) => announcement._id !== id));
+      } else {
+        console.error('Duyuru gizlenemedi.');
+      }
+    } catch (error) {
+      console.error('Duyuru gizlenirken hata:', error);
+    }
+  };
+
+  const handleOpen = (announcement) => {
+    setSelectedAnnouncement(announcement);
+    setOpen(true);
+    if (!announcement.readBy.includes(JSON.parse(localStorage.getItem('user'))._id)) {
+      markAsRead(announcement._id);
+    }
+  };
+
+  const handleClose = () => {
+    setOpen(false);
+    setSelectedAnnouncement(null);
+  };
+
   const dashboardItems = [
-    {
-      title: 'Yoklama',
-      path: '/my-attendance',
-      icon: <AssignmentTurnedInIcon style={{ fontSize: 50 }} />,
-      bgColor: '#f0f8ff',
-    },
-    {
-      title: 'Aidat',
-      path: '/my-fees',
-      icon: <AccountBalanceIcon style={{ fontSize: 50 }} />,
-      bgColor: '#e6ffe6',
-    },
-    {
-      title: 'Takvim',
-      path: '/calendar-view',
-      icon: <EventNoteIcon style={{ fontSize: 50 }} />,
-      bgColor: '#ffe6e6',
-    },
+    { title: 'Yoklama', path: '/my-attendance', icon: <AssignmentTurnedInIcon style={{ fontSize: 50 }} />, bgColor: '#f0f8ff' },
+    { title: 'Aidat', path: '/my-fees', icon: <AccountBalanceIcon style={{ fontSize: 50 }} />, bgColor: '#e6ffe6' },
+    { title: 'Takvim', path: '/calendar-view', icon: <EventNoteIcon style={{ fontSize: 50 }} />, bgColor: '#ffe6e6' },
+    { title: 'Duyurular', path: '/announcements', icon: <NotificationsIcon style={{ fontSize: 50 }} />, bgColor: '#fff8dc' },
   ];
 
   return (
-    <Box minHeight="100vh" bgcolor="#f9f9f9">
-      {/* Dashboard İçeriği */}
+<Box minHeight="100vh" bgcolor="#f9f9f9">
       <Box p={3}>
-        <Grid container spacing={2}>
+        <Grid container spacing={1}>
           {dashboardItems.map((item, index) => (
-            <Grid
-              item
-              xs={6} // Her kutu ekranın %50'sini kaplayacak
-              key={index}
-              style={{
-                display: 'flex',
-                justifyContent: index === 2 ? 'flex-start' : 'center', // 3. kutu sola dayalı
-                alignItems: 'center',
-              }}
-            >
+            <Grid item xs={6} key={index} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
               <Card
                 style={{
-                  width: '90%',
-                  aspectRatio: '1/1', // Kare kutular
+                  width: '85%',
+                  aspectRatio: '1/1',
                   backgroundColor: item.bgColor,
                   color: '#333',
                   textAlign: 'center',
-                  borderRadius: 10,
+                  borderRadius: 8,
                   cursor: 'pointer',
-                  boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
+                  boxShadow: '0 3px 6px rgba(0,0,0,0.1)',
                   display: 'flex',
-                  alignItems: 'center',
                   justifyContent: 'center',
+                  alignItems: 'center',
                 }}
                 onClick={() => navigate(item.path)}
               >
-                <CardContent>
+                <CardContent style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                   <Box>{item.icon}</Box>
-                  <Typography variant="h6">{item.title}</Typography>
+                  <Typography variant="h6" style={{ fontSize: '14px', marginTop: '8px' }}>{item.title}</Typography>
                 </CardContent>
               </Card>
             </Grid>
           ))}
         </Grid>
+
+        {/* Duyurular Kartı */}
+        <Card
+          sx={{
+            marginTop: 4,
+            borderRadius: 2,
+            boxShadow: '0px 4px 10px rgba(0,0,0,0.1)',
+            padding: 2,
+            maxHeight: 300, // Scrollbar için maksimum yükseklik
+            overflowY: 'auto', // Scrollbar ekleme
+          }}
+        >
+          <CardContent>
+            <Typography
+              variant="h6"
+              sx={{ display: 'flex', alignItems: 'center', marginBottom: 2, color: '#333', fontWeight: 'bold' }}
+            >
+              <Badge badgeContent={unreadCount} color="error">
+                <NotificationsIcon sx={{ marginRight: 1, color: '#ff5722' }} />
+              </Badge>
+              Duyurular
+            </Typography>
+            {announcements.length > 0 ? (
+              announcements.map((announcement) => (
+                <Card
+                  key={announcement._id}
+                  sx={{
+                    marginBottom: 2,
+                    padding: 2,
+                    borderRadius: 2,
+                    boxShadow: '0px 2px 5px rgba(0,0,0,0.1)',
+                    cursor: 'pointer',
+                    backgroundColor: announcement.readBy.includes(JSON.parse(localStorage.getItem('user'))?._id)
+                      ? '#f0f0f0'
+                      : '#ffffff',
+                  }}
+                  onClick={() => handleOpen(announcement)}
+                >
+                  <Typography variant="subtitle1" fontWeight="bold">{announcement.title}</Typography>
+                  <Typography variant="body2">{announcement.content}</Typography>
+                  <IconButton
+                    color="error"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      hideAnnouncement(announcement._id);
+                    }}
+                  >
+                    <DeleteIcon />
+                  </IconButton>
+                </Card>
+              ))
+            ) : (
+              <Typography
+                variant="body2"
+                sx={{ color: '#888', fontStyle: 'italic', textAlign: 'center' }}
+              >
+                Henüz duyuru bulunmamaktadır.
+              </Typography>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Modal */}
+        <Modal open={open} onClose={handleClose} closeAfterTransition BackdropComponent={Backdrop} BackdropProps={{ timeout: 500 }}>
+          <Fade in={open}>
+            <Box
+              sx={{
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                bgcolor: 'background.paper',
+                boxShadow: 24,
+                p: 4,
+                borderRadius: 2,
+                maxWidth: 400,
+                width: '90%',
+              }}
+            >
+              <Typography variant="h6" fontWeight="bold" gutterBottom>
+                {selectedAnnouncement?.title}
+              </Typography>
+              <Typography variant="body2" color="textSecondary" gutterBottom>
+                {selectedAnnouncement?.content}
+              </Typography>
+              <Button variant="contained" color="primary" fullWidth onClick={handleClose}>
+                Kapat
+              </Button>
+            </Box>
+          </Fade>
+        </Modal>
       </Box>
     </Box>
   );

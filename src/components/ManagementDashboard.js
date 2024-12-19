@@ -9,12 +9,14 @@ const ManagementDashboard = () => {
     { title: 'Aidat Durumu', description: 'Aidat ödemelerini görüntüle', path: '/fee-management' },
     { title: 'Devamsızlık Durumu', description: 'Korist devamsızlıklarını işle', path: '/attendance-management' },
     { title: 'Konser ve Prova Takvimi', description: 'Etkinlik tarihlerini düzenle', path: '/calendar-management' },
+    { title: 'Duyuru Yönetimi', description: 'Duyuruları oluştur ve yönet', path: '/announcement-management' }, // Eklendi
+
   ];
 
   return (
     <Box p={3} bgcolor="#f5f5f5" minHeight="100vh">
       <Typography variant="h4" gutterBottom>
-        Yönetim Dashboard
+        Yönetim Paneli
       </Typography>
       <Grid container spacing={3}>
         {dashboardItems.map((item, index) => (

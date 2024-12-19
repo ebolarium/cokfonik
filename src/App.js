@@ -15,6 +15,8 @@ import AttendanceManagement from './components/AttendanceManagement';
 import CalendarManagement from './components/CalendarManagement';
 import FeeManagement from './components/FeeManagement';
 import Profile from './components/Profile';
+import AnnouncementManagement from './components/AnnouncementManagement';
+import AnnouncementsPage from './components/AnnouncementsPage';
 
 
 const App = () => {
@@ -24,9 +26,24 @@ const App = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userRole, setUserRole] = useState(''); // Kullanıcı rolü
   const [viewMode, setViewMode] = useState('korist'); // Başlangıçta korist görünümü
-
   const [showLoadingOnStart, setShowLoadingOnStart] = useState(true);
 
+  const fetchUnreadAnnouncements = async () => {
+    try {
+      const user = JSON.parse(localStorage.getItem('user'));
+      if (!user || !user._id) {
+        console.error('Kullanıcı bilgisi eksik. Oturum açılmamış olabilir.');
+        return 0;
+      }
+
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/announcements/unread/${user._id}`);
+      const data = await response.json();
+      return data.length;
+    } catch (error) {
+      console.error('Okunmamış duyurular alınamadı:', error);
+      return 0;
+    }
+  };
 
   // Oturum kontrolü ve yönlendirme
   useEffect(() => {
@@ -43,19 +60,17 @@ const App = () => {
       setUserRole(user.role); // Kullanıcı rolünü ayarla
     }
 
-        // Yalnızca girişte gösterilecek
-        if (showLoadingOnStart) {
-          const timer = setTimeout(() => {
-            setLoading(false);
-            setShowLoadingOnStart(false); // Tekrar loading göstermesin
-          }, 4000);
-    
-          return () => clearTimeout(timer);
-        } else {
-          setLoading(false); // Sonraki sayfalarda loading'i kapat
-        }
-      }, [location, navigate, showLoadingOnStart]);
+    if (showLoadingOnStart) {
+      const timer = setTimeout(() => {
+        setLoading(false);
+        setShowLoadingOnStart(false); // Tekrar loading göstermesin
+      }, 4000);
 
+      return () => clearTimeout(timer);
+    } else {
+      setLoading(false); // Sonraki sayfalarda loading'i kapat
+    }
+  }, [location, navigate, showLoadingOnStart]);
 
   // Switch işlemi sırasında uygun dashboard'a yönlendirme
   const handleSwitchView = () => {
@@ -82,11 +97,13 @@ const App = () => {
     if (viewMode === 'korist') {
       return (
         <>
-          <Route path="/user-dashboard" element={<UserDashboard />} />
+          <Route path="/user-dashboard" element={<UserDashboard fetchUnreadAnnouncements={fetchUnreadAnnouncements} />} />
           <Route path="/my-attendance" element={<MyAttendance />} />
           <Route path="/my-fees" element={<MyFees />} />
           <Route path="/calendar-view" element={<CalendarView />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/announcements" element={<AnnouncementsPage />} /> {/* Yeni rota */}
+
         </>
       );
     } else if (userRole === 'Master Admin') {
@@ -98,6 +115,8 @@ const App = () => {
           <Route path="/fee-management" element={<FeeManagement />} />
           <Route path="/users" element={<UserManagement />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/announcement-management" element={<AnnouncementManagement />} />
+          
         </>
       );
     } else if (userRole === 'Yönetim Kurulu') {
@@ -108,6 +127,7 @@ const App = () => {
           <Route path="/calendar-management" element={<CalendarManagement />} />
           <Route path="/fee-management" element={<FeeManagement />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/announcement-management" element={<AnnouncementManagement />} />
         </>
       );
     }
@@ -122,8 +142,9 @@ const App = () => {
           {showAppBar && (
             <CustomAppBar
               userName={JSON.parse(localStorage.getItem('user'))?.name}
-              onSwitchView={handleSwitchView} // Switch butonu
+              onSwitchView={handleSwitchView}
               viewMode={viewMode}
+              fetchUnreadAnnouncements={fetchUnreadAnnouncements} // Prop olarak geçiliyor
             />
           )}
           <Routes>

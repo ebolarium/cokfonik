@@ -32,6 +32,9 @@ app.use('/api/events', eventRoutes);
 // Statik Dosya Yolu
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+const announcementRoutes = require('./routes/announcementRoutes');
+app.use('/api/announcements', announcementRoutes);
+
 // Login Endpoint
 app.post('/api/login', async (req, res) => {
   const { email, password } = req.body;

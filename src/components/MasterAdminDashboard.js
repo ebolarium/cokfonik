@@ -10,6 +10,8 @@ const MasterAdminDashboard = () => {
     { title: 'Aidat Durumu', description: 'Aidat ödemelerini görüntüle', path: '/fee-management' },
     { title: 'Devamsızlık Durumu', description: 'Korist devamsızlıklarını işle', path: '/attendance-management' },
     { title: 'Konser ve Prova Takvimi', description: 'Etkinlik tarihlerini düzenle', path: '/calendar-management' },
+    { title: 'Duyuru Yönetimi', description: 'Duyuruları oluştur ve yönet', path: '/announcement-management' }, // Eklendi
+
   ];
 
   return (

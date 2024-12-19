@@ -1,10 +1,40 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AppBar, Toolbar, Typography, IconButton, Menu, MenuItem, Badge } from '@mui/material';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import MenuIcon from '@mui/icons-material/Menu';
 
 const CustomAppBar = ({ userName, viewMode }) => {
   const [anchorEl, setAnchorEl] = useState(null);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  const fetchUnreadAnnouncements = async () => {
+    try {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/announcements`);
+      const data = await response.json();
+
+      const user = JSON.parse(localStorage.getItem('user'));
+      const unreadAnnouncements = data.filter(
+        (announcement) => !announcement.readBy.includes(user._id)
+      );
+      setUnreadCount(unreadAnnouncements.length);
+      console.log("Okunmamış duyuru sayısı güncellendi:", unreadAnnouncements.length);
+    } catch (error) {
+      console.error('Okunmamış duyurular alınamadı:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchUnreadAnnouncements(); // İlk yükleme sırasında çağırılıyor
+  }, []);
+
+  useEffect(() => {
+    console.log("Okunmamış duyuru dinleyicisi eklendi");
+    window.addEventListener('updateUnreadCount', fetchUnreadAnnouncements);
+    return () => {
+      console.log("Okunmamış duyuru dinleyicisi kaldırıldı");
+      window.removeEventListener('updateUnreadCount', fetchUnreadAnnouncements);
+    };
+  }, []);
 
   const handleMenuOpen = (event) => {
     setAnchorEl(event.currentTarget);
@@ -25,7 +55,7 @@ const CustomAppBar = ({ userName, viewMode }) => {
       position="sticky"
       sx={{
         backgroundColor: viewMode === 'korist' ? '#ff5722' : '#283593', // Korist için turuncu, Yönetici için lacivert
-         borderBottom: viewMode === 'korist'
+        borderBottom: viewMode === 'korist'
           ? '4px solid #bf360c' // Korist için koyu turuncu çerçeve
           : '4px solid #1a237e', // Yönetici için koyu lacivert çerçeve
         transition: 'all 0.3s ease', // Yumuşak geçiş efekti
@@ -36,7 +66,7 @@ const CustomAppBar = ({ userName, viewMode }) => {
           Hoş Geldin, {userName || 'Misafir'}
         </Typography>
         <IconButton color="inherit">
-          <Badge badgeContent={1} color="error">
+          <Badge badgeContent={unreadCount} color="error">
             <NotificationsIcon />
           </Badge>
         </IconButton>
