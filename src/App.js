@@ -18,6 +18,7 @@ import Profile from './components/Profile';
 import AnnouncementManagement from './components/AnnouncementManagement';
 import AnnouncementsPage from './components/AnnouncementsPage';
 import Game from "./components/Game";
+import Game2 from "./components/Game2";
 
 
 
@@ -106,6 +107,7 @@ const App = () => {
           <Route path="/profile" element={<Profile />} />
           <Route path="/announcements" element={<AnnouncementsPage />} /> {/* Yeni rota */}
           <Route path="/game" element={<Game />} />
+          <Route path="/game2" element={<Game2 />} />
 
 
         </>

@@ -5,7 +5,6 @@ const Score = require('../models/Score');
 // En yüksek puanları getir
 router.get('/top', async (req, res) => {
   try {
-    console.log('Starting /top endpoint');
     const topScores = await Score.aggregate([
       {
         $group: {
@@ -34,7 +33,6 @@ router.get('/top', async (req, res) => {
       { $limit: 10 },
     ]);
 
-    console.log('Aggregated top scores:', topScores);
 
     res.status(200).json(topScores);
   } catch (error) {

@@ -18,6 +18,8 @@ import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import MusicNoteIcon from '@mui/icons-material/MusicNote';
 import LibraryMusicIcon from '@mui/icons-material/LibraryMusic'; // Yeni ikon
+import HearingIcon from '@mui/icons-material/Hearing';
+
 
 const UserDashboard = () => {
   const navigate = useNavigate();
@@ -136,6 +138,12 @@ const UserDashboard = () => {
       icon: <LibraryMusicIcon style={{ fontSize: 50 }} />,
       bgColor: '#e6e6ff', // Yeni kart rengi
     },
+    {
+      title: 'Oyun 2',
+      path: '/game2',
+      icon: <HearingIcon style={{ fontSize: 50 }} />,
+      bgColor: '#a6a6ff',
+    }
   ];
 
   return (
