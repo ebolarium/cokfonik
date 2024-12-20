@@ -132,7 +132,7 @@ const UserDashboard = () => {
     },
     {
       title: 'Nota/Midi',
-      path: '/notes-midi',
+      link: 'https://drive.google.com/drive/folders/1paeqvHKubfoUEwh9v-4zjL64E0eBHf5r?usp=sharing',
       icon: <LibraryMusicIcon style={{ fontSize: 50 }} />,
       bgColor: '#e6e6ff', // Yeni kart rengi
     },
@@ -168,8 +168,13 @@ const UserDashboard = () => {
                   justifyContent: 'center',
                   alignItems: 'center',
                 }}
-                onClick={() => navigate(item.path)}
-              >
+                onClick={() => {
+                  if (item.link) {
+                    window.open(item.link, '_blank');
+                  } else {
+                    navigate(item.path);
+                  }
+                }}              >
                 <CardContent
                   style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}
                 >
