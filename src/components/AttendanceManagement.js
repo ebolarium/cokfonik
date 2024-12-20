@@ -177,7 +177,7 @@ const AttendanceManagement = () => {
       overflowY: 'auto',
       display: 'flex',
       flexDirection: 'column',
-      marginTop: '64px', // AppBar yüksekliğine göre ayarla
+      marginTop: '16px', // AppBar yüksekliğine göre ayarla
       marginBottom: '64px', // BottomNav yüksekliğine göre ayarla
     }}
   >

@@ -15,8 +15,16 @@ const MasterAdminDashboard = () => {
   ];
 
   return (
-    <Box p={3} bgcolor="#f5f5f5" minHeight="100vh">
-      <Typography variant="h5" gutterBottom align='center'>
+    <Box 
+    p={3} 
+    bgcolor="#f5f5f5" 
+    minHeight="100vh"
+    sx={{
+      height: 'calc(100vh - 64px - 64px)', // Toplam ekran yüksekliğinden AppBar ve BottomNav yüksekliğini çıkar
+      overflowY: 'auto'
+    }}
+  >
+          <Typography variant="h5" gutterBottom align='center'>
         Admin Panel
       </Typography>
       <Grid container spacing={3}>

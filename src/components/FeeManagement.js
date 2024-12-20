@@ -143,6 +143,8 @@ const FeeManagement = () => {
       overflowY: 'auto',
       display: 'flex',
       flexDirection: 'column',
+      marginBottom: '64px', // BottomNav yüksekliğine göre ayarla
+
     }}
   >
     <Typography variant="h5" sx={{ mb: 2, textAlign: 'center' }}>
