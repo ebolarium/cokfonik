@@ -17,7 +17,6 @@ const CustomAppBar = ({ userName, viewMode }) => {
         (announcement) => !announcement.readBy.includes(user._id)
       );
       setUnreadCount(unreadAnnouncements.length);
-      console.log("Okunmamış duyuru sayısı güncellendi:", unreadAnnouncements.length);
     } catch (error) {
       console.error('Okunmamış duyurular alınamadı:', error);
     }
@@ -28,10 +27,8 @@ const CustomAppBar = ({ userName, viewMode }) => {
   }, []);
 
   useEffect(() => {
-    console.log("Okunmamış duyuru dinleyicisi eklendi");
     window.addEventListener('updateUnreadCount', fetchUnreadAnnouncements);
     return () => {
-      console.log("Okunmamış duyuru dinleyicisi kaldırıldı");
       window.removeEventListener('updateUnreadCount', fetchUnreadAnnouncements);
     };
   }, []);
@@ -65,11 +62,7 @@ const CustomAppBar = ({ userName, viewMode }) => {
         <Typography variant="h6" sx={{ flexGrow: 1 }}>
           Hoş Geldin, {userName || 'Misafir'}
         </Typography>
-        <IconButton color="inherit">
-          <Badge badgeContent={unreadCount} color="error">
-            <NotificationsIcon />
-          </Badge>
-        </IconButton>
+        
         <IconButton edge="end" color="inherit" onClick={handleMenuOpen}>
           <MenuIcon />
         </IconButton>

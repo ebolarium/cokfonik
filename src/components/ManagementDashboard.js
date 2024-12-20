@@ -1,16 +1,39 @@
 import React from 'react';
 import { Box, Typography, Grid, Card, CardContent } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
+import PaymentsIcon from '@mui/icons-material/Payments';
+import PersonOffIcon from '@mui/icons-material/PersonOff';
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
+import CampaignIcon from '@mui/icons-material/Campaign';
 
 const ManagementDashboard = () => {
   const navigate = useNavigate();
 
   const dashboardItems = [
-    { title: 'Aidat Durumu', description: 'Aidat ödemelerini görüntüle', path: '/fee-management' },
-    { title: 'Devamsızlık Durumu', description: 'Korist devamsızlıklarını işle', path: '/attendance-management' },
-    { title: 'Konser ve Prova Takvimi', description: 'Etkinlik tarihlerini düzenle', path: '/calendar-management' },
-    { title: 'Duyuru Yönetimi', description: 'Duyuruları oluştur ve yönet', path: '/announcement-management' }, // Eklendi
-
+    {
+      title: 'Aidat Durumu',
+      description: 'Aidat ödemelerini ekle/görüntüle',
+      path: '/fee-management',
+      icon: <PaymentsIcon />,
+    },
+    {
+      title: 'Devamsızlık Durumu',
+      description: 'Korist devamsızlıklarını işle',
+      path: '/attendance-management',
+      icon: <PersonOffIcon />,
+    },
+    {
+      title: 'Konser ve Prova Takvimi',
+      description: 'Etkinlik tarihlerini gir',
+      path: '/calendar-management',
+      icon: <CalendarMonthIcon />,
+    },
+    {
+      title: 'Duyuru Yönetimi',
+      description: 'Duyuruları oluştur ve yönet',
+      path: '/announcement-management',
+      icon: <CampaignIcon />,
+    },
   ];
 
   return (
@@ -31,7 +54,12 @@ const ManagementDashboard = () => {
               onClick={() => navigate(item.path)}
             >
               <CardContent>
-                <Typography variant="h6">{item.title}</Typography>
+                <Box display="flex" alignItems="center" mb={1}>
+                  {item.icon}
+                  <Typography variant="h6" sx={{ ml: 1 }}>
+                    {item.title}
+                  </Typography>
+                </Box>
                 <Typography variant="body2" color="textSecondary">
                   {item.description}
                 </Typography>

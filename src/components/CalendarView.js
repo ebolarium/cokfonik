@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Card, Typography, Modal, Backdrop, Fade, List, ListItem, ListItemText } from '@mui/material';
+import { Box, Card, Typography, Modal, Backdrop, Fade, List, ListItem, ListItemText, ListItemButton, Button } from '@mui/material';
 
 const CalendarView = () => {
   const [events, setEvents] = useState([]);
-  const [selectedEvent, setSelectedEvent] = useState(null); // Modal için seçilen etkinlik
-  const [open, setOpen] = useState(false); // Modal durumu
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [open, setOpen] = useState(false);
+
+  const [currentDate, setCurrentDate] = useState(new Date()); // Eklendi
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -14,9 +16,9 @@ const CalendarView = () => {
         setEvents(
           data.map((event) => ({
             title: event.title,
-            description: event.details, // Detaylar için doğru alan
+            description: event.details,
             date: new Date(event.date),
-            type: event.type, // Etkinlik tipi
+            type: event.type,
           }))
         );
       } catch (error) {
@@ -32,26 +34,42 @@ const CalendarView = () => {
   };
 
   const generateCalendarDays = () => {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = now.getMonth();
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
     const days = [];
     const totalDays = daysInMonth(year, month);
 
     for (let day = 1; day <= totalDays; day++) {
-      const currentDate = new Date(year, month, day);
+      const currentDateObj = new Date(year, month, day);
       const event = events.find(
-        (event) => event.date.toDateString() === currentDate.toDateString()
+        (event) => event.date.toDateString() === currentDateObj.toDateString()
       );
 
       days.push({
-        date: currentDate,
+        date: currentDateObj,
         hasEvent: !!event,
         event: event,
       });
     }
 
-    return days;
+    return { days, month, year };
+  };
+
+  const { days, month, year } = generateCalendarDays();
+
+  const monthNames = [
+    'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
+    'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık',
+  ];
+
+  const handlePrevMonth = () => {
+    const prevMonthDate = new Date(year, month - 1, 1);
+    setCurrentDate(prevMonthDate);
+  };
+
+  const handleNextMonth = () => {
+    const nextMonthDate = new Date(year, month + 1, 1);
+    setCurrentDate(nextMonthDate);
   };
 
   const handleDayClick = (day) => {
@@ -71,123 +89,119 @@ const CalendarView = () => {
     setSelectedEvent(null);
   };
 
-  const days = generateCalendarDays();
   const upcomingEvents = events
     .filter((event) => event.date > new Date())
-    .slice(0, 4); // Sonraki 4 etkinliği al
+    .slice(0, 4);
 
   return (
-<Box minHeight="100vh" bgcolor="#f9f9f9" p={2}>
-  {/* Takvim Kartı */}
-  <Card
-    sx={{
-      padding: 2,
-      margin: '0 auto', // Ortalıyor
-      maxWidth: '100%', // Ekran genişliğini aşmasını engelliyor
-      textAlign: 'center',
-      boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-    }}
-  >
-    <Typography variant="h6" gutterBottom>
-      Takvim
-    </Typography>
-    <Box
-      display="grid"
-      sx={{
-        gridTemplateColumns: 'repeat(7, 1fr)', // Sabit 7 sütun
-        gap: 1,
-        marginTop: 2,
-        overflowX: 'auto', // Taşma durumunda yatay kaydırma sağlar
-        paddingX: 1, // Küçük ekranlarda ekstra padding
-      }}
-    >
-      {/* Haftanın günleri */}
-      {['Pzr', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'].map((day, index) => (
-        <Typography
-          key={index}
-          variant="body2"
-          sx={{
-            textAlign: 'center',
-            fontWeight: 'bold',
-            fontSize: { xs: '0.75rem', md: '0.85rem' }, // Küçük ekranlarda yazı boyutunu küçült
-          }}
-        >
-          {day}
-        </Typography>
-      ))}
-      {/* Günler */}
-      {days.map((day, index) => (
-        <Box
-          key={index}
-          onClick={() => handleDayClick(day)}
-          sx={{
-            backgroundColor: day.hasEvent
-              ? day.event.type === 'Konser'
-                ? '#ffe6e6' // Konser için kırmızımsı renk
-                : '#e6ffe6' // Diğer etkinlikler için yeşilimsi renk
-              : '#f9f9f9',
-            color: day.hasEvent ? '#000' : '#ccc',
-            border: '1px solid #ddd',
-            borderRadius: '8px',
-            padding: { xs: '4px', sm: '8px' }, // Küçük ekranlarda daha az padding
-            textAlign: 'center',
-            fontSize: { xs: '0.8rem', sm: '0.9rem' }, // Küçük ekranlarda yazı boyutunu küçült
-            cursor: day.hasEvent ? 'pointer' : 'default',
-            minWidth: 0, // Taşmayı engelle
-          }}
-        >
-          {day.date.getDate()}
-        </Box>
-      ))}
-    </Box>
-  </Card>
-
-
-      {/* Sonraki 4 Etkinlik */}
-      <Card style={{ padding: '15px', textAlign: 'center' }}>
-  <Typography variant="h6" gutterBottom>
-    Sonraki Etkinlikler
-  </Typography>
-  <List dense>
-    {upcomingEvents.map((event, index) => (
-      <ListItem
-        key={index}
-        button
-        onClick={() => handleEventClick(event)}
+    <Box minHeight="100vh" bgcolor="#f9f9f9" p={2}>
+      <Card
         sx={{
-          padding: '4px 8px', // Varsayılan padding azaltıldı
-          marginBottom: '0', // Alt boşluk tamamen kaldırıldı
-          lineHeight: 1.2, // Satır yüksekliği azaltıldı
-          '&.MuiListItem-root': {
-            minHeight: 'unset', // Varsayılan minimum yükseklik kaldırıldı
-          },
+          padding: 2,
+          margin: '0 auto',
+          maxWidth: '100%',
+          textAlign: 'center',
+          boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
         }}
-        className="custom-list-item"
       >
+        <Box display="flex" justifyContent="center" alignItems="center">
+          <Button onClick={handlePrevMonth}>{'←'}</Button>
+          <Typography variant="h6" gutterBottom sx={{ marginX: 2 }}>
+            {monthNames[month]} {year}
+          </Typography>
+          <Button onClick={handleNextMonth}>{'→'}</Button>
+        </Box>
+        <Box
+          display="grid"
+          sx={{
+            gridTemplateColumns: 'repeat(7, 1fr)',
+            gap: 1,
+            marginTop: 2,
+            overflowX: 'auto',
+            paddingX: 1,
+          }}
+        >
+          {['Pzr', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'].map((day, index) => (
+            <Typography
+              key={index}
+              variant="body2"
+              sx={{
+                textAlign: 'center',
+                fontWeight: 'bold',
+                fontSize: { xs: '0.75rem', md: '0.85rem' },
+              }}
+            >
+              {day}
+            </Typography>
+          ))}
+
+          {days.map((day, index) => (
+            <Box
+              key={index}
+              onClick={() => handleDayClick(day)}
+              sx={{
+                backgroundColor: day.hasEvent
+                  ? day.event.type === 'Konser'
+                    ? '#ffe6e6'
+                    : '#e6ffe6'
+                  : '#f9f9f9',
+                color: day.hasEvent ? '#000' : '#ccc',
+                border: '1px solid #ddd',
+                borderRadius: '8px',
+                padding: { xs: '4px', sm: '8px' },
+                textAlign: 'center',
+                fontSize: { xs: '0.8rem', sm: '0.9rem' },
+                cursor: day.hasEvent ? 'pointer' : 'default',
+                minWidth: 0,
+              }}
+            >
+              {day.date.getDate()}
+            </Box>
+          ))}
+        </Box>
+      </Card>
+
+      <Card style={{ padding: '15px', textAlign: 'center', marginTop: '20px' }}>
+        <Typography variant="h6" gutterBottom>
+          Sonraki Etkinlikler
+        </Typography>
+        <List dense>
+          {upcomingEvents.map((event, index) => (
+      <ListItem
+      key={index}
+      sx={{
+        padding: '4px 8px',
+        marginBottom: '0',
+        lineHeight: 1.2,
+        '&.MuiListItem-root': {
+          minHeight: 'unset',
+        },
+      }}
+      className="custom-list-item"
+    >
+      <ListItemButton onClick={() => handleEventClick(event)}>
         <ListItemText
           primary={event.title}
           secondary={`Tarih: ${event.date.toLocaleDateString('tr-TR')}`}
           primaryTypographyProps={{
-            style: { fontSize: '0.9rem', lineHeight: 1.2 }, // Yazı boyutu küçültüldü
+            style: { fontSize: '0.9rem', lineHeight: 1.2 },
           }}
           secondaryTypographyProps={{
-            style: { fontSize: '0.8rem', color: '#666', lineHeight: 1.2 }, // Alt yazı boyutu ve satır yüksekliği
+            style: { fontSize: '0.8rem', color: '#666', lineHeight: 1.2 },
           }}
-          className="custom-list-item-text"
         />
-      </ListItem>
-    ))}
-    {upcomingEvents.length === 0 && (
-      <Typography variant="body2" color="textSecondary">
-        Yaklaşan etkinlik bulunmamaktadır.
-      </Typography>
-    )}
-  </List>
-</Card>
+      </ListItemButton>
+    </ListItem>
+    
+          ))}
+          {upcomingEvents.length === 0 && (
+            <Typography variant="body2" color="textSecondary">
+              Yaklaşan etkinlik bulunmamaktadır.
+            </Typography>
+          )}
+        </List>
+      </Card>
 
-
-
-      {/* Modal */}
       <Modal
         open={open}
         onClose={handleClose}

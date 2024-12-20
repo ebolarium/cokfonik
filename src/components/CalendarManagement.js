@@ -13,6 +13,8 @@ const CalendarManagement = () => {
     details: '',
   });
 
+  const [currentDate, setCurrentDate] = useState(new Date()); // Eklendi
+
   const fetchEvents = async () => {
     try {
       const response = await fetch(`${process.env.REACT_APP_API_URL}/events`);
@@ -105,18 +107,17 @@ const CalendarManagement = () => {
   const daysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
 
   const generateCalendarDays = () => {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = now.getMonth();
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
     const days = [];
     const totalDays = daysInMonth(year, month);
 
     for (let day = 1; day <= totalDays; day++) {
-      const currentDate = new Date(year, month, day);
-      const event = events.find(e => e.date.toDateString() === currentDate.toDateString());
+      const currentDateObj = new Date(year, month, day);
+      const event = events.find(e => e.date.toDateString() === currentDateObj.toDateString());
 
       days.push({
-        date: currentDate,
+        date: currentDateObj,
         hasEvent: !!event,
         event,
       });
@@ -132,15 +133,30 @@ const CalendarManagement = () => {
     'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık',
   ];
 
+  const handlePrevMonth = () => {
+    const prevMonthDate = new Date(year, month - 1, 1);
+    setCurrentDate(prevMonthDate);
+  };
+
+  const handleNextMonth = () => {
+    const nextMonthDate = new Date(year, month + 1, 1);
+    setCurrentDate(nextMonthDate);
+  };
+
   return (
     <Box minHeight="100vh" bgcolor="#f9f9f9" p={3}>
       <Typography variant="h4" gutterBottom>Takvim Yönetimi</Typography>
-      <Typography
-        variant="h5"
-        sx={{ textAlign: 'center', marginBottom: '20px', color: '#333', fontWeight: 'bold' }}
-      >
-        {monthNames[month]} {year}
-      </Typography>
+      <Box display="flex" justifyContent="center" alignItems="center" marginBottom="20px">
+        <Button onClick={handlePrevMonth}>{'←'}</Button>
+        <Typography
+          variant="h5"
+          sx={{ textAlign: 'center', margin: '0 20px', color: '#333', fontWeight: 'bold' }}
+        >
+          {monthNames[month]} {year}
+        </Typography>
+        <Button onClick={handleNextMonth}>{'→'}</Button>
+      </Box>
+
       <Box
         sx={{
           border: '2px solid #ddd',
@@ -150,16 +166,15 @@ const CalendarManagement = () => {
           margin: '0 auto',
         }}
       >
-<Box
-  display="grid"
-  sx={{
-    gridTemplateColumns: 'repeat(7, 1fr)', // 7 sütunlu düzen
-    gap: 1, // Hücreler arası boşluk
-    marginTop: '15px', // Yukarıdan boşluk
-    overflowX: 'auto', // Yatay taşma için kaydırma
-  }}
->
-
+        <Box
+          display="grid"
+          sx={{
+            gridTemplateColumns: 'repeat(7, 1fr)',
+            gap: 1,
+            marginTop: '15px',
+            overflowX: 'auto',
+          }}
+        >
           {['Pzr', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'].map((day, index) => (
             <Typography
               key={index}
@@ -198,7 +213,6 @@ const CalendarManagement = () => {
         </Box>
       </Box>
 
-      {/* Modal */}
       <Modal
         open={openModal}
         onClose={handleCloseModal}
@@ -207,22 +221,22 @@ const CalendarManagement = () => {
         BackdropProps={{ timeout: 500 }}
       >
         <Fade in={openModal}>
-        <Box
-      sx={{
-        position: 'absolute',
-        top: '50%',
-        left: '50%',
-        transform: 'translate(-50%, -50%)', // Ortalar
-        width: { xs: '90%', sm: '80%', md: '60%' }, // Responsive genişlik
-        maxWidth: '600px', // Maksimum genişlik sınırı
-        bgcolor: 'background.paper', // Tema ile uyumlu arka plan
-        borderRadius: '8px', // Köşeleri yuvarlatır
-        boxShadow: 24, // Hafif gölge
-        p: 4, // İç boşluk
-        overflowY: 'auto', // İçerik taşarsa kaydırma
-        maxHeight: '80vh', // Modal ekranın %80'ini geçmez
-      }}
-    >
+          <Box
+            sx={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: { xs: '90%', sm: '80%', md: '60%' },
+              maxWidth: '600px',
+              bgcolor: 'background.paper',
+              borderRadius: '8px',
+              boxShadow: 24,
+              p: 4,
+              overflowY: 'auto',
+              maxHeight: '80vh',
+            }}
+          >
             <Typography variant="h6" gutterBottom>
               {selectedEvent ? 'Etkinliği Düzenle' : 'Yeni Etkinlik'}
             </Typography>

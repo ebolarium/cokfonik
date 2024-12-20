@@ -10,7 +10,6 @@ import {
   Backdrop,
   Fade,
   Button,
-  IconButton,
   Badge,
 } from '@mui/material';
 import EventNoteIcon from '@mui/icons-material/EventNote';
@@ -18,7 +17,7 @@ import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import MusicNoteIcon from '@mui/icons-material/MusicNote';
-
+import LibraryMusicIcon from '@mui/icons-material/LibraryMusic'; // Yeni ikon
 
 const UserDashboard = () => {
   const navigate = useNavigate();
@@ -129,19 +128,33 @@ const UserDashboard = () => {
       title: 'Oyun',
       path: '/game',
       icon: <MusicNoteIcon style={{ fontSize: 50 }} />,
-      bgColor: '#e6f7ff', // Farklı bir renk ekledim
-    }
-
-
+      bgColor: '#e6f7ff',
+    },
+    {
+      title: 'Nota/Midi',
+      path: '/notes-midi',
+      icon: <LibraryMusicIcon style={{ fontSize: 50 }} />,
+      bgColor: '#e6e6ff', // Yeni kart rengi
+    },
   ];
 
   return (
-<Box minHeight="100vh" bgcolor="#f9f9f9">
+    <Box minHeight="100vh" bgcolor="#f9f9f9">
       <Box p={3}>
         <Grid container spacing={3}>
           {dashboardItems.map((item, index) => (
-            <Grid item xs={6} key={index} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: '16px' }}>
-            <Card
+            <Grid
+              item
+              xs={6}
+              key={index}
+              style={{
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                marginBottom: '16px',
+              }}
+            >
+              <Card
                 style={{
                   width: '85%',
                   aspectRatio: '1/1',
@@ -157,19 +170,27 @@ const UserDashboard = () => {
                 }}
                 onClick={() => navigate(item.path)}
               >
-                <CardContent style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <CardContent
+                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}
+                >
                   <Box>{item.icon}</Box>
-                  <Typography variant="h6" style={{ fontSize: '14px', marginTop: '8px' }}>{item.title}</Typography>
+                  <Typography variant="h6" style={{ fontSize: '14px', marginTop: '8px' }}>
+                    {item.title}
+                  </Typography>
                 </CardContent>
               </Card>
             </Grid>
           ))}
         </Grid>
 
-
-
         {/* Modal */}
-        <Modal open={open} onClose={handleClose} closeAfterTransition BackdropComponent={Backdrop} BackdropProps={{ timeout: 500 }}>
+        <Modal
+          open={open}
+          onClose={handleClose}
+          closeAfterTransition
+          BackdropComponent={Backdrop}
+          BackdropProps={{ timeout: 500 }}
+        >
           <Fade in={open}>
             <Box
               sx={{
