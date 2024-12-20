@@ -150,12 +150,11 @@ const AttendanceManagement = () => {
         gap={0.5}
         flexWrap="nowrap"
         sx={{
-          marginTop: '64px', // AppBar yüksekliğine göre ayarla
-          marginBottom: '64px', // BottomNav yüksekliğine göre ayarla
-
           overflowX: 'auto',
           paddingBottom: '8px',
           '::-webkit-scrollbar': { display: 'none' },
+
+          
         }}
       >
         {userAttendances.map((attendance) => (
@@ -178,6 +177,8 @@ const AttendanceManagement = () => {
       overflowY: 'auto',
       display: 'flex',
       flexDirection: 'column',
+      marginTop: '64px', // AppBar yüksekliğine göre ayarla
+      marginBottom: '64px', // BottomNav yüksekliğine göre ayarla
     }}
   >
     <Typography variant="h5" sx={{ mb: 2, textAlign: 'center' }}>
