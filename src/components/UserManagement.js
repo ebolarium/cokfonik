@@ -95,7 +95,13 @@ const UserManagement = () => {
   };
 
   return (
-    <Box p={2}>
+    <Box p={2}
+    sx={{
+      marginTop: '64px', // AppBar yüksekliğine göre ayarla
+      marginBottom: '64px', // BottomNav yüksekliğine göre ayarla
+      overflow: 'auto' // Gerekirse kaydırma
+    }}
+  >
       <Typography variant="h5" gutterBottom align='center'>Kullanıcı Yönetimi</Typography>
       <Button variant="contained" color="primary" onClick={() => setOpen(true)}>
         Yeni Kullanıcı Ekle
