@@ -4,6 +4,15 @@ import { Box, Typography, Button, Modal, Paper } from "@mui/material";
 import Soundfont from "soundfont-player";
 
 const notes = ["C4", "D4", "E4", "F4", "G4", "A4", "B4"];
+const noteNames = {
+  C4: "Do",
+  D4: "Re",
+  E4: "Mi",
+  F4: "Fa",
+  G4: "Sol",
+  A4: "La",
+  B4: "Si"
+};
 
 const IntervalGame = () => {
   const [piano, setPiano] = useState(null);
@@ -15,7 +24,6 @@ const IntervalGame = () => {
   const [openScoreboard, setOpenScoreboard] = useState(false);
   const [gameActive, setGameActive] = useState(false);
 
-  // Piyano seslerini yükle
   useEffect(() => {
     const audioContext = new (window.AudioContext || window.webkitAudioContext)();
     Soundfont.instrument(audioContext, "acoustic_grand_piano").then((p) => {
@@ -26,7 +34,6 @@ const IntervalGame = () => {
   const playInterval = () => {
     if (!piano) return;
     setMessage("");
-    // İlk nota: C4 (Do)
     piano.play("C4", 0, { duration: 1 });
     setTimeout(() => {
       const randomNote = notes[Math.floor(Math.random() * notes.length)];
@@ -37,20 +44,16 @@ const IntervalGame = () => {
 
   const checkAnswer = (guess) => {
     if (!gameActive) return;
-    
     if (guess === currentNote) {
       setMessage("Doğru! 🎉");
       setScore((prev) => prev + 5);
     } else {
       setMessage("Yanlış! ❌");
     }
-  
-    // Doğru ya da yanlış olsun, 1 saniye sonra yeni notalar çal
     setTimeout(() => {
       playInterval();
     }, 1000);
   };
-  
 
   const fetchTopScores = async () => {
     try {
@@ -63,7 +66,7 @@ const IntervalGame = () => {
   };
 
   const saveScore = useCallback(async () => {
-    const user = JSON.parse(localStorage.getItem("user")); // Kullanıcı bilgileri
+    const user = JSON.parse(localStorage.getItem("user"));
     if (!user) return;
     try {
       const response = await fetch(`${process.env.REACT_APP_API_URL}/scores`, {
@@ -72,7 +75,6 @@ const IntervalGame = () => {
         body: JSON.stringify({ userId: user._id, score }),
       });
       if (response.ok) {
-        console.log("Skor başarıyla kaydedildi!");
         fetchTopScores();
       } else {
         console.error("Skor kaydedilirken hata oluştu.");
@@ -111,7 +113,7 @@ const IntervalGame = () => {
       marginTop="0px"
     >
       <Typography variant="h4" gutterBottom textAlign="center">
-        Interval Oyunu
+        Oyun 2
       </Typography>
       <Button
         variant="outlined"
@@ -169,7 +171,7 @@ const IntervalGame = () => {
             }}
             onClick={() => checkAnswer(n)}
           >
-            {n}
+            {noteNames[n]}
           </Button>
         ))}
       </Box>

@@ -150,6 +150,9 @@ const AttendanceManagement = () => {
         gap={0.5}
         flexWrap="nowrap"
         sx={{
+          marginTop: '64px', // AppBar yüksekliğine göre ayarla
+          marginBottom: '64px', // BottomNav yüksekliğine göre ayarla
+
           overflowX: 'auto',
           paddingBottom: '8px',
           '::-webkit-scrollbar': { display: 'none' },
