@@ -2,43 +2,49 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Box, Typography, Button, Modal, Paper } from "@mui/material";
 import { Renderer, Stave, StaveNote, Voice, Formatter } from "vexflow";
 
-
 const Game = () => {
-  const [currentNote, setCurrentNote] = useState("c/4"); // Başlangıç notası
+  const [currentNote, setCurrentNote] = useState("c/4"); 
+  const [currentGroup, setCurrentGroup] = useState("Do"); 
   const [message, setMessage] = useState("");
-  const [score, setScore] = useState(0); // Skor
-  const [timeLeft, setTimeLeft] = useState(60); // 1 dakikalık süre
-  const [topScores, setTopScores] = useState([]); // En yüksek skorlar
-  const [openModal, setOpenModal] = useState(false); // Modal durumu
-  const [openScoreboard, setOpenScoreboard] = useState(false); // Skorboard modalı
-  const [previousNote, setPreviousNote] = useState(null); // Önceki notayı saklamak için
+  const [score, setScore] = useState(0); 
+  const [timeLeft, setTimeLeft] = useState(60); 
+  const [topScores, setTopScores] = useState([]); 
+  const [openModal, setOpenModal] = useState(false); 
+  const [openScoreboard, setOpenScoreboard] = useState(false); 
+  const [previousNote, setPreviousNote] = useState(null); 
 
-  const notes = [
-    { name: "c/4", display: "Do" },
-    { name: "d/4", display: "Re" },
-    { name: "e/4", display: "Mi" },
-    { name: "f/4", display: "Fa" },
-    { name: "g/4", display: "Sol" },
-    { name: "a/4", display: "La" },
-    { name: "b/4", display: "Si" },
+  // 2 oktavlık notaları gruplu şekilde tutuyoruz
+  const noteGroups = [
+    { name: "Do", variants: ["c/4", "c/5"] },
+    { name: "Re", variants: ["d/4", "d/5"] },
+    { name: "Mi", variants: ["e/4", "e/5"] },
+    { name: "Fa", variants: ["f/4", "f/5"] },
+    { name: "Sol", variants: ["g/4", "g/5"] },
+    { name: "La", variants: ["a/4", "a/5"] },
+    { name: "Si", variants: ["b/4", "b/5"] },
   ];
 
   // Yeni bir rastgele nota üret
   const generateNewNote = () => {
-    let randomNote;
+    let randomGroup, randomVariant;
     do {
-      randomNote = notes[Math.floor(Math.random() * notes.length)];
-    } while (randomNote.name === previousNote); // Aynı notayı seçmemek için kontrol
-  
-    setCurrentNote(randomNote.name); // Yeni notayı güncelle
-    setPreviousNote(randomNote.name); // Önceki notayı güncelle
+      randomGroup = noteGroups[Math.floor(Math.random() * noteGroups.length)];
+      randomVariant =
+        randomGroup.variants[
+          Math.floor(Math.random() * randomGroup.variants.length)
+        ];
+    } while (randomVariant === previousNote);
+
+    setCurrentNote(randomVariant);
+    setCurrentGroup(randomGroup.name);
+    setPreviousNote(randomVariant);
     setMessage("Doğru! 🎉");
   };
 
-  // Kullanıcının cevabını kontrol et
-  const checkAnswer = (selectedNote) => {
+  // Kullanıcının cevabını kontrol et (oktavdan bağımsız kontrol)
+  const checkAnswer = (selectedGroup) => {
     if (timeLeft > 0) {
-      if (selectedNote === currentNote) {
+      if (selectedGroup === currentGroup) {
         setMessage("Doğru! 🎉");
         setScore((prevScore) => prevScore + 1);
         generateNewNote();
@@ -51,10 +57,9 @@ const Game = () => {
   // Porteyi ve notayı çiz
   useEffect(() => {
     const VF = { Renderer, Stave, StaveNote, Voice, Formatter };
-
-    // VexFlow Renderer oluştur
     const div = document.getElementById("music-port");
-    div.innerHTML = ""; // Eski çizimleri temizle
+    if (!div) return;
+    div.innerHTML = "";
     const renderer = new VF.Renderer(div, VF.Renderer.Backends.SVG);
     renderer.resize(300, 150);
 
@@ -62,7 +67,6 @@ const Game = () => {
     const stave = new VF.Stave(10, 40, 280);
     stave.addClef("treble").setContext(context).draw();
 
-    // Nota oluştur ve porte üzerinde çiz
     const staveNote = new VF.StaveNote({
       clef: "treble",
       keys: [currentNote],
@@ -78,11 +82,11 @@ const Game = () => {
     voice.draw(context, stave);
   }, [currentNote]);
 
-
+  // Skoru kaydet
   const saveScore = useCallback(async () => {
-    const user = JSON.parse(localStorage.getItem("user")); // Kullanıcı bilgileri
+    const user = JSON.parse(localStorage.getItem("user")); 
     if (!user) return;
-  
+
     try {
       const response = await fetch(`${process.env.REACT_APP_API_URL}/scores`, {
         method: "POST",
@@ -91,7 +95,7 @@ const Game = () => {
       });
       if (response.ok) {
         console.log("Skor başarıyla kaydedildi!");
-        fetchTopScores(); // En yüksek skorları güncelle
+        fetchTopScores(); 
       } else {
         console.error("Skor kaydedilirken hata oluştu.");
       }
@@ -99,7 +103,8 @@ const Game = () => {
       console.error("Skor API isteğinde hata:", error);
     }
   }, [score]);
-  
+
+  // Geri sayım
   useEffect(() => {
     if (timeLeft > 0) {
       const timer = setInterval(() => {
@@ -107,11 +112,10 @@ const Game = () => {
       }, 1000);
       return () => clearInterval(timer);
     } else {
-      saveScore(); // Zaman bitince skoru kaydet
-      setOpenModal(true); // Modalı aç
+      saveScore();
+      setOpenModal(true);
     }
-  }, [timeLeft, saveScore]); // Bağımlılıklar: saveScore
-  
+  }, [timeLeft, saveScore]);
 
   // En yüksek skorları getir
   const fetchTopScores = async () => {
@@ -137,8 +141,7 @@ const Game = () => {
       alignItems="center"
       bgcolor="#f9f9f9"
       padding="10px"
-      marginTop= "0px" // Üst boşluk kaldırıldı
-
+      marginTop="0px"
     >
       <Typography variant="h4" gutterBottom textAlign="center">
         Nota Oyunu
@@ -158,29 +161,28 @@ const Game = () => {
         Skor: {score}
       </Typography>
       <Button
-  variant="contained"
-  color="primary"
-  style={{ marginTop: "10px" }}
-  onClick={() => {
-    setScore(0);
-    setTimeLeft(60);
-  }}
->
-  Başlat
-</Button>
+        variant="contained"
+        color="primary"
+        style={{ marginTop: "10px" }}
+        onClick={() => {
+          setScore(0);
+          setTimeLeft(60);
+        }}
+      >
+        Başlat
+      </Button>
       <Box
-            id="music-port"
-            style={{
-              marginBottom: "20px",
-              width: "100%",
-              maxWidth: "400px",
-              height: "150px",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-
-            }}
-          ></Box>
+        id="music-port"
+        style={{
+          marginBottom: "20px",
+          width: "100%",
+          maxWidth: "400px",
+          height: "150px",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      ></Box>
       <Typography variant="h6" mt={2} textAlign="center">
         Bu notayı seçin:
       </Typography>
@@ -192,9 +194,9 @@ const Game = () => {
         maxWidth="400px"
         width="100%"
       >
-        {notes.map((note) => (
+        {noteGroups.map((group) => (
           <Button
-            key={note.name}
+            key={group.name}
             variant="contained"
             color="primary"
             style={{
@@ -203,9 +205,9 @@ const Game = () => {
               minWidth: "80px",
               maxWidth: "120px",
             }}
-            onClick={() => checkAnswer(note.name)}
+            onClick={() => checkAnswer(group.name)}
           >
-            {note.display}
+            {group.name}
           </Button>
         ))}
       </Box>
@@ -265,15 +267,15 @@ const Game = () => {
             textAlign: "center",
           }}
         >
-<Typography variant="h5" gutterBottom>
+          <Typography variant="h5" gutterBottom>
             Skorboard
           </Typography>
           {topScores.length > 0 ? (
             <Box>
               {topScores.map((entry, index) => (
                 <Typography key={index}>
-                  {index + 1}. {entry.user?.name || "-"} {entry.user?.surname || "-"}:{" "}
-                  {entry.totalScore || "-"}
+                  {index + 1}. {entry.user?.name || "-"}{" "}
+                  {entry.user?.surname || "-"}: {entry.totalScore || "-"}
                 </Typography>
               ))}
             </Box>
@@ -287,7 +289,7 @@ const Game = () => {
             onClick={() => setOpenScoreboard(false)}
           >
             Kapat
-            </Button>
+          </Button>
         </Paper>
       </Modal>
     </Box>
