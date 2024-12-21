@@ -20,9 +20,9 @@ const MasterAdminDashboard = () => {
     bgcolor="#f5f5f5" 
     minHeight="100vh"
     sx={{
-      height: 'calc(100vh - 64px - 64px)', // Toplam ekran yüksekliğinden AppBar ve BottomNav yüksekliğini çıkar
-      overflowY: 'auto'
-    }}
+        marginBottom: '64px', // BottomNav yüksekliğine göre ayarla
+        overflow: 'auto' // Gerekirse kaydırma
+      }}
   >
           <Typography variant="h5" gutterBottom align='center'>
         Admin Panel

@@ -37,7 +37,12 @@ const ManagementDashboard = () => {
   ];
 
   return (
-    <Box p={3} bgcolor="#f5f5f5" minHeight="100vh">
+    <Box p={3} bgcolor="#f5f5f5" minHeight="100vh"
+    sx={{
+      marginBottom: '64px', // BottomNav yüksekliğine göre ayarla
+      overflow: 'auto' // Gerekirse kaydırma
+    }}
+    >
       <Typography variant="h4" gutterBottom>
         Yönetim Paneli
       </Typography>
