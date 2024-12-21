@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Box, Typography, Grid, Card, CardContent } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import PaymentsIcon from '@mui/icons-material/Payments';
@@ -9,6 +9,11 @@ import CampaignIcon from '@mui/icons-material/Campaign';
 const ManagementDashboard = () => {
   const navigate = useNavigate();
 
+  // Toplam ve donduran kullanıcı sayısı için state'ler
+  const [totalUsers, setTotalUsers] = useState(0);
+  const [frozenUsers, setFrozenUsers] = useState(0);
+
+  // Dashboard öğeleri
   const dashboardItems = [
     {
       title: 'Aidat Durumu',
@@ -36,16 +41,46 @@ const ManagementDashboard = () => {
     },
   ];
 
+  // Sayfa yüklenince kullanıcı verisi çek
+  useEffect(() => {
+    const fetchUsersCount = async () => {
+      try {
+        const response = await fetch(`${process.env.REACT_APP_API_URL}/users`);
+        if (!response.ok) {
+          throw new Error(`API Hatası: ${response.status}`);
+        }
+        const data = await response.json();
+        setTotalUsers(data.length);
+        // data.frozen === true olanları sayalım
+        const frozenCount = data.filter((user) => user.frozen === true).length;
+        setFrozenUsers(frozenCount);
+      } catch (error) {
+        console.error('Kullanıcılar yüklenirken hata:', error);
+      }
+    };
+
+    fetchUsersCount();
+  }, []);
+
   return (
-    <Box p={3} bgcolor="#f5f5f5" minHeight="100vh"
-    sx={{
-      marginBottom: '64px', // BottomNav yüksekliğine göre ayarla
-      overflow: 'auto' // Gerekirse kaydırma
-    }}
+    <Box
+      p={3}
+      bgcolor="#f5f5f5"
+      minHeight="100vh"
+      sx={{
+        marginBottom: '64px', // BottomNav yüksekliğine göre ayarla
+        overflow: 'auto',
+      }}
     >
       <Typography variant="h4" gutterBottom>
         Yönetim Paneli
       </Typography>
+
+      {/* Üye ve Donduran sayısını göster */}
+      <Typography variant="body1" gutterBottom>
+        Üye: {totalUsers} | Donduran: {frozenUsers}
+      </Typography>
+
       <Grid container spacing={3}>
         {dashboardItems.map((item, index) => (
           <Grid item xs={12} sm={6} md={4} key={index}>
