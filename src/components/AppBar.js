@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AppBar, Toolbar, Typography, IconButton, Menu, MenuItem, Badge } from '@mui/material';
-import NotificationsIcon from '@mui/icons-material/Notifications';
+import { AppBar, Toolbar, Typography, IconButton, Menu, MenuItem } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 
 const CustomAppBar = ({ userName, viewMode }) => {
@@ -47,22 +46,35 @@ const CustomAppBar = ({ userName, viewMode }) => {
     window.location.href = '/login';
   };
 
+  // Kullanıcının rol bilgisi (appbar rengini belirlemek için)
+  const user = JSON.parse(localStorage.getItem('user'));
+  const userRole = user?.role || ''; // Örn: "Master Admin", "Yönetim Kurulu", "Şef", vb.
+
   return (
     <AppBar
       position="sticky"
       sx={{
-        backgroundColor: viewMode === 'korist' ? '#ff5722' : '#283593', // Korist için turuncu, Yönetici için lacivert
-        borderBottom: viewMode === 'korist'
-          ? '4px solid #bf360c' // Korist için koyu turuncu çerçeve
-          : '4px solid #1a237e', // Yönetici için koyu lacivert çerçeve
-        transition: 'all 0.3s ease', // Yumuşak geçiş efekti
+        // Rol ve viewMode'a göre appbar rengi
+        backgroundColor:
+          userRole === 'Şef'
+            ? '#9c27b0' // Mor (primary)
+            : viewMode === 'korist'
+            ? '#ff5722' // Turuncu
+            : '#283593', // Lacivert
+        // Rol ve viewMode'a göre alt çerçeve rengi
+        borderBottom:
+          userRole === 'Şef'
+            ? '4px solid #4a148c' // Daha koyu mor
+            : viewMode === 'korist'
+            ? '4px solid #bf360c' // Koyu turuncu
+            : '4px solid #1a237e', // Koyu lacivert
+        transition: 'all 0.3s ease',
       }}
     >
       <Toolbar>
         <Typography variant="h6" sx={{ flexGrow: 1 }}>
           Hoş Geldin, {userName || 'Misafir'}
         </Typography>
-        
         <IconButton edge="end" color="inherit" onClick={handleMenuOpen}>
           <MenuIcon />
         </IconButton>

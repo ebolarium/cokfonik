@@ -27,12 +27,17 @@ router.get('/:userId', async (req, res) => {
   }
 
   try {
-    const attendanceRecords = await Attendance.find({ userId }); // Burada userId kullanılıyor
+    const attendanceRecords = await Attendance.find({ userId }).populate({
+      path: 'event',
+      select: 'type date title',
+    });
     res.json(attendanceRecords);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 });
+
+
 
 
 // Yeni Devamsızlık Kaydı Ekle

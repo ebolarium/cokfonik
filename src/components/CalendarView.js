@@ -143,6 +143,8 @@ const CalendarView = () => {
                 backgroundColor: day.hasEvent
                   ? day.event.type === 'Konser'
                     ? '#ffe6e6'
+                    : day.event.type === 'Özel'
+                    ? '#e6e6ff' // Özel türü için renk
                     : '#e6ffe6'
                   : '#f9f9f9',
                 color: day.hasEvent ? '#000' : '#ccc',

@@ -18,8 +18,6 @@ if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-
-
 // Multer Konfigürasyonu
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {

@@ -54,8 +54,11 @@ const FeeManagement = () => {
     try {
       const response = await fetch(`${process.env.REACT_APP_API_URL}/users`);
       const data = await response.json();
+  
       if (Array.isArray(data)) {
-        setUsers(data);
+        // Yalnızca aktif kullanıcıları listele
+        const activeUsers = data.filter((user) => user.isActive === true);
+        setUsers(activeUsers);
       } else {
         console.error('Unexpected API response for users:', data);
       }
@@ -63,6 +66,7 @@ const FeeManagement = () => {
       console.error('Error fetching users:', error);
     }
   };
+  
 
   const sortedUsers = [...users].sort((a, b) => {
     if (orderBy === 'name') {

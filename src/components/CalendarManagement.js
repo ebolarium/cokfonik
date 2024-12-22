@@ -189,26 +189,29 @@ const CalendarManagement = () => {
             </Typography>
           ))}
           {days.map((day, index) => (
-            <Box
-              key={index}
-              onClick={() => handleOpenModal(day.event, day.date)}
-              style={{
-                backgroundColor: day.event
-                  ? day.event.type === 'Konser'
-                    ? '#ffe6e6'
-                    : '#e6ffe6'
-                  : '#f9f9f9',
-                color: day.hasEvent ? '#000' : '#ccc',
-                border: '1px solid #ddd',
-                borderRadius: '8px',
-                padding: '8px',
-                textAlign: 'center',
-                fontSize: '0.9rem',
-                cursor: 'pointer',
-              }}
-            >
-              {day.date.getDate()}
-            </Box>
+           <Box
+           key={index}
+           onClick={() => handleOpenModal(day.event, day.date)}
+           style={{
+             backgroundColor: day.event
+               ? day.event.type === 'Konser'
+                 ? '#ffe6e6'
+                 : day.event.type === 'Özel'
+                 ? '#e6e6ff' // Özel türü için renk
+                 : '#e6ffe6'
+               : '#f9f9f9',
+             color: day.hasEvent ? '#000' : '#ccc',
+             border: '1px solid #ddd',
+             borderRadius: '8px',
+             padding: '8px',
+             textAlign: 'center',
+             fontSize: '0.9rem',
+             cursor: 'pointer',
+           }}
+         >
+           {day.date.getDate()}
+         </Box>
+         
           ))}
         </Box>
       </Box>
@@ -243,7 +246,7 @@ const CalendarManagement = () => {
             <TextField
               label="Başlık"
               fullWidth
-              margin="normal"
+              margin="dense"
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
             />
@@ -251,31 +254,32 @@ const CalendarManagement = () => {
               label="Tarih"
               type="date"
               fullWidth
-              margin="normal"
+              margin="dense"
               InputLabelProps={{ shrink: true }}
               value={formData.date}
               onChange={(e) => setFormData({ ...formData, date: e.target.value })}
             />
             <Select
               fullWidth
-              margin="normal"
+              margin="dense"
               value={formData.type}
               onChange={(e) => setFormData({ ...formData, type: e.target.value })}
             >
               <MenuItem value="Prova">Prova</MenuItem>
               <MenuItem value="Konser">Konser</MenuItem>
+              <MenuItem value="Özel">Özel</MenuItem> {/* Yeni eklenen tür */}
             </Select>
             <TextField
               label="Yer"
               fullWidth
-              margin="normal"
+              margin="dense"
               value={formData.location}
               onChange={(e) => setFormData({ ...formData, location: e.target.value })}
             />
             <TextField
               label="Detaylar"
               fullWidth
-              margin="normal"
+              margin="dense"
               multiline
               value={formData.details}
               onChange={(e) => setFormData({ ...formData, details: e.target.value })}

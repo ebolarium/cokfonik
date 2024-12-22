@@ -62,11 +62,17 @@ const AttendanceManagement = () => {
     try {
       const response = await fetch(`${process.env.REACT_APP_API_URL}/users`);
       const data = await response.json();
-      setUsers(data);
+  
+      // ‘isActive: false’ (veya ‘frozen: true’) olan kullanıcıyı filtrele
+      const activeUsers = data.filter((user) => user.isActive);
+      // veya user.frozen === false veya istediğin başka bir koşul
+  
+      setUsers(activeUsers);
     } catch (error) {
-      console.error('Kullanıcı verileri alınırken hata oluştu:', error);
+      console.error('Kullanıcı verileri alınırken hata:', error);
     }
   };
+  
 
   const handleRequestSort = (property) => {
     const isAsc = orderBy === property && order === 'asc';
@@ -133,16 +139,22 @@ const AttendanceManagement = () => {
   };
 
   const getEventType = (date) => {
-    const event = events.find((e) => new Date(e.date).toISOString() === new Date(date).toISOString());
+    const event = events.find((e) =>     new Date(e.date).toISOString() === new Date(date).toISOString() && e.type === 'Prova'
+  );
+
     return event ? event.type : 'Bilinmiyor';
   };
 
   const renderAttendanceGrid = (userId) => {
     const userAttendances = attendances
-      .filter((a) => a.userId?._id === userId && new Date(a.date) < new Date())
-      .sort((a, b) => new Date(a.date) - new Date(b.date)) // Sıralamayı en eski solda olacak şekilde değiştirdik
+      .filter((a) => 
+        a.userId?._id === userId && 
+        new Date(a.date) < new Date() && 
+        getEventType(a.date) === 'Prova'
+      )
+      .sort((a, b) => new Date(a.date) - new Date(b.date))
       .slice(0, 10);
-
+  
     return (
       <Box
         ref={scrollContainerRef}
@@ -153,8 +165,6 @@ const AttendanceManagement = () => {
           overflowX: 'auto',
           paddingBottom: '8px',
           '::-webkit-scrollbar': { display: 'none' },
-
-          
         }}
       >
         {userAttendances.map((attendance) => (
@@ -302,15 +312,18 @@ const AttendanceManagement = () => {
               Kullanıcı Etkinlik Detayları
             </Typography>
             <List>
-              {selectedUserAttendances.map((attendance) => (
-                <ListItem key={attendance._id}>
-                  <ListItemText
-                    primary={`${new Date(attendance.date).toLocaleDateString()} - ${attendance.status}`}
-                    secondary={getEventType(attendance.date) === 'Prova' ? '🎤 Prova' : '🎵 Konser'}
-                  />
-                </ListItem>
-              ))}
-            </List>
+  {selectedUserAttendances
+    .filter((attendance) => getEventType(attendance.date) === 'Prova')
+    .map((attendance) => (
+      <ListItem key={attendance._id}>
+        <ListItemText
+          primary={`${new Date(attendance.date).toLocaleDateString()} - ${attendance.status}`}
+          secondary="🎤 Prova"
+        />
+      </ListItem>
+    ))}
+</List>
+
           </Box>
         </Fade>
       </Modal>

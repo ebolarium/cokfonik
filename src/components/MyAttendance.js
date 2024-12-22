@@ -34,7 +34,10 @@ const MyAttendance = () => {
   const pastAndTodayAttendances = attendances.filter((attendance) => {
     const attendanceDate = new Date(attendance.date);
     const today = new Date();
-    return attendanceDate <= today; // Yalnızca bugüne kadar olan tarihleri göster
+    return (
+      attendanceDate <= today &&
+      attendance.event?.type === 'Prova' // "Prova" türünü kontrol eder
+    );
   });
 
   return (

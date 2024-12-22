@@ -133,16 +133,16 @@ const UserDashboard = () => {
       bgColor: '#e6f7ff',
     },
     {
-      title: 'Nota/Midi',
-      link: 'https://drive.google.com/drive/folders/1paeqvHKubfoUEwh9v-4zjL64E0eBHf5r?usp=sharing',
-      icon: <LibraryMusicIcon style={{ fontSize: 50 }} />,
-      bgColor: '#e6e6ff', // Yeni kart rengi
-    },
-    {
       title: 'Oyun 2',
       path: '/game2',
       icon: <HearingIcon style={{ fontSize: 50 }} />,
       bgColor: '#a6a6ff',
+    },
+    {
+      title: 'Nota/Midi',
+      link: 'https://drive.google.com/drive/folders/1paeqvHKubfoUEwh9v-4zjL64E0eBHf5r?usp=sharing',
+      icon: <LibraryMusicIcon style={{ fontSize: 50 }} />,
+      bgColor: '#e6e6ff', // Yeni kart rengi
     }
   ];
 
