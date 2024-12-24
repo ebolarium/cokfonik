@@ -30,41 +30,47 @@ const MyAttendance = () => {
     fetchMyAttendance();
   }, [user]);
 
-  // Geçmiş ve bugünkü tarihler için filtreleme
-  const pastAndTodayAttendances = attendances.filter((attendance) => {
-    const attendanceDate = new Date(attendance.date);
-    const today = new Date();
-    return (
-      attendanceDate <= today &&
-      attendance.event?.type === 'Prova' // "Prova" türünü kontrol eder
-    );
-  });
+  // Geçmiş ve bugünkü tarihler için filtreleme ve sıralama
+  const pastAndTodayAttendances = attendances
+    .filter((attendance) => {
+      const attendanceDate = new Date(attendance.date);
+      const today = new Date();
+      return (
+        attendanceDate <= today &&
+        attendance.event?.type === 'Prova' // "Prova" türünü kontrol eder
+      );
+    })
+    .sort((a, b) => new Date(b.date) - new Date(a.date)); // En yakın tarihten en eskiye sıralama
 
   return (
     <Box p={3}>
       <Typography variant="h5" gutterBottom>Katılım Geçmişim</Typography>
-      <Table>
-        <TableHead>
-          <TableRow>
-            <TableCell>Tarih</TableCell>
-            <TableCell>Durum</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {Array.isArray(pastAndTodayAttendances) && pastAndTodayAttendances.length > 0 ? (
-            pastAndTodayAttendances.map((attendance) => (
-              <TableRow key={attendance._id}>
-                <TableCell>{new Date(attendance.date).toLocaleDateString()}</TableCell>
-                <TableCell>{attendance.status}</TableCell>
-              </TableRow>
-            ))
-          ) : (
+      
+      {/* Tabloyu kaydırılabilir hale getirmek için Box ekledik */}
+      <Box sx={{ maxHeight: '60vh', overflowY: 'auto' }}>
+        <Table stickyHeader>
+          <TableHead>
             <TableRow>
-              <TableCell colSpan={2}>Hiç devamsızlık kaydı bulunamadı.</TableCell>
+              <TableCell>Tarih</TableCell>
+              <TableCell>Durum</TableCell>
             </TableRow>
-          )}
-        </TableBody>
-      </Table>
+          </TableHead>
+          <TableBody>
+            {Array.isArray(pastAndTodayAttendances) && pastAndTodayAttendances.length > 0 ? (
+              pastAndTodayAttendances.map((attendance) => (
+                <TableRow key={attendance._id}>
+                  <TableCell>{new Date(attendance.date).toLocaleDateString()}</TableCell>
+                  <TableCell>{attendance.status}</TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={2}>Hiç devamsızlık kaydı bulunamadı.</TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </Box>
     </Box>
   );
 };

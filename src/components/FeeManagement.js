@@ -54,10 +54,10 @@ const FeeManagement = () => {
     try {
       const response = await fetch(`${process.env.REACT_APP_API_URL}/users`);
       const data = await response.json();
-  
+
       if (Array.isArray(data)) {
-        // Yalnızca aktif kullanıcıları listele
-        const activeUsers = data.filter((user) => user.isActive === true);
+        // Yalnızca aktif ve rolü "Şef" olmayan kullanıcıları listele
+        const activeUsers = data.filter((user) => user.isActive === true && user.role !== 'Şef');
         setUsers(activeUsers);
       } else {
         console.error('Unexpected API response for users:', data);
@@ -66,7 +66,6 @@ const FeeManagement = () => {
       console.error('Error fetching users:', error);
     }
   };
-  
 
   const sortedUsers = [...users].sort((a, b) => {
     if (orderBy === 'name') {
@@ -83,13 +82,12 @@ const FeeManagement = () => {
     }
     return 0;
   });
-  
+
   const handleRequestSort = (property) => {
     const isAsc = orderBy === property && order === 'asc';
     setOrder(isAsc ? 'desc' : 'asc');
     setOrderBy(property);
   };
-  
 
   useEffect(() => {
     fetchUsers();
@@ -138,98 +136,96 @@ const FeeManagement = () => {
     return string.charAt(0).toUpperCase() + string.slice(1).toLowerCase();
   };
 
-
   return (
     <Box
-    sx={{
-      p: 4,
-      height: '100vh',
-      overflowY: 'auto',
-      display: 'flex',
-      flexDirection: 'column',
-      marginBottom: '64px', // BottomNav yüksekliğine göre ayarla
+      sx={{
+        p: 4,
+        height: '100vh',
+        overflowY: 'auto',
+        display: 'flex',
+        flexDirection: 'column',
+        marginBottom: '64px', // BottomNav yüksekliğine göre ayarla
+      }}
+    >
+      <Typography variant="h5" sx={{ mb: 2, textAlign: 'center' }}>
+        Aidat Yönetimi
+      </Typography>
 
-    }}
-  >
-    <Typography variant="h5" sx={{ mb: 2, textAlign: 'center' }}>
-      Aidat Yönetimi
-    </Typography>
-  
-    <Grid container spacing={1} sx={{ mb: 2, fontWeight: 'bold', textAlign: 'center' }}>
-      <Grid item xs={6}>
-        <Typography
-          variant="body1"
-          sx={{ cursor: 'pointer' }}
-          onClick={() => handleRequestSort('name')}
-        >
-          İsim
-        </Typography>
+      <Grid container spacing={1} sx={{ mb: 2, fontWeight: 'bold', textAlign: 'center' }}>
+        <Grid item xs={6}>
+          <Typography
+            variant="body1"
+            sx={{ cursor: 'pointer' }}
+            onClick={() => handleRequestSort('name')}
+          >
+            İsim
+          </Typography>
+        </Grid>
+        <Grid item xs={6}>
+          <Typography
+            variant="body1"
+            sx={{ cursor: 'pointer' }}
+            onClick={() => handleRequestSort('part')}
+          >
+            Partisyon
+          </Typography>
+        </Grid>
       </Grid>
-      <Grid item xs={6}>
-        <Typography
-          variant="body1"
-          sx={{ cursor: 'pointer' }}
-          onClick={() => handleRequestSort('part')}
-        >
-          Partisyon
-        </Typography>
-      </Grid>
-    </Grid>
-  
-    <Box>
-      {sortedUsers.map((user) => {
-        const userFees = fees.filter((fee) => fee.userId?._id === user._id);
-  
-        return (
-          <Box key={user._id} sx={{ mb: 1 }}>
-            <Grid container spacing={1} alignItems="center">
-              <Grid item xs={6}>
-                <Typography
-                  variant="body1"
-                  sx={{ fontSize: '0.9rem', lineHeight: 1.2, cursor: 'pointer' }}
-                  onClick={() => handleOpenModal(user._id)}
-                >
-  {`${user.name} ${user.surname}`}
-  </Typography>
+
+      <Box>
+        {sortedUsers.map((user) => {
+          const userFees = fees.filter((fee) => fee.userId?._id === user._id);
+
+          return (
+            <Box key={user._id} sx={{ mb: 1 }}>
+              <Grid container spacing={1} alignItems="center">
+                <Grid item xs={6}>
+                  <Typography
+                    variant="body1"
+                    sx={{ fontSize: '0.9rem', lineHeight: 1.2, cursor: 'pointer' }}
+                    onClick={() => handleOpenModal(user._id)}
+                  >
+                    {`${user.name} ${user.surname}`}
+                  </Typography>
+                </Grid>
+                <Grid item xs={6} style={{ textAlign: 'right' }}>
+                  <Typography
+                    variant="body1"
+                    sx={{ fontSize: '0.9rem', lineHeight: 1.2 }}
+                  >
+                    {user.part || 'Belirtilmemiş'}
+                  </Typography>
+                </Grid>
               </Grid>
-              <Grid item xs={6} style={{ textAlign: 'right' }}>
-                <Typography
-                  variant="body1"
-                  sx={{ fontSize: '0.9rem', lineHeight: 1.2 }}
-                >
-                  {user.part || 'Belirtilmemiş'}
-                </Typography>
-              </Grid>
-            </Grid>
-  
-            <Divider sx={{ my: 1, borderColor: 'lightgray' }} />
-  
-            <Box display="flex" gap={0.5} flexWrap="nowrap">
-              {getLastSixMonths().map((monthYear, index) => {
-                const fee = userFees.find(
-                  (f) =>
-                    f.month.toLowerCase() === monthYear.month &&
-                    f.year === monthYear.year
-                );
-                return (
-                  <Tooltip title={`${monthYear.month} ${monthYear.year}`} key={index}>
-                    <FeeBox
-                      isPaid={fee?.isPaid || false}
-                      isInactive={!fee}
-                      onClick={() => fee && toggleFeeStatus(fee._id, fee.isPaid)}
-                    />
-                  </Tooltip>
-                );
-              })}
+
+              <Divider sx={{ my: 1, borderColor: 'lightgray' }} />
+
+              <Box display="flex" gap={0.5} flexWrap="nowrap">
+                {getLastSixMonths().map((monthYear, index) => {
+                  const fee = userFees.find(
+                    (f) =>
+                      f.month.toLowerCase() === monthYear.month &&
+                      f.year === monthYear.year
+                  );
+                  return (
+                    <Tooltip title={`${monthYear.month} ${monthYear.year}`} key={index}>
+                      <FeeBox
+                        isPaid={fee?.isPaid || false}
+                        isInactive={!fee}
+                        onClick={() => fee && toggleFeeStatus(fee._id, fee.isPaid)}
+                      />
+                    </Tooltip>
+                  );
+                })}
+              </Box>
+
+              <Divider sx={{ my: 1, borderColor: 'lightgray' }} />
             </Box>
-  
-            <Divider sx={{ my: 1, borderColor: 'lightgray' }} />
-          </Box>
-        );
-      })}
-    </Box>
-      
+          );
+        })}
+      </Box>
 
+      {/* Modal */}
       <Modal
         open={openModal}
         onClose={handleCloseModal}
@@ -268,24 +264,22 @@ const FeeManagement = () => {
               Kullanıcı Aidat Detayları
             </Typography>
             <List>
-
-  {selectedUserFees.map((fee) => (
-    <ListItem
-      key={fee._id}
-      sx={{
-        backgroundColor: fee.isPaid ? 'rgba(0, 255, 0, 0.1)' : 'rgba(255, 0, 0, 0.1)',
-        borderRadius: 1,
-        mb: 1,
-      }}
-    >
-      <ListItemText
-        primary={`${capitalizeFirstLetter(fee.month)} ${fee.year}`}
-        secondary={fee.isPaid ? 'Ödendi' : 'Ödenmedi'}
-      />
-    </ListItem>
-  ))}
-</List>
-
+              {selectedUserFees.map((fee) => (
+                <ListItem
+                  key={fee._id}
+                  sx={{
+                    backgroundColor: fee.isPaid ? 'rgba(0, 255, 0, 0.1)' : 'rgba(255, 0, 0, 0.1)',
+                    borderRadius: 1,
+                    mb: 1,
+                  }}
+                >
+                  <ListItemText
+                    primary={`${capitalizeFirstLetter(fee.month)} ${fee.year}`}
+                    secondary={fee.isPaid ? 'Ödendi' : 'Ödenmedi'}
+                  />
+                </ListItem>
+              ))}
+            </List>
           </Box>
         </Fade>
       </Modal>
