@@ -58,7 +58,7 @@ const App = () => {
     }
   };
 
-  // Oturum kontrolü ve loading
+  // Oturum kontrolü & Loading
   useEffect(() => {
     const token = localStorage.getItem('authToken');
     const user = JSON.parse(localStorage.getItem('user'));
@@ -78,37 +78,42 @@ const App = () => {
         setLoading(false);
         setShowLoadingOnStart(false);
       }, 4000);
-
       return () => clearTimeout(timer);
     } else {
       setLoading(false);
     }
   }, [location, navigate, showLoadingOnStart]);
 
-  // Görünüm değiştirme (korist / admin)
+  // Görünüm değiştirme
   const handleSwitchView = () => {
+    // Şef hiçbir zaman korist mode'a geçmesin:
+    if (userRole === 'Şef') {
+      return;
+    }
+
     if (viewMode === 'korist') {
       setViewMode('admin');
       if (userRole === 'Master Admin') {
         navigate('/master-admin-dashboard');
       } else if (userRole === 'Yönetim Kurulu') {
         navigate('/management-dashboard');
-      } else if (userRole === 'Şef') {
-        navigate('/conductor-dashboard');
       }
+      // Şef'i buradan çıkardık
     } else {
       setViewMode('korist');
+      // Her türlü role (Master Admin veya YK) => korist görünümde user-dashboard
       navigate('/user-dashboard');
     }
   };
 
-  // Bazı yollarda AppBar ve BottomNav gösterme
+  // Bazı yollar için AppBar/BottomNav gizle
   const excludedPaths = ['/login', '/loading'];
   const showAppBar = !excludedPaths.includes(location.pathname);
   const showBottomNav = !excludedPaths.includes(location.pathname);
 
-  // Rol bazlı rotalar
+  // Rotaları çiz
   const renderRoutes = () => {
+    // 1) Eğer userRole = Şef ise, daima Şef rotaları
     if (userRole === 'Şef') {
       return (
         <>
@@ -119,41 +124,12 @@ const App = () => {
           <Route path="/announcements" element={<AnnouncementsPage />} />
           <Route path="/game" element={<Game />} />
           <Route path="/game2" element={<Game2 />} />
+        </>
+      );
+    }
 
-
-          {/* Şefe özel başka sayfaları da buraya ekleyebilirsin */}
-        </>
-      );
-    } else if (userRole === 'Master Admin') {
-      return (
-        <>
-          <Route path="/master-admin-dashboard" element={<MasterAdminDashboard />} />
-          <Route path="/attendance-management" element={<AttendanceManagement />} />
-          <Route path="/calendar-management" element={<CalendarManagement />} />
-          <Route path="/fee-management" element={<FeeManagement />} />
-          <Route path="/users" element={<UserManagement />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route
-            path="/announcement-management"
-            element={<AnnouncementManagement />}
-          />
-        </>
-      );
-    } else if (userRole === 'Yönetim Kurulu') {
-      return (
-        <>
-          <Route path="/management-dashboard" element={<ManagementDashboard />} />
-          <Route path="/attendance-management" element={<AttendanceManagement />} />
-          <Route path="/calendar-management" element={<CalendarManagement />} />
-          <Route path="/fee-management" element={<FeeManagement />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route
-            path="/announcement-management"
-            element={<AnnouncementManagement />}
-          />
-        </>
-      );
-    } else if (viewMode === 'korist') {
+    // 2) Eğer Şef değilse ve viewMode = korist => korist rotaları
+    if (viewMode === 'korist') {
       return (
         <>
           <Route
@@ -170,6 +146,35 @@ const App = () => {
         </>
       );
     }
+
+    // 3) Admin view => rol bazlı
+    if (userRole === 'Master Admin') {
+      return (
+        <>
+          <Route path="/master-admin-dashboard" element={<MasterAdminDashboard />} />
+          <Route path="/attendance-management" element={<AttendanceManagement />} />
+          <Route path="/calendar-management" element={<CalendarManagement />} />
+          <Route path="/fee-management" element={<FeeManagement />} />
+          <Route path="/users" element={<UserManagement />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/announcement-management" element={<AnnouncementManagement />} />
+        </>
+      );
+    } else if (userRole === 'Yönetim Kurulu') {
+      return (
+        <>
+          <Route path="/management-dashboard" element={<ManagementDashboard />} />
+          <Route path="/attendance-management" element={<AttendanceManagement />} />
+          <Route path="/calendar-management" element={<CalendarManagement />} />
+          <Route path="/fee-management" element={<FeeManagement />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/announcement-management" element={<AnnouncementManagement />} />
+        </>
+      );
+    }
+
+    // Fallback => hiçbir koşulu karşılamadıysa null dönebilir.
+    return null;
   };
 
   return (
@@ -193,14 +198,16 @@ const App = () => {
               element={
                 <Navigate
                   to={
-                    viewMode === 'korist'
+                    // viewMode = korist => user-dashboard
+                    // Aksi halde role bazlı
+                    userRole === 'Şef'
+                      ? '/conductor-dashboard'
+                      : viewMode === 'korist'
                       ? '/user-dashboard'
                       : userRole === 'Master Admin'
                       ? '/master-admin-dashboard'
                       : userRole === 'Yönetim Kurulu'
                       ? '/management-dashboard'
-                      : userRole === 'Şef'
-                      ? '/conductor-dashboard'
                       : '/user-dashboard'
                   }
                 />
@@ -208,7 +215,11 @@ const App = () => {
             />
           </Routes>
           {showBottomNav && (
-            <BottomNav role={userRole} viewMode={viewMode} onSwitchView={handleSwitchView} />
+            <BottomNav
+              role={userRole}
+              viewMode={viewMode}
+              onSwitchView={handleSwitchView}
+            />
           )}
         </>
       ) : (
