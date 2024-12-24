@@ -50,7 +50,7 @@ const AttendanceManagement = () => {
   const [orderBy, setOrderBy] = useState('name');
 
   // Bu state kaç çalışmayı göstereceğimizi tutuyor
-  const [lastCount, setLastCount] = useState('');
+  const [lastCount, setLastCount] = useState('4');
 
   const fetchAttendances = async () => {
     try {
@@ -68,7 +68,7 @@ const AttendanceManagement = () => {
       const data = await response.json();
   
       // ‘isActive: false’ olan kullanıcıları filtrele
-      const activeUsers = data.filter((user) => user.isActive);
+      const activeUsers = data.filter((user) => user.isActive && user.role !== 'Şef');
       setUsers(activeUsers);
     } catch (error) {
       console.error('Kullanıcı verileri alınırken hata:', error);
