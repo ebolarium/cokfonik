@@ -55,7 +55,7 @@ const ConductorAttendance = () => {
       const data = await response.json();
 
       // isActive === true olanları filtreliyoruz
-      const activeUsers = data.filter((user) => user.isActive);
+      const activeUsers = data.filter((user) => user.isActive && user.role !== 'Şef');
       setUsers(activeUsers);
     } catch (error) {
       console.error('Kullanıcı verileri alınırken hata:', error);
