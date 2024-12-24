@@ -109,22 +109,41 @@ const CalendarManagement = () => {
   const generateCalendarDays = () => {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
-    const days = [];
     const totalDays = daysInMonth(year, month);
-
-    for (let day = 1; day <= totalDays; day++) {
-      const currentDateObj = new Date(year, month, day);
-      const event = events.find(e => e.date.toDateString() === currentDateObj.toDateString());
-
+    const days = [];
+  
+    // Hafta başına offset
+    const firstDayOfMonth = new Date(year, month, 1).getDay(); 
+    // 0 => Pazar, 1 => Pazartesi, vb.
+  
+    // 1) Boş hücreler
+    for (let i = 0; i < firstDayOfMonth; i++) {
+      days.push({
+        date: null,
+        hasEvent: false,
+        event: null,
+        isPlaceholder: true, 
+      });
+    }
+  
+    // 2) Asıl günler
+    for (let dayNum = 1; dayNum <= totalDays; dayNum++) {
+      const currentDateObj = new Date(year, month, dayNum);
+      const event = events.find(
+        (e) => e.date.toDateString() === currentDateObj.toDateString()
+      );
+  
       days.push({
         date: currentDateObj,
         hasEvent: !!event,
         event,
+        isPlaceholder: false,
       });
     }
-
+  
     return { days, month, year };
   };
+  
 
   const { days, month, year } = generateCalendarDays();
 
@@ -188,33 +207,52 @@ const CalendarManagement = () => {
               {day}
             </Typography>
           ))}
-          {days.map((day, index) => (
-           <Box
-           key={index}
-           onClick={() => handleOpenModal(day.event, day.date)}
-           style={{
-             backgroundColor: day.event
-               ? day.event.type === 'Konser'
-                 ? '#ffe6e6'
-                 : day.event.type === 'Özel'
-                 ? '#e6e6ff' // Özel türü için renk
-                 : '#e6ffe6'
-               : '#f9f9f9',
-             color: day.hasEvent ? '#000' : '#ccc',
-             border: '1px solid #ddd',
-             borderRadius: '8px',
-             padding: '8px',
-             textAlign: 'center',
-             fontSize: '0.9rem',
-             cursor: 'pointer',
-           }}
-         >
-           {day.date.getDate()}
-         </Box>
-         
-          ))}
-        </Box>
+ {days.map((day, index) => {
+  if (day.isPlaceholder) {
+    // Boş hücre
+    return (
+      <Box
+        key={index}
+        style={{
+          border: '1px solid #ddd',
+          borderRadius: '8px',
+          backgroundColor: '#f9f9f9',
+          color: '#ccc',
+          textAlign: 'center',
+          padding: '8px',
+        }}
+      >
+        {/* Boş hücre */}
       </Box>
+    );
+  } else {
+    return (
+      <Box
+        key={index}
+        onClick={() => handleOpenModal(day.event, day.date)}
+        style={{
+          backgroundColor: day.event
+            ? day.event.type === 'Konser'
+              ? '#ffe6e6'
+              : day.event.type === 'Özel'
+              ? '#e6e6ff'
+              : '#e6ffe6'
+            : '#f9f9f9',
+          color: day.hasEvent ? '#000' : '#ccc',
+          border: '1px solid #ddd',
+          borderRadius: '8px',
+          padding: '8px',
+          textAlign: 'center',
+          fontSize: '0.9rem',
+          cursor: 'pointer',
+        }}
+      >
+        {day.date.getDate()}
+      </Box>
+    );
+  }
+})}
+</Box></Box>
 
       <Modal
         open={openModal}
