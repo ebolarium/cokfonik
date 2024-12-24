@@ -16,6 +16,7 @@ import {
   ListItem,
   ListItemText,
   TableSortLabel,
+  TextField,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { styled } from '@mui/system';
@@ -48,6 +49,9 @@ const AttendanceManagement = () => {
   const [order, setOrder] = useState('asc');
   const [orderBy, setOrderBy] = useState('name');
 
+  // Bu state kaç çalışmayı göstereceğimizi tutuyor
+  const [lastCount, setLastCount] = useState('');
+
   const fetchAttendances = async () => {
     try {
       const response = await fetch(`${process.env.REACT_APP_API_URL}/attendance`);
@@ -63,16 +67,13 @@ const AttendanceManagement = () => {
       const response = await fetch(`${process.env.REACT_APP_API_URL}/users`);
       const data = await response.json();
   
-      // ‘isActive: false’ (veya ‘frozen: true’) olan kullanıcıyı filtrele
+      // ‘isActive: false’ olan kullanıcıları filtrele
       const activeUsers = data.filter((user) => user.isActive);
-      // veya user.frozen === false veya istediğin başka bir koşul
-  
       setUsers(activeUsers);
     } catch (error) {
       console.error('Kullanıcı verileri alınırken hata:', error);
     }
   };
-  
 
   const handleRequestSort = (property) => {
     const isAsc = orderBy === property && order === 'asc';
@@ -139,22 +140,33 @@ const AttendanceManagement = () => {
   };
 
   const getEventType = (date) => {
-    const event = events.find((e) =>     new Date(e.date).toISOString() === new Date(date).toISOString() && e.type === 'Prova'
-  );
-
+    const event = events.find(
+      (e) =>
+        new Date(e.date).toISOString() === new Date(date).toISOString() &&
+        e.type === 'Prova'
+    );
     return event ? event.type : 'Bilinmiyor';
   };
 
   const renderAttendanceGrid = (userId) => {
-    const userAttendances = attendances
-      .filter((a) => 
-        a.userId?._id === userId && 
-        new Date(a.date) < new Date() && 
-        getEventType(a.date) === 'Prova'
+    // Önce bu kullanıcıya ait, geçmiş tarihli ve "Prova" türünde olanları çekiyoruz
+    let userAttendances = attendances
+      .filter(
+        (a) =>
+          a.userId?._id === userId &&
+          new Date(a.date) < new Date() &&
+          getEventType(a.date) === 'Prova'
       )
-      .sort((a, b) => new Date(a.date) - new Date(b.date))
-      .slice(0, 10);
-  
+      .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    // Eğer son kaç çalışma gösterilsin alanı boş değilse, userAttendances'ın son X tanesini alıyoruz
+    if (lastCount.trim() !== '') {
+      const count = parseInt(lastCount, 10);
+      if (!isNaN(count) && count > 0) {
+        userAttendances = userAttendances.slice(-count);
+      }
+    }
+
     return (
       <Box
         ref={scrollContainerRef}
@@ -168,10 +180,15 @@ const AttendanceManagement = () => {
         }}
       >
         {userAttendances.map((attendance) => (
-          <Tooltip title={new Date(attendance.date).toLocaleDateString()} key={attendance._id}>
+          <Tooltip
+            title={new Date(attendance.date).toLocaleDateString()}
+            key={attendance._id}
+          >
             <AttendanceBox
               status={attendance.status}
-              onClick={() => toggleAttendanceStatus(attendance._id, attendance.status)}
+              onClick={() =>
+                toggleAttendanceStatus(attendance._id, attendance.status)
+              }
             />
           </Tooltip>
         ))}
@@ -181,97 +198,111 @@ const AttendanceManagement = () => {
 
   return (
     <Box
-    sx={{
-      p: 2,
-      height: '100vh',
-      overflowY: 'auto',
-      display: 'flex',
-      flexDirection: 'column',
-      marginTop: '16px', // AppBar yüksekliğine göre ayarla
-      marginBottom: '64px', // BottomNav yüksekliğine göre ayarla
-    }}
-  >
-    <Typography variant="h5" sx={{ mb: 2, textAlign: 'center' }}>
-      Devamsızlık Yönetimi
-    </Typography>
-    <Table sx={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse' }}>
-      <TableHead>
-        <TableRow>
-          <TableCell sx={{ fontWeight: 'bold', fontSize: '0.9rem', width: '50%' }}>
-            <TableSortLabel
-              active={orderBy === 'name'}
-              direction={orderBy === 'name' ? order : 'asc'}
-              onClick={() => handleRequestSort('name')}
-            >
-              Korist
-            </TableSortLabel>
-          </TableCell>
-          <TableCell
-            sx={{
-              fontWeight: 'bold',
-              fontSize: '0.9rem',
-              textAlign: 'right',
-              width: '25%',
-            }}
-          >
-            <TableSortLabel
-              active={orderBy === 'part'}
-              direction={orderBy === 'part' ? order : 'asc'}
-              onClick={() => handleRequestSort('part')}
-            >
-              Part.
-            </TableSortLabel>
-          </TableCell>
-          <TableCell
-            sx={{
-              fontWeight: 'bold',
-              fontSize: '0.9rem',
-              textAlign: 'right',
-              width: '25%',
-            }}
-          >
-            Durum
-          </TableCell>
-        </TableRow>
-      </TableHead>
-      <TableBody>
-        {sortedUsers.map((user) => {
-          const userAttendances = attendances.filter((a) => a.userId?._id === user._id);
-          const cameCount = userAttendances.filter((a) => a.status === 'GELDI').length;
+      sx={{
+        p: 2,
+        height: '100vh',
+        overflowY: 'auto',
+        display: 'flex',
+        flexDirection: 'column',
+        marginTop: '16px', // AppBar yüksekliğine göre ayarla
+        marginBottom: '64px', // BottomNav yüksekliğine göre ayarla
+      }}
+    >
+      <Typography variant="h5" sx={{ mb: 2, textAlign: 'center' }}>
+        Devamsızlık Yönetimi
+      </Typography>
 
-          return (
-            <React.Fragment key={user._id}>
-              <TableRow
-                sx={{
-                  borderBottom: 'none',
-                  height: '40px',
-                }}
+      {/* Son kaç çalışma gösterilsin? */}
+      <TextField
+        label="Son kaç çalışma"
+        variant="outlined"
+        size="small"
+        value={lastCount}
+        onChange={(e) => setLastCount(e.target.value)}
+        sx={{ mb: 2 }}
+      />
+
+      <Table sx={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse' }}>
+        <TableHead>
+          <TableRow>
+            <TableCell sx={{ fontWeight: 'bold', fontSize: '0.9rem', width: '50%' }}>
+              <TableSortLabel
+                active={orderBy === 'name'}
+                direction={orderBy === 'name' ? order : 'asc'}
+                onClick={() => handleRequestSort('name')}
               >
-<TableCell
-  sx={{ fontSize: '0.85rem', verticalAlign: 'middle', padding: '4px 8px', cursor: 'pointer' }}
-  onClick={() => handleOpenModal(user._id)}
->
-  {`${user.name} ${user.surname}`}
-</TableCell>
+                Korist
+              </TableSortLabel>
+            </TableCell>
+            <TableCell
+              sx={{
+                fontWeight: 'bold',
+                fontSize: '0.9rem',
+                textAlign: 'right',
+                width: '25%',
+              }}
+            >
+              <TableSortLabel
+                active={orderBy === 'part'}
+                direction={orderBy === 'part' ? order : 'asc'}
+                onClick={() => handleRequestSort('part')}
+              >
+                Part.
+              </TableSortLabel>
+            </TableCell>
+            <TableCell
+              sx={{
+                fontWeight: 'bold',
+                fontSize: '0.9rem',
+                textAlign: 'right',
+                width: '25%',
+              }}
+            >
+              Durum
+            </TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {sortedUsers.map((user) => {
+            const userAttendances = attendances.filter((a) => a.userId?._id === user._id);
+            const cameCount = userAttendances.filter((a) => a.status === 'GELDI').length;
 
-                <TableCell sx={{ fontSize: '0.85rem', textAlign: 'right', padding: '4px 8px' }}>
-                  {user.part || '-'}
-                </TableCell>
-                <TableCell sx={{ fontSize: '0.85rem', textAlign: 'right', padding: '4px 8px' }}>
-                  {`${cameCount}/${userAttendances.length}`}
-                </TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell colSpan={3} sx={{ paddingTop: '2px', paddingBottom: '2px' }}>
-                  {renderAttendanceGrid(user._id)}
-                </TableCell>
-              </TableRow>
-            </React.Fragment>
-          );
-        })}
-      </TableBody>
-    </Table>
-
+            return (
+              <React.Fragment key={user._id}>
+                <TableRow
+                  sx={{
+                    borderBottom: 'none',
+                    height: '40px',
+                  }}
+                >
+                  <TableCell
+                    sx={{
+                      fontSize: '0.85rem',
+                      verticalAlign: 'middle',
+                      padding: '4px 8px',
+                      cursor: 'pointer',
+                    }}
+                    onClick={() => handleOpenModal(user._id)}
+                  >
+                    {`${user.name} ${user.surname}`}
+                  </TableCell>
+                  <TableCell sx={{ fontSize: '0.85rem', textAlign: 'right', padding: '4px 8px' }}>
+                    {user.part || '-'}
+                  </TableCell>
+                  <TableCell sx={{ fontSize: '0.85rem', textAlign: 'right', padding: '4px 8px' }}>
+                    {`${cameCount}/${userAttendances.length}`}
+                  </TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell colSpan={3} sx={{ paddingTop: '2px', paddingBottom: '2px' }}>
+                    {renderAttendanceGrid(user._id)}
+                  </TableCell>
+                </TableRow>
+              </React.Fragment>
+            );
+          })}
+        </TableBody>
+      </Table>
 
       {/* Modal */}
       <Modal
@@ -312,18 +343,19 @@ const AttendanceManagement = () => {
               Kullanıcı Etkinlik Detayları
             </Typography>
             <List>
-  {selectedUserAttendances
-    .filter((attendance) => getEventType(attendance.date) === 'Prova')
-    .map((attendance) => (
-      <ListItem key={attendance._id}>
-        <ListItemText
-          primary={`${new Date(attendance.date).toLocaleDateString()} - ${attendance.status}`}
-          secondary="🎤 Prova"
-        />
-      </ListItem>
-    ))}
-</List>
-
+              {selectedUserAttendances
+                .filter((attendance) => getEventType(attendance.date) === 'Prova')
+                .map((attendance) => (
+                  <ListItem key={attendance._id}>
+                    <ListItemText
+                      primary={`${new Date(attendance.date).toLocaleDateString()} - ${
+                        attendance.status
+                      }`}
+                      secondary="🎤 Prova"
+                    />
+                  </ListItem>
+                ))}
+            </List>
           </Box>
         </Fade>
       </Modal>
