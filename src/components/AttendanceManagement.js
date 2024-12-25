@@ -263,9 +263,12 @@ const AttendanceManagement = () => {
           </TableRow>
         </TableHead>
         <TableBody>
-          {sortedUsers.map((user) => {
-            const userAttendances = attendances.filter((a) => a.userId?._id === user._id);
-            const cameCount = userAttendances.filter((a) => a.status === 'GELDI').length;
+        {sortedUsers.map((user) => {
+    // Sadece "Prova" etkinliklerini filtreleyin
+    const userAttendances = attendances.filter((a) => 
+      a.userId?._id === user._id && getEventType(a.date) === 'Prova'
+    );
+    const cameCount = userAttendances.filter((a) => a.status === 'GELDI').length;
 
             return (
               <React.Fragment key={user._id}>
