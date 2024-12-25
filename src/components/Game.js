@@ -1,13 +1,15 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Box, Typography, Button, Modal, Paper } from "@mui/material";
 import { Renderer, Stave, StaveNote, Voice, Formatter } from "vexflow";
+import FavoriteIcon from '@mui/icons-material/Favorite'; // Dolmuş kalp ikonu
+import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder'; // Boş kalp ikonu
 
 const Game = () => {
   const [currentNote, setCurrentNote] = useState("c/4"); 
   const [currentGroup, setCurrentGroup] = useState("Do"); 
   const [message, setMessage] = useState("");
   const [score, setScore] = useState(0); 
-  const [timeLeft, setTimeLeft] = useState(60); 
+  const [lives, setLives] = useState(3); // Can State'i
   const [topScores, setTopScores] = useState([]); 
   const [openModal, setOpenModal] = useState(false); 
   const [openScoreboard, setOpenScoreboard] = useState(false); 
@@ -38,18 +40,24 @@ const Game = () => {
     setCurrentNote(randomVariant);
     setCurrentGroup(randomGroup.name);
     setPreviousNote(randomVariant);
-    setMessage("Doğru! 🎉");
+    setMessage(""); // Mesajı temizle
   };
 
   // Kullanıcının cevabını kontrol et (oktavdan bağımsız kontrol)
   const checkAnswer = (selectedGroup) => {
-    if (timeLeft > 0) {
+    if (lives > 0) { // Süre yerine can kontrolü
       if (selectedGroup === currentGroup) {
         setMessage("Doğru! 🎉");
         setScore((prevScore) => prevScore + 1);
         generateNewNote();
       } else {
         setMessage("Yanlış, tekrar dene! ❌");
+        setLives((prevLives) => prevLives - 1); // Canı azalt
+        if (lives - 1 === 0) {
+          // Can kalmadı, oyunu bitir
+          saveScore();
+          setOpenModal(true);
+        }
       }
     }
   };
@@ -62,16 +70,16 @@ const Game = () => {
     div.innerHTML = "";
     const renderer = new VF.Renderer(div, VF.Renderer.Backends.SVG);
     renderer.resize(300, 150);
-  
+
     const context = renderer.getContext();
     const stave = new VF.Stave(10, 40, 280);
     stave.addClef("treble").setContext(context).draw();
-  
+
     // Oktavı currentNote'dan ayır
     const octave = parseInt(currentNote.split('/')[1], 10);
     // Oktava bağlı olarak stem_direction belirle
     const stemDirection = octave >= 5 ? -1 : 1;
-  
+
     // StaveNote'u stem_direction ile oluştur
     const staveNote = new VF.StaveNote({
       clef: "treble",
@@ -79,24 +87,15 @@ const Game = () => {
       duration: "q",
       stem_direction: stemDirection, // Stem direction'ı ekle
     });
-  
-    // Alternatif olarak, StaveNote oluşturulduktan sonra setStemDirection kullanabilirsiniz:
-    // const staveNote = new VF.StaveNote({
-    //   clef: "treble",
-    //   keys: [currentNote],
-    //   duration: "q",
-    // });
-    // staveNote.setStemDirection(stemDirection);
-  
+
     const voice = new VF.Voice({ num_beats: 1, beat_value: 4 });
     voice.addTickable(staveNote);
-  
+
     const formatter = new VF.Formatter();
     formatter.joinVoices([voice]).format([voice], 250);
-  
+
     voice.draw(context, stave);
   }, [currentNote]);
-  
 
   // Skoru kaydet
   const saveScore = useCallback(async () => {
@@ -107,7 +106,7 @@ const Game = () => {
       const response = await fetch(`${process.env.REACT_APP_API_URL}/scores`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user._id, score }),
+        body: JSON.stringify({ userId: user._id, game: 'oyun1', score }),
       });
       if (response.ok) {
         console.log("Skor başarıyla kaydedildi!");
@@ -120,23 +119,10 @@ const Game = () => {
     }
   }, [score]);
 
-  // Geri sayım
-  useEffect(() => {
-    if (timeLeft > 0) {
-      const timer = setInterval(() => {
-        setTimeLeft((prevTime) => prevTime - 1);
-      }, 1000);
-      return () => clearInterval(timer);
-    } else {
-      saveScore();
-      setOpenModal(true);
-    }
-  }, [timeLeft, saveScore]);
-
   // En yüksek skorları getir
   const fetchTopScores = async () => {
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/scores/top`);
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/scores/top/oyun1`);
       const data = await response.json();
       setTopScores(data);
     } catch (error) {
@@ -170,9 +156,20 @@ const Game = () => {
       >
         Skorboard
       </Button>
-      <Typography variant="h6" gutterBottom textAlign="center">
-        Kalan Süre: {timeLeft} saniye
-      </Typography>
+
+      {/* Canları Göster */}
+      <Box display="flex" alignItems="center" mb={2}>
+        {[1, 2, 3].map((heart) => (
+          <Box key={heart} mr={1}>
+            {lives >= heart ? (
+              <FavoriteIcon color="error" /> // Dolmuş kalp
+            ) : (
+              <FavoriteBorderIcon color="error" /> // Boş kalp
+            )}
+          </Box>
+        ))}
+      </Box>
+
       <Typography variant="h6" gutterBottom textAlign="center">
         Skor: {score}
       </Typography>
@@ -182,7 +179,9 @@ const Game = () => {
         style={{ marginTop: "10px" }}
         onClick={() => {
           setScore(0);
-          setTimeLeft(60);
+          setLives(3); // Canları sıfırla
+          setMessage("");
+          generateNewNote(); // Yeni bir nota üret
         }}
       >
         Başlat
@@ -236,6 +235,7 @@ const Game = () => {
         {message}
       </Typography>
 
+      {/* Oyun Bitti Modal'ı */}
       <Modal open={openModal} onClose={() => setOpenModal(false)}>
         <Paper
           style={{
@@ -261,8 +261,10 @@ const Game = () => {
             style={{ marginTop: "20px" }}
             onClick={() => {
               setScore(0);
-              setTimeLeft(60);
+              setLives(3); // Canları sıfırla
               setOpenModal(false);
+              generateNewNote(); // Yeni bir nota üret
+              setMessage("");
             }}
           >
             Tekrar Oyna
@@ -270,6 +272,7 @@ const Game = () => {
         </Paper>
       </Modal>
 
+      {/* Skorboard Modal'ı */}
       <Modal open={openScoreboard} onClose={() => setOpenScoreboard(false)}>
         <Paper
           style={{
@@ -281,6 +284,8 @@ const Game = () => {
             maxWidth: "90%",
             width: "400px",
             textAlign: "center",
+            maxHeight: "80vh",
+            overflowY: "auto",
           }}
         >
           <Typography variant="h5" gutterBottom>
@@ -290,8 +295,7 @@ const Game = () => {
             <Box>
               {topScores.map((entry, index) => (
                 <Typography key={index}>
-                  {index + 1}. {entry.user?.name || "-"}{" "}
-                  {entry.user?.surname || "-"}: {entry.totalScore || "-"}
+                  {index + 1}. {entry.user?.name || "-"} {entry.user?.surname || "-"}: {entry.maxScore || "-"}
                 </Typography>
               ))}
             </Box>

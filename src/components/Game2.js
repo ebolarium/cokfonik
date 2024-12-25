@@ -2,6 +2,8 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Box, Typography, Button, Modal, Paper } from "@mui/material";
 import Soundfont from "soundfont-player";
+import FavoriteIcon from '@mui/icons-material/Favorite'; // Dolmuş kalp ikonu
+import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder'; // Boş kalp ikonu
 
 const notes = ["C4", "D4", "E4", "F4", "G4", "A4", "B4"];
 const noteNames = {
@@ -16,14 +18,17 @@ const noteNames = {
 
 const IntervalGame = () => {
   const [piano, setPiano] = useState(null);
-  const [currentNote, setCurrentNote] = useState("C4");
+  const [currentNote, setCurrentNote] = useState("C4"); // İlk nota
+  const [targetNote, setTargetNote] = useState(null); // Hedef nota
   const [message, setMessage] = useState("");
   const [score, setScore] = useState(0);
+  const [lives, setLives] = useState(3); // Can durumu
   const [topScores, setTopScores] = useState([]);
   const [openModal, setOpenModal] = useState(false);
   const [openScoreboard, setOpenScoreboard] = useState(false);
   const [gameActive, setGameActive] = useState(false);
 
+  // Piano enstrümanını yükle
   useEffect(() => {
     const audioContext = new (window.AudioContext || window.webkitAudioContext)();
     Soundfont.instrument(audioContext, "acoustic_grand_piano").then((p) => {
@@ -31,33 +36,65 @@ const IntervalGame = () => {
     });
   }, []);
 
+  // Yeni rastgele nota üret, önceki notadan farklı olmalı
+  const generateRandomNote = () => {
+    let randomNote;
+    do {
+      randomNote = notes[Math.floor(Math.random() * notes.length)];
+    } while (randomNote === targetNote); // Aynı notayı tekrarlamamak için
+    setTargetNote(randomNote);
+  };
+
+  // Notaları çal
   const playInterval = () => {
-    if (!piano) return;
+    if (!piano || !targetNote) return;
     setMessage("");
-    piano.play("C4", 0, { duration: 1 });
+    piano.play(currentNote, 0, { duration: 1 });
     setTimeout(() => {
-      const randomNote = notes[Math.floor(Math.random() * notes.length)];
-      setCurrentNote(randomNote);
-      piano.play(randomNote, 0, { duration: 1 });
+      piano.play(targetNote, 0, { duration: 1 });
     }, 1000);
   };
 
+  // targetNote değiştiğinde playInterval'ı tetikle
+  useEffect(() => {
+    if (gameActive && targetNote) {
+      playInterval();
+    }
+  }, [targetNote, gameActive]);
+
+  // Cevabı kontrol et
   const checkAnswer = (guess) => {
     if (!gameActive) return;
-    if (guess === currentNote) {
+
+    if (guess === targetNote) {
       setMessage("Doğru! 🎉");
       setScore((prev) => prev + 5);
+      // Doğru cevaptan sonra 1 saniye bekle
+      setTimeout(() => {
+        generateRandomNote(); // Yeni bir hedef nota belirle
+      }, 1000);
+      // playInterval otomatik olarak useEffect ile tetiklenecek
     } else {
       setMessage("Yanlış! ❌");
+      setLives((prevLives) => {
+        const newLives = prevLives - 1;
+        if (newLives > 0) {
+          // Yanlış cevaptan sonra 1 saniye bekle ve aynı notayı tekrar sor
+          setTimeout(() => {
+            playInterval(); // Aynı hedef notayı tekrar sor
+          }, 1000);
+        } else {
+          endGame(); // Can kalmadı, oyunu bitir
+        }
+        return newLives;
+      });
     }
-    setTimeout(() => {
-      playInterval();
-    }, 1000);
   };
 
+  // En yüksek skorları getir
   const fetchTopScores = async () => {
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/scores/top`);
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/scores/top/oyun2`);
       const data = await response.json();
       setTopScores(data);
     } catch (error) {
@@ -65,6 +102,7 @@ const IntervalGame = () => {
     }
   };
 
+  // Skoru kaydet
   const saveScore = useCallback(async () => {
     const user = JSON.parse(localStorage.getItem("user"));
     if (!user) return;
@@ -72,7 +110,7 @@ const IntervalGame = () => {
       const response = await fetch(`${process.env.REACT_APP_API_URL}/scores`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user._id, score }),
+        body: JSON.stringify({ userId: user._id, game: 'oyun2', score }),
       });
       if (response.ok) {
         fetchTopScores();
@@ -88,13 +126,21 @@ const IntervalGame = () => {
     fetchTopScores();
   }, [fetchTopScores]);
 
+  // Oyunu başlat
   const startGame = () => {
+    if (!piano) {
+      setMessage("Piano yükleniyor, lütfen biraz bekleyin...");
+      return;
+    }
     setScore(0);
+    setLives(3); // Canları sıfırla
     setMessage("");
     setGameActive(true);
-    playInterval();
+    generateRandomNote(); // Yeni bir hedef nota belirle
+    // playInterval otomatik olarak useEffect ile tetiklenecek
   };
 
+  // Oyunu bitir
   const endGame = () => {
     setGameActive(false);
     saveScore();
@@ -124,6 +170,19 @@ const IntervalGame = () => {
         Skorboard
       </Button>
 
+      {/* Canları Göster */}
+      <Box display="flex" alignItems="center" mb={2}>
+        {[1, 2, 3].map((heart) => (
+          <Box key={heart} mr={1}>
+            {lives >= heart ? (
+              <FavoriteIcon color="error" /> // Dolmuş kalp
+            ) : (
+              <FavoriteBorderIcon color="error" /> // Boş kalp
+            )}
+          </Box>
+        ))}
+      </Box>
+
       <Typography variant="h6" gutterBottom textAlign="center">
         Skor: {score}
       </Typography>
@@ -132,18 +191,13 @@ const IntervalGame = () => {
         <Button
           variant="contained"
           color="primary"
-          onClick={startGame}
-          disabled={gameActive}
+          style={{ marginTop: "20px" }}
+          onClick={() => {
+            startGame();          // Oyunu yeniden başlat
+            setOpenModal(false);  // Modal'ı kapat
+          }}
         >
-          Başlat
-        </Button>
-        <Button
-          variant="contained"
-          color="secondary"
-          onClick={endGame}
-          disabled={!gameActive}
-        >
-          Oyunu Bitir
+          Başla
         </Button>
       </Box>
 
@@ -170,6 +224,7 @@ const IntervalGame = () => {
               maxWidth: "120px",
             }}
             onClick={() => checkAnswer(n)}
+            disabled={!gameActive}
           >
             {noteNames[n]}
           </Button>
@@ -185,6 +240,7 @@ const IntervalGame = () => {
         {message}
       </Typography>
 
+     {/* Oyun Bitti Modal'ı */}
       <Modal open={openModal} onClose={() => setOpenModal(false)}>
         <Paper
           style={{
@@ -209,15 +265,16 @@ const IntervalGame = () => {
             color="primary"
             style={{ marginTop: "20px" }}
             onClick={() => {
-              setScore(0);
-              setOpenModal(false);
+              startGame();          // Oyunu yeniden başlat
+              setOpenModal(false);  // Modal'ı kapat
             }}
           >
-            Kapat
+            Tekrar Oyna
           </Button>
         </Paper>
       </Modal>
-
+      
+      {/* Skorboard Modal'ı */}
       <Modal open={openScoreboard} onClose={() => setOpenScoreboard(false)}>
         <Paper
           style={{
@@ -229,6 +286,8 @@ const IntervalGame = () => {
             maxWidth: "90%",
             width: "400px",
             textAlign: "center",
+            maxHeight: "80vh",
+            overflowY: "auto",
           }}
         >
           <Typography variant="h5" gutterBottom>
@@ -238,8 +297,7 @@ const IntervalGame = () => {
             <Box>
               {topScores.map((entry, index) => (
                 <Typography key={index}>
-                  {index + 1}. {entry.user?.name || "-"} {entry.user?.surname || "-"}:{" "}
-                  {entry.totalScore || "-"}
+                  {index + 1}. {entry.user?.name || "-"} {entry.user?.surname || "-"}: {entry.maxScore || "-"}
                 </Typography>
               ))}
             </Box>
