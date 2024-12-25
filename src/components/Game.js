@@ -1,3 +1,4 @@
+// Game.js
 import React, { useState, useEffect, useCallback } from "react";
 import { Box, Typography, Button, Modal, Paper } from "@mui/material";
 import { Renderer, Stave, StaveNote, Voice, Formatter } from "vexflow";
@@ -52,12 +53,15 @@ const Game = () => {
         generateNewNote();
       } else {
         setMessage("Yanlış, tekrar dene! ❌");
-        setLives((prevLives) => prevLives - 1); // Canı azalt
-        if (lives - 1 === 0) {
-          // Can kalmadı, oyunu bitir
-          saveScore();
-          setOpenModal(true);
-        }
+        setLives((prevLives) => {
+          const newLives = prevLives - 1;
+          if (newLives === 0) {
+            // Can kalmadı, oyunu bitir
+            saveScore();
+            setOpenModal(true);
+          }
+          return newLives;
+        });
       }
     }
   };
@@ -97,6 +101,14 @@ const Game = () => {
     voice.draw(context, stave);
   }, [currentNote]);
 
+  // Fontu yükle
+  useEffect(() => {
+    const link = document.createElement('link');
+    link.href = 'https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap';
+    link.rel = 'stylesheet';
+    document.head.appendChild(link);
+  }, []);
+
   // Skoru kaydet
   const saveScore = useCallback(async () => {
     const user = JSON.parse(localStorage.getItem("user")); 
@@ -134,6 +146,14 @@ const Game = () => {
     fetchTopScores();
   }, []);
 
+  // Oyunu başlat
+  const startGame = () => {
+    setScore(0);
+    setLives(3); // Canları sıfırla
+    setMessage("");
+    generateNewNote(); // Yeni bir nota üret
+  };
+
   return (
     <Box
       minHeight="100vh"
@@ -142,50 +162,80 @@ const Game = () => {
       justifyContent="flex-start"
       alignItems="center"
       bgcolor="#f9f9f9"
-      padding="10px"
+      padding="20px"
       marginTop="0px"
     >
-      <Typography variant="h4" gutterBottom textAlign="center">
+      <Typography
+        variant="h4"
+        gutterBottom
+        textAlign="center"
+        style={{ fontFamily: "'Press Start 2P', cursive" }}
+      >
         Nota Oyunu
       </Typography>
-      <Button
-        variant="outlined"
-        color="primary"
-        onClick={() => setOpenScoreboard(true)}
-        style={{ marginBottom: "20px" }}
-      >
-        Skorboard
-      </Button>
 
-      {/* Canları Göster */}
-      <Box display="flex" alignItems="center" mb={2}>
-        {[1, 2, 3].map((heart) => (
-          <Box key={heart} mr={1}>
-            {lives >= heart ? (
-              <FavoriteIcon color="error" /> // Dolmuş kalp
-            ) : (
-              <FavoriteBorderIcon color="error" /> // Boş kalp
-            )}
-          </Box>
-        ))}
+      {/* Canlar ve Skor */}
+      <Box
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        width="100%"
+        maxWidth="400px"
+        mb={2}
+      >
+        <Box display="flex" alignItems="center">
+          {[1, 2, 3].map((heart) => (
+            <Box key={heart} mr={1}>
+              {lives >= heart ? (
+                <FavoriteIcon color="error" />
+              ) : (
+                <FavoriteBorderIcon color="error" />
+              )}
+            </Box>
+          ))}
+        </Box>
+        <Typography variant="h6">
+          Skor: {score}
+        </Typography>
       </Box>
 
-      <Typography variant="h6" gutterBottom textAlign="center">
-        Skor: {score}
-      </Typography>
-      <Button
-        variant="contained"
-        color="primary"
-        style={{ marginTop: "10px" }}
-        onClick={() => {
-          setScore(0);
-          setLives(3); // Canları sıfırla
-          setMessage("");
-          generateNewNote(); // Yeni bir nota üret
-        }}
+      {/* Skorboard ve Başla Butonları */}
+      <Box
+        display="flex"
+        justifyContent="center"
+        gap="10px"
+        mb={2}
+        width="100%"
+        maxWidth="400px"
       >
-        Başlat
-      </Button>
+        <Button
+          variant="outlined"
+          color="primary"
+          onClick={() => setOpenScoreboard(true)}
+          fullWidth
+        >
+          Skorboard
+        </Button>
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={() => {
+            startGame();
+            setOpenModal(false);
+          }}
+          disabled={false} // Oyunu başlatırken modal kapatmaya gerek yoksa false yapabilirsiniz
+          fullWidth
+        >
+          Başlat
+        </Button>
+      </Box>
+
+      {/* Açıklama */}
+      <Typography variant="subtitle1" textAlign="center" mb={2}>
+        Çalan ilk nota {currentGroup}. İkinci nota nedir?
+      </Typography>
+
+      {/* Müzik Portesi */}
       <Box
         id="music-port"
         style={{
@@ -198,14 +248,13 @@ const Game = () => {
           alignItems: "center",
         }}
       ></Box>
-      <Typography variant="h6" mt={2} textAlign="center">
-        Bu notayı seçin:
-      </Typography>
+
+      {/* Oyun Butonları */}
       <Box
         display="flex"
         justifyContent="center"
         flexWrap="wrap"
-        mt={2}
+        mb={2}
         maxWidth="400px"
         width="100%"
       >
@@ -226,11 +275,13 @@ const Game = () => {
           </Button>
         ))}
       </Box>
+
+      {/* Doğru/Yanlış Mesajı */}
       <Typography
         variant="h6"
-        mt={2}
         color={message.includes("Doğru") ? "green" : "red"}
         textAlign="center"
+        mb={2}
       >
         {message}
       </Typography>

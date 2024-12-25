@@ -29,6 +29,14 @@ const IntervalGame = () => {
   const [gameActive, setGameActive] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false); // Ses oynatma durumu
 
+  // Fontu yükle
+  useEffect(() => {
+    const link = document.createElement('link');
+    link.href = 'https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap';
+    link.rel = 'stylesheet';
+    document.head.appendChild(link);
+  }, []);
+
   // Piano enstrümanını yükle
   useEffect(() => {
     const audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -163,61 +171,85 @@ const IntervalGame = () => {
       justifyContent="flex-start"
       alignItems="center"
       bgcolor="#f9f9f9"
-      padding="10px"
+      padding="20px"
       marginTop="0px"
     >
-      <Typography variant="h4" gutterBottom textAlign="center">
-        Oyun 2
-      </Typography>
-      <Button
-        variant="outlined"
-        color="primary"
-        onClick={() => setOpenScoreboard(true)}
-        style={{ marginBottom: "20px" }}
+      <Typography
+        variant="h4"
+        gutterBottom
+        textAlign="center"
+        style={{ fontFamily: "'Press Start 2P', cursive" }}
       >
-        Skorboard
-      </Button>
+        Oyun2
+      </Typography>
 
-      {/* Canları Göster */}
-      <Box display="flex" alignItems="center" mb={2}>
-        {[1, 2, 3].map((heart) => (
-          <Box key={heart} mr={1}>
-            {lives >= heart ? (
-              <FavoriteIcon color="error" /> // Dolmuş kalp
-            ) : (
-              <FavoriteBorderIcon color="error" /> // Boş kalp
-            )}
-          </Box>
-        ))}
+      {/* Canlar ve Skor */}
+      <Box
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        width="100%"
+        maxWidth="400px"
+        mb={2}
+      >
+        <Box display="flex" alignItems="center">
+          {[1, 2, 3].map((heart) => (
+            <Box key={heart} mr={1}>
+              {lives >= heart ? (
+                <FavoriteIcon color="error" />
+              ) : (
+                <FavoriteBorderIcon color="error" />
+              )}
+            </Box>
+          ))}
+        </Box>
+        <Typography variant="h6">
+          Skor: {score}
+        </Typography>
       </Box>
 
-      <Typography variant="h6" gutterBottom textAlign="center">
-        Skor: {score}
-      </Typography>
-
-      <Box display="flex" gap="10px" marginBottom="20px">
+      {/* Skorboard ve Başla Butonları */}
+      <Box
+        display="flex"
+        justifyContent="center"
+        gap="10px"
+        mb={2}
+        width="100%"
+        maxWidth="400px"
+      >
+        <Button
+          variant="outlined"
+          color="primary"
+          onClick={() => setOpenScoreboard(true)}
+          fullWidth
+        >
+          Skorboard
+        </Button>
         <Button
           variant="contained"
           color="primary"
-          style={{ marginTop: "20px" }}
           onClick={() => {
-            startGame();          // Oyunu yeniden başlat
-            setOpenModal(false);  // Modal'ı kapat
+            startGame();
+            setOpenModal(false);
           }}
-          disabled={gameActive} // Oyun aktifken butonu devre dışı bırak
+          disabled={gameActive}
+          fullWidth
         >
           Başla
         </Button>
       </Box>
 
-      <Typography variant="h6" mt={2} textAlign="center">
-        Bu çalınan ikinci notayı seçin:
+      {/* Açıklama */}
+      <Typography variant="subtitle1" textAlign="center" mb={2}>
+        Çalan ilk nota {noteNames[currentNote]}. İkinci nota nedir?
       </Typography>
+
+      {/* Oyun Butonları */}
       <Box
         display="flex"
         justifyContent="center"
         flexWrap="wrap"
-        mt={2}
+        mb={2}
         maxWidth="400px"
         width="100%"
       >
@@ -233,23 +265,24 @@ const IntervalGame = () => {
               maxWidth: "120px",
             }}
             onClick={() => checkAnswer(n)}
-            disabled={!gameActive || isPlaying} // Oyun aktif değilse veya ses oynatılıyorsa butonları devre dışı bırak
+            disabled={!gameActive || isPlaying}
           >
             {noteNames[n]}
           </Button>
         ))}
       </Box>
 
+      {/* Doğru/Yanlış Mesajı */}
       <Typography
         variant="h6"
-        mt={2}
         color={message.includes("Doğru") ? "green" : "red"}
         textAlign="center"
+        mb={2}
       >
         {message}
       </Typography>
 
-     {/* Oyun Bitti Modal'ı */}
+      {/* Oyun Bitti Modal'ı */}
       <Modal open={openModal} onClose={() => setOpenModal(false)}>
         <Paper
           style={{
@@ -274,10 +307,10 @@ const IntervalGame = () => {
             color="primary"
             style={{ marginTop: "20px" }}
             onClick={() => {
-              startGame();          // Oyunu yeniden başlat
-              setOpenModal(false);  // Modal'ı kapat
+              startGame();
+              setOpenModal(false);
             }}
-            disabled={gameActive} // Oyun aktifken butonu devre dışı bırak
+            disabled={gameActive}
           >
             Tekrar Oyna
           </Button>
