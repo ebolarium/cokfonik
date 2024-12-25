@@ -27,6 +27,7 @@ const IntervalGame = () => {
   const [openModal, setOpenModal] = useState(false);
   const [openScoreboard, setOpenScoreboard] = useState(false);
   const [gameActive, setGameActive] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false); // Ses oynatma durumu
 
   // Piano enstrümanını yükle
   useEffect(() => {
@@ -49,10 +50,17 @@ const IntervalGame = () => {
   const playInterval = () => {
     if (!piano || !targetNote) return;
     setMessage("");
+    setIsPlaying(true); // Ses oynatmayı başlat
+
     piano.play(currentNote, 0, { duration: 1 });
     setTimeout(() => {
       piano.play(targetNote, 0, { duration: 1 });
     }, 1000);
+
+    // Seslerin tamamlanmasının ardından butonları tekrar etkinleştir
+    setTimeout(() => {
+      setIsPlaying(false);
+    }, 2000); // 2 saniye sonra butonları etkinleştir
   };
 
   // targetNote değiştiğinde playInterval'ı tetikle
@@ -64,7 +72,7 @@ const IntervalGame = () => {
 
   // Cevabı kontrol et
   const checkAnswer = (guess) => {
-    if (!gameActive) return;
+    if (!gameActive || isPlaying) return; // Oyun aktif değilse veya ses oynatılıyorsa cevap kontrol etme
 
     if (guess === targetNote) {
       setMessage("Doğru! 🎉");
@@ -196,6 +204,7 @@ const IntervalGame = () => {
             startGame();          // Oyunu yeniden başlat
             setOpenModal(false);  // Modal'ı kapat
           }}
+          disabled={gameActive} // Oyun aktifken butonu devre dışı bırak
         >
           Başla
         </Button>
@@ -224,7 +233,7 @@ const IntervalGame = () => {
               maxWidth: "120px",
             }}
             onClick={() => checkAnswer(n)}
-            disabled={!gameActive}
+            disabled={!gameActive || isPlaying} // Oyun aktif değilse veya ses oynatılıyorsa butonları devre dışı bırak
           >
             {noteNames[n]}
           </Button>
@@ -268,6 +277,7 @@ const IntervalGame = () => {
               startGame();          // Oyunu yeniden başlat
               setOpenModal(false);  // Modal'ı kapat
             }}
+            disabled={gameActive} // Oyun aktifken butonu devre dışı bırak
           >
             Tekrar Oyna
           </Button>
