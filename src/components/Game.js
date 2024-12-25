@@ -62,25 +62,41 @@ const Game = () => {
     div.innerHTML = "";
     const renderer = new VF.Renderer(div, VF.Renderer.Backends.SVG);
     renderer.resize(300, 150);
-
+  
     const context = renderer.getContext();
     const stave = new VF.Stave(10, 40, 280);
     stave.addClef("treble").setContext(context).draw();
-
+  
+    // Oktavı currentNote'dan ayır
+    const octave = parseInt(currentNote.split('/')[1], 10);
+    // Oktava bağlı olarak stem_direction belirle
+    const stemDirection = octave >= 5 ? -1 : 1;
+  
+    // StaveNote'u stem_direction ile oluştur
     const staveNote = new VF.StaveNote({
       clef: "treble",
       keys: [currentNote],
       duration: "q",
+      stem_direction: stemDirection, // Stem direction'ı ekle
     });
-
+  
+    // Alternatif olarak, StaveNote oluşturulduktan sonra setStemDirection kullanabilirsiniz:
+    // const staveNote = new VF.StaveNote({
+    //   clef: "treble",
+    //   keys: [currentNote],
+    //   duration: "q",
+    // });
+    // staveNote.setStemDirection(stemDirection);
+  
     const voice = new VF.Voice({ num_beats: 1, beat_value: 4 });
     voice.addTickable(staveNote);
-
+  
     const formatter = new VF.Formatter();
     formatter.joinVoices([voice]).format([voice], 250);
-
+  
     voice.draw(context, stave);
   }, [currentNote]);
+  
 
   // Skoru kaydet
   const saveScore = useCallback(async () => {
