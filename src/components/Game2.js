@@ -1,4 +1,3 @@
-// IntervalGame.js
 import React, { useState, useEffect, useCallback } from "react";
 import { Box, Typography, Button, Modal, Paper } from "@mui/material";
 import Soundfont from "soundfont-player";
@@ -28,8 +27,8 @@ const IntervalGame = () => {
   const [openScoreboard, setOpenScoreboard] = useState(false);
   const [gameActive, setGameActive] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [hasAnswered, setHasAnswered] = useState(false); // Yeni state eklendi
 
-  // Fontu yükle
   useEffect(() => {
     const link = document.createElement('link');
     link.href = 'https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap';
@@ -37,7 +36,6 @@ const IntervalGame = () => {
     document.head.appendChild(link);
   }, []);
 
-  // Piano enstrümanını yükle
   useEffect(() => {
     const audioContext = new (window.AudioContext || window.webkitAudioContext)();
     Soundfont.instrument(audioContext, "acoustic_grand_piano").then((p) => {
@@ -45,16 +43,15 @@ const IntervalGame = () => {
     });
   }, []);
 
-  // Yeni rastgele nota üret, önceki notadan farklı olmalı
   const generateRandomNote = () => {
     let randomNote;
     do {
       randomNote = notes[Math.floor(Math.random() * notes.length)];
     } while (randomNote === targetNote);
     setTargetNote(randomNote);
+    setHasAnswered(false); // Yeni soru geldiğinde hasAnswered'ı sıfırla
   };
 
-  // Notaları çal
   const playInterval = () => {
     if (!piano || !targetNote) return;
     setMessage("");
@@ -70,16 +67,15 @@ const IntervalGame = () => {
     }, 2000);
   };
 
-  // targetNote değiştiğinde playInterval'ı tetikle
   useEffect(() => {
     if (gameActive && targetNote) {
       playInterval();
     }
   }, [targetNote, gameActive]);
 
-  // Cevabı kontrol et
   const checkAnswer = (guess) => {
-    if (!gameActive || isPlaying) return;
+    if (!gameActive || isPlaying || hasAnswered) return; // hasAnswered kontrolü eklendi
+    setHasAnswered(true); // Cevap verildiğini işaretle
 
     if (guess === targetNote) {
       setMessage("Doğru! 🎉");
@@ -94,6 +90,7 @@ const IntervalGame = () => {
         if (newLives > 0) {
           setTimeout(() => {
             playInterval();
+            setHasAnswered(false); // Yanlış cevap sonrası tekrar deneme hakkı
           }, 1000);
         } else {
           endGame();
@@ -103,7 +100,6 @@ const IntervalGame = () => {
     }
   };
 
-  // En yüksek skorları getir
   const fetchTopScores = async () => {
     try {
       const response = await fetch(`${process.env.REACT_APP_API_URL}/scores/top/oyun2`);
@@ -114,7 +110,6 @@ const IntervalGame = () => {
     }
   };
 
-  // Skoru kaydet
   const saveScore = useCallback(async () => {
     const user = JSON.parse(localStorage.getItem("user"));
     if (!user) return;
@@ -138,7 +133,6 @@ const IntervalGame = () => {
     fetchTopScores();
   }, [fetchTopScores]);
 
-  // Oyunu başlat
   const startGame = () => {
     if (!piano) {
       setMessage("Piano yükleniyor, lütfen biraz bekleyin...");
@@ -148,10 +142,10 @@ const IntervalGame = () => {
     setLives(3);
     setMessage("");
     setGameActive(true);
+    setHasAnswered(false); // Oyun başlangıcında hasAnswered'ı sıfırla
     generateRandomNote();
   };
 
-  // Oyunu bitir
   const endGame = () => {
     setGameActive(false);
     saveScore();
@@ -178,7 +172,6 @@ const IntervalGame = () => {
         Oyun2
       </Typography>
 
-      {/* Canlar ve Skor */}
       <Box
         display="flex"
         justifyContent="space-between"
@@ -203,7 +196,6 @@ const IntervalGame = () => {
         </Typography>
       </Box>
 
-      {/* Skorboard ve Başla Butonları */}
       <Box
         display="flex"
         justifyContent="center"
@@ -234,12 +226,10 @@ const IntervalGame = () => {
         </Button>
       </Box>
 
-      {/* Açıklama */}
       <Typography variant="subtitle1" textAlign="center" mb={2}>
         Çalan ilk nota {noteNames[currentNote]}. İkinci nota nedir?
       </Typography>
 
-      {/* Oyun Butonları */}
       <Box
         display="flex"
         justifyContent="center"
@@ -253,24 +243,23 @@ const IntervalGame = () => {
             key={n}
             variant="contained"
             color="primary"
-            size="small" // Boyutu küçültmek için 'small' kullanıldı
+            size="small"
             sx={{
-              margin: "4px", // Marjin küçültüldü
-              flex: "1 1 calc(33.333% - 8px)", // Flex-basis ayarı daraltıldı
-              minWidth: "60px", // Min genişlik azaltıldı
-              maxWidth: "100px", // Max genişlik azaltıldı
-              padding: "6px 12px", // İç boşluklar küçültüldü
-              fontSize: "0.75rem", // Yazı boyutu küçültüldü
+              margin: "4px",
+              flex: "1 1 calc(33.333% - 8px)",
+              minWidth: "60px",
+              maxWidth: "100px",
+              padding: "6px 12px",
+              fontSize: "0.75rem",
             }}
             onClick={() => checkAnswer(n)}
-            disabled={!gameActive || isPlaying}
+            disabled={!gameActive || isPlaying || hasAnswered} // hasAnswered kontrolü eklendi
           >
             {noteNames[n]}
           </Button>
         ))}
       </Box>
 
-      {/* Doğru/Yanlış Mesajı */}
       <Typography
         variant="h6"
         color={message.includes("Doğru") ? "green" : "red"}
@@ -280,7 +269,6 @@ const IntervalGame = () => {
         {message}
       </Typography>
 
-      {/* Oyun Bitti Modal'ı */}
       <Modal open={openModal} onClose={() => setOpenModal(false)}>
         <Paper
           sx={{
@@ -315,7 +303,6 @@ const IntervalGame = () => {
         </Paper>
       </Modal>
       
-      {/* Skorboard Modal'ı */}
       <Modal open={openScoreboard} onClose={() => setOpenScoreboard(false)}>
         <Paper
           sx={{
