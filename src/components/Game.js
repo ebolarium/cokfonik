@@ -232,7 +232,7 @@ const Game = () => {
 
       {/* Açıklama */}
       <Typography variant="subtitle1" textAlign="center" mb={2}>
-        Çalan ilk nota {currentGroup}. İkinci nota nedir?
+Portede yazan notayı bulun.
       </Typography>
 
       {/* Müzik Portesi */}
