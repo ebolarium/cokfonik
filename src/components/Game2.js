@@ -2,8 +2,8 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Box, Typography, Button, Modal, Paper } from "@mui/material";
 import Soundfont from "soundfont-player";
-import FavoriteIcon from '@mui/icons-material/Favorite'; // Dolmuş kalp ikonu
-import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder'; // Boş kalp ikonu
+import FavoriteIcon from '@mui/icons-material/Favorite';
+import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 
 const notes = ["C4", "D4", "E4", "F4", "G4", "A4", "B4"];
 const noteNames = {
@@ -18,16 +18,16 @@ const noteNames = {
 
 const IntervalGame = () => {
   const [piano, setPiano] = useState(null);
-  const [currentNote, setCurrentNote] = useState("C4"); // İlk nota
-  const [targetNote, setTargetNote] = useState(null); // Hedef nota
+  const [currentNote, setCurrentNote] = useState("C4");
+  const [targetNote, setTargetNote] = useState(null);
   const [message, setMessage] = useState("");
   const [score, setScore] = useState(0);
-  const [lives, setLives] = useState(3); // Can durumu
+  const [lives, setLives] = useState(3);
   const [topScores, setTopScores] = useState([]);
   const [openModal, setOpenModal] = useState(false);
   const [openScoreboard, setOpenScoreboard] = useState(false);
   const [gameActive, setGameActive] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false); // Ses oynatma durumu
+  const [isPlaying, setIsPlaying] = useState(false);
 
   // Fontu yükle
   useEffect(() => {
@@ -50,7 +50,7 @@ const IntervalGame = () => {
     let randomNote;
     do {
       randomNote = notes[Math.floor(Math.random() * notes.length)];
-    } while (randomNote === targetNote); // Aynı notayı tekrarlamamak için
+    } while (randomNote === targetNote);
     setTargetNote(randomNote);
   };
 
@@ -58,17 +58,16 @@ const IntervalGame = () => {
   const playInterval = () => {
     if (!piano || !targetNote) return;
     setMessage("");
-    setIsPlaying(true); // Ses oynatmayı başlat
+    setIsPlaying(true);
 
     piano.play(currentNote, 0, { duration: 1 });
     setTimeout(() => {
       piano.play(targetNote, 0, { duration: 1 });
     }, 1000);
 
-    // Seslerin tamamlanmasının ardından butonları tekrar etkinleştir
     setTimeout(() => {
       setIsPlaying(false);
-    }, 2000); // 2 saniye sonra butonları etkinleştir
+    }, 2000);
   };
 
   // targetNote değiştiğinde playInterval'ı tetikle
@@ -80,27 +79,24 @@ const IntervalGame = () => {
 
   // Cevabı kontrol et
   const checkAnswer = (guess) => {
-    if (!gameActive || isPlaying) return; // Oyun aktif değilse veya ses oynatılıyorsa cevap kontrol etme
+    if (!gameActive || isPlaying) return;
 
     if (guess === targetNote) {
       setMessage("Doğru! 🎉");
       setScore((prev) => prev + 5);
-      // Doğru cevaptan sonra 1 saniye bekle
       setTimeout(() => {
-        generateRandomNote(); // Yeni bir hedef nota belirle
+        generateRandomNote();
       }, 1000);
-      // playInterval otomatik olarak useEffect ile tetiklenecek
     } else {
       setMessage("Yanlış! ❌");
       setLives((prevLives) => {
         const newLives = prevLives - 1;
         if (newLives > 0) {
-          // Yanlış cevaptan sonra 1 saniye bekle ve aynı notayı tekrar sor
           setTimeout(() => {
-            playInterval(); // Aynı hedef notayı tekrar sor
+            playInterval();
           }, 1000);
         } else {
-          endGame(); // Can kalmadı, oyunu bitir
+          endGame();
         }
         return newLives;
       });
@@ -149,11 +145,10 @@ const IntervalGame = () => {
       return;
     }
     setScore(0);
-    setLives(3); // Canları sıfırla
+    setLives(3);
     setMessage("");
     setGameActive(true);
-    generateRandomNote(); // Yeni bir hedef nota belirle
-    // playInterval otomatik olarak useEffect ile tetiklenecek
+    generateRandomNote();
   };
 
   // Oyunu bitir
@@ -258,11 +253,14 @@ const IntervalGame = () => {
             key={n}
             variant="contained"
             color="primary"
-            style={{
-              margin: "8px",
-              flex: "1 1 calc(33.333% - 16px)",
-              minWidth: "80px",
-              maxWidth: "120px",
+            size="small" // Boyutu küçültmek için 'small' kullanıldı
+            sx={{
+              margin: "4px", // Marjin küçültüldü
+              flex: "1 1 calc(33.333% - 8px)", // Flex-basis ayarı daraltıldı
+              minWidth: "60px", // Min genişlik azaltıldı
+              maxWidth: "100px", // Max genişlik azaltıldı
+              padding: "6px 12px", // İç boşluklar küçültüldü
+              fontSize: "0.75rem", // Yazı boyutu küçültüldü
             }}
             onClick={() => checkAnswer(n)}
             disabled={!gameActive || isPlaying}
@@ -285,7 +283,7 @@ const IntervalGame = () => {
       {/* Oyun Bitti Modal'ı */}
       <Modal open={openModal} onClose={() => setOpenModal(false)}>
         <Paper
-          style={{
+          sx={{
             position: "absolute",
             top: "50%",
             left: "50%",
@@ -305,7 +303,7 @@ const IntervalGame = () => {
           <Button
             variant="contained"
             color="primary"
-            style={{ marginTop: "20px" }}
+            sx={{ marginTop: "20px" }}
             onClick={() => {
               startGame();
               setOpenModal(false);
@@ -320,7 +318,7 @@ const IntervalGame = () => {
       {/* Skorboard Modal'ı */}
       <Modal open={openScoreboard} onClose={() => setOpenScoreboard(false)}>
         <Paper
-          style={{
+          sx={{
             position: "absolute",
             top: "50%",
             left: "50%",
@@ -350,7 +348,7 @@ const IntervalGame = () => {
           <Button
             variant="contained"
             color="primary"
-            style={{ marginTop: "20px" }}
+            sx={{ marginTop: "20px" }}
             onClick={() => setOpenScoreboard(false)}
           >
             Kapat
