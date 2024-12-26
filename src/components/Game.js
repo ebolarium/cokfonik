@@ -1,22 +1,19 @@
-// Game.js
 import React, { useState, useEffect, useCallback } from "react";
 import { Box, Typography, Button, Modal, Paper } from "@mui/material";
 import { Renderer, Stave, StaveNote, Voice, Formatter } from "vexflow";
-import FavoriteIcon from '@mui/icons-material/Favorite'; // Dolmuş kalp ikonu
-import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder'; // Boş kalp ikonu
 
 const Game = () => {
-  const [currentNote, setCurrentNote] = useState("c/4"); 
-  const [currentGroup, setCurrentGroup] = useState("Do"); 
+  const [currentNote, setCurrentNote] = useState("c/4");
+  const [currentGroup, setCurrentGroup] = useState("Do");
   const [message, setMessage] = useState("");
-  const [score, setScore] = useState(0); 
-  const [lives, setLives] = useState(3); // Can State'i
-  const [topScores, setTopScores] = useState([]); 
-  const [openModal, setOpenModal] = useState(false); 
-  const [openScoreboard, setOpenScoreboard] = useState(false); 
-  const [previousNote, setPreviousNote] = useState(null); 
+  const [score, setScore] = useState(0);
+  const [timeLeft, setTimeLeft] = useState(60); // 60 saniye
+  const [isGameActive, setIsGameActive] = useState(false);
+  const [topScores, setTopScores] = useState([]);
+  const [openModal, setOpenModal] = useState(false);
+  const [openScoreboard, setOpenScoreboard] = useState(false);
+  const [previousNote, setPreviousNote] = useState(null);
 
-  // 2 oktavlık notaları gruplu şekilde tutuyoruz
   const noteGroups = [
     { name: "Do", variants: ["c/4", "c/5"] },
     { name: "Re", variants: ["d/4", "d/5"] },
@@ -27,7 +24,24 @@ const Game = () => {
     { name: "Si", variants: ["b/4", "b/5"] },
   ];
 
-  // Yeni bir rastgele nota üret
+  // Sayaç için useEffect
+  useEffect(() => {
+    let timer;
+    if (isGameActive && timeLeft > 0) {
+      timer = setInterval(() => {
+        setTimeLeft((prev) => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            endGame();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [isGameActive, timeLeft]);
+
   const generateNewNote = () => {
     let randomGroup, randomVariant;
     do {
@@ -41,32 +55,27 @@ const Game = () => {
     setCurrentNote(randomVariant);
     setCurrentGroup(randomGroup.name);
     setPreviousNote(randomVariant);
-    setMessage(""); // Mesajı temizle
+    setMessage("");
   };
 
-  // Kullanıcının cevabını kontrol et (oktavdan bağımsız kontrol)
   const checkAnswer = (selectedGroup) => {
-    if (lives > 0) { // Süre yerine can kontrolü
-      if (selectedGroup === currentGroup) {
-        setMessage("Doğru! 🎉");
-        setScore((prevScore) => prevScore + 1);
-        generateNewNote();
-      } else {
-        setMessage("Yanlış, tekrar dene! ❌");
-        setLives((prevLives) => {
-          const newLives = prevLives - 1;
-          if (newLives === 0) {
-            // Can kalmadı, oyunu bitir
-            saveScore();
-            setOpenModal(true);
-          }
-          return newLives;
-        });
-      }
+    if (!isGameActive || timeLeft === 0) return;
+
+    if (selectedGroup === currentGroup) {
+      setMessage("Doğru! 🎉");
+      setScore((prevScore) => prevScore + 1);
+      generateNewNote();
+    } else {
+      setMessage("Yanlış, tekrar dene! ❌");
     }
   };
 
-  // Porteyi ve notayı çiz
+  const endGame = () => {
+    setIsGameActive(false);
+    saveScore();
+    setOpenModal(true);
+  };
+
   useEffect(() => {
     const VF = { Renderer, Stave, StaveNote, Voice, Formatter };
     const div = document.getElementById("music-port");
@@ -79,17 +88,14 @@ const Game = () => {
     const stave = new VF.Stave(10, 40, 280);
     stave.addClef("treble").setContext(context).draw();
 
-    // Oktavı currentNote'dan ayır
     const octave = parseInt(currentNote.split('/')[1], 10);
-    // Oktava bağlı olarak stem_direction belirle
     const stemDirection = octave >= 5 ? -1 : 1;
 
-    // StaveNote'u stem_direction ile oluştur
     const staveNote = new VF.StaveNote({
       clef: "treble",
       keys: [currentNote],
       duration: "q",
-      stem_direction: stemDirection, // Stem direction'ı ekle
+      stem_direction: stemDirection,
     });
 
     const voice = new VF.Voice({ num_beats: 1, beat_value: 4 });
@@ -101,7 +107,6 @@ const Game = () => {
     voice.draw(context, stave);
   }, [currentNote]);
 
-  // Fontu yükle
   useEffect(() => {
     const link = document.createElement('link');
     link.href = 'https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap';
@@ -109,9 +114,8 @@ const Game = () => {
     document.head.appendChild(link);
   }, []);
 
-  // Skoru kaydet
   const saveScore = useCallback(async () => {
-    const user = JSON.parse(localStorage.getItem("user")); 
+    const user = JSON.parse(localStorage.getItem("user"));
     if (!user) return;
 
     try {
@@ -122,7 +126,7 @@ const Game = () => {
       });
       if (response.ok) {
         console.log("Skor başarıyla kaydedildi!");
-        fetchTopScores(); 
+        fetchTopScores();
       } else {
         console.error("Skor kaydedilirken hata oluştu.");
       }
@@ -131,7 +135,6 @@ const Game = () => {
     }
   }, [score]);
 
-  // En yüksek skorları getir
   const fetchTopScores = async () => {
     try {
       const response = await fetch(`${process.env.REACT_APP_API_URL}/scores/top/oyun1`);
@@ -146,12 +149,12 @@ const Game = () => {
     fetchTopScores();
   }, []);
 
-  // Oyunu başlat
   const startGame = () => {
     setScore(0);
-    setLives(3); // Canları sıfırla
+    setTimeLeft(60);
+    setIsGameActive(true);
     setMessage("");
-    generateNewNote(); // Yeni bir nota üret
+    generateNewNote();
   };
 
   return (
@@ -174,7 +177,7 @@ const Game = () => {
         Nota Oyunu
       </Typography>
 
-      {/* Canlar ve Skor */}
+      {/* Timer ve Skor */}
       <Box
         display="flex"
         justifyContent="space-between"
@@ -183,23 +186,14 @@ const Game = () => {
         maxWidth="400px"
         mb={2}
       >
-        <Box display="flex" alignItems="center">
-          {[1, 2, 3].map((heart) => (
-            <Box key={heart} mr={1}>
-              {lives >= heart ? (
-                <FavoriteIcon color="error" />
-              ) : (
-                <FavoriteBorderIcon color="error" />
-              )}
-            </Box>
-          ))}
-        </Box>
+        <Typography variant="h6" color={timeLeft <= 10 ? "error" : "inherit"}>
+          Süre: {timeLeft}s
+        </Typography>
         <Typography variant="h6">
           Skor: {score}
         </Typography>
       </Box>
 
-      {/* Skorboard ve Başla Butonları */}
       <Box
         display="flex"
         justifyContent="center"
@@ -223,19 +217,17 @@ const Game = () => {
             startGame();
             setOpenModal(false);
           }}
-          disabled={false} // Oyunu başlatırken modal kapatmaya gerek yoksa false yapabilirsiniz
+          disabled={isGameActive}
           fullWidth
         >
           Başlat
         </Button>
       </Box>
 
-      {/* Açıklama */}
       <Typography variant="subtitle1" textAlign="center" mb={2}>
-Portede yazan notayı bulun.
+        Portede yazan notayı bulun.
       </Typography>
 
-      {/* Müzik Portesi */}
       <Box
         id="music-port"
         style={{
@@ -247,9 +239,8 @@ Portede yazan notayı bulun.
           justifyContent: "center",
           alignItems: "center",
         }}
-      ></Box>
+      />
 
-      {/* Oyun Butonları */}
       <Box
         display="flex"
         justifyContent="center"
@@ -270,13 +261,13 @@ Portede yazan notayı bulun.
               maxWidth: "120px",
             }}
             onClick={() => checkAnswer(group.name)}
+            disabled={!isGameActive || timeLeft === 0}
           >
             {group.name}
           </Button>
         ))}
       </Box>
 
-      {/* Doğru/Yanlış Mesajı */}
       <Typography
         variant="h6"
         color={message.includes("Doğru") ? "green" : "red"}
@@ -286,7 +277,6 @@ Portede yazan notayı bulun.
         {message}
       </Typography>
 
-      {/* Oyun Bitti Modal'ı */}
       <Modal open={openModal} onClose={() => setOpenModal(false)}>
         <Paper
           style={{
@@ -301,7 +291,7 @@ Portede yazan notayı bulun.
           }}
         >
           <Typography variant="h5" gutterBottom>
-            Oyun Bitti!
+            Süre Doldu!
           </Typography>
           <Typography variant="h6" gutterBottom>
             Skorunuz: {score}
@@ -311,11 +301,8 @@ Portede yazan notayı bulun.
             color="primary"
             style={{ marginTop: "20px" }}
             onClick={() => {
-              setScore(0);
-              setLives(3); // Canları sıfırla
+              startGame();
               setOpenModal(false);
-              generateNewNote(); // Yeni bir nota üret
-              setMessage("");
             }}
           >
             Tekrar Oyna
@@ -323,7 +310,6 @@ Portede yazan notayı bulun.
         </Paper>
       </Modal>
 
-      {/* Skorboard Modal'ı */}
       <Modal open={openScoreboard} onClose={() => setOpenScoreboard(false)}>
         <Paper
           style={{
