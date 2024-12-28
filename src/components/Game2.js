@@ -1,38 +1,31 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Box, Typography, Button, Modal, Paper, LinearProgress } from "@mui/material";
+import { Box, Typography, Button, Modal, Paper, LinearProgress, Switch, FormControlLabel } from "@mui/material";
 import Soundfont from "soundfont-player";
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 
-// Level 1: Temel notalar
 const level1Notes = ["C4", "D4", "E4", "F4", "G4", "A4", "B4"];
-
-// Level 2: Diyezli/bemollü notalar
 const level2Notes = [
   "C4", "C#4", "D4", "D#4", "E4", "F4", "F#4", 
   "G4", "G#4", "A4", "A#4", "B4"
 ];
-
-// Level 3: İki oktav
 const level3Notes = [
   "C3", "C#3", "D3", "D#3", "E3", "F3", "F#3", "G3", "G#3", "A3", "A#3", "B3",
   "C4", "C#4", "D4", "D#4", "E4", "F4", "F#4", "G4", "G#4", "A4", "A#4", "B4"
 ];
 
 const noteNames = {
-  // Birinci oktav
   "C3": "Do₃", "C#3": "Do#₃", "D3": "Re₃", "D#3": "Re#₃", "E3": "Mi₃",
   "F3": "Fa₃", "F#3": "Fa#₃", "G3": "Sol₃", "G#3": "Sol#₃", "A3": "La₃",
   "A#3": "La#₃", "B3": "Si₃",
-  // İkinci oktav
   "C4": "Do₄", "C#4": "Do#₄", "D4": "Re₄", "D#4": "Re#₄", "E4": "Mi₄",
   "F4": "Fa₄", "F#4": "Fa#₄", "G4": "Sol₄", "G#4": "Sol#₄", "A4": "La₄",
   "A#4": "La#₄", "B4": "Si₄"
 };
 
 const LEVEL_THRESHOLDS = {
-  2: 50,  // Level 1'den 2'ye geçiş için gereken puan
-  3: 90   // Level 2'den 3'e geçiş için gereken puan
+  2: 50,
+  3: 90
 };
 
 const IntervalGame = () => {
@@ -50,6 +43,7 @@ const IntervalGame = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [hasAnswered, setHasAnswered] = useState(false);
   const [streak, setStreak] = useState(0);
+  const [mode, setMode] = useState('game'); // 'game' or 'practice'
 
   useEffect(() => {
     const link = document.createElement('link');
@@ -64,17 +58,6 @@ const IntervalGame = () => {
       setPiano(p);
     });
   }, []);
-
-  // Level yükseltme kontrolü
-  useEffect(() => {
-    if (score >= LEVEL_THRESHOLDS[3] && level === 2) {
-      setLevel(3);
-      setMessage("Muhteşem! Level 3'e yükseldiniz! 🎉🌟");
-    } else if (score >= LEVEL_THRESHOLDS[2] && level === 1) {
-      setLevel(2);
-      setMessage("Tebrikler! Level 2'ye yükseldiniz! 🎉");
-    }
-  }, [score, level]);
 
   const getCurrentNotes = () => {
     switch (level) {
@@ -127,7 +110,7 @@ const IntervalGame = () => {
   }, [targetNote, gameActive]);
 
   const calculateBonus = () => {
-    return Math.floor(streak / 3); // Her 3 doğru cevap için 1 bonus puan
+    return Math.floor(streak / 3);
   };
 
   const checkAnswer = (guess) => {
@@ -139,29 +122,56 @@ const IntervalGame = () => {
       const pointsEarned = 5 + bonus;
       setStreak(prev => prev + 1);
       setMessage(`Doğru! ${bonus > 0 ? `+${pointsEarned} puan (${bonus} bonus)` : '+5 puan'} 🎉`);
-      setScore(prev => prev + pointsEarned);
+
+      setScore(prev => {
+        const newScore = prev + pointsEarned;
+
+        if (newScore >= LEVEL_THRESHOLDS[3] && level === 2) {
+          setLevel(3);
+          setMessage("Muhteşem! Level 3'e yükseldiniz! 🎉🌟");
+        } else if (newScore >= LEVEL_THRESHOLDS[2] && level === 1) {
+          setLevel(2);
+          setMessage("Tebrikler! Level 2'ye yükseldiniz! 🎉");
+        }
+
+        return newScore;
+      });
+
       setTimeout(() => {
         generateRandomNote();
       }, 1000);
     } else {
-      setMessage("Yanlış! ❌");
+      if (mode === 'game') {
+        setMessage("Yanlış! ❌");
+      } else {
+        setMessage(`Yanlış! (Doğru cevap: ${noteNames[targetNote]}) ❌`);
+      }
+
       setStreak(0);
-      setLives(prevLives => {
-        const newLives = prevLives - 1;
-        if (newLives > 0) {
-          setTimeout(() => {
-            playInterval();
-            setHasAnswered(false);
-          }, 1000);
-        } else {
-          endGame();
-        }
-        return newLives;
-      });
+      if (mode === 'game') {
+        setLives(prevLives => {
+          const newLives = prevLives - 1;
+          if (newLives > 0) {
+            setTimeout(() => {
+              playInterval();
+              setHasAnswered(false);
+            }, 1000);
+          } else {
+            endGame();
+          }
+          return newLives;
+        });
+      } else {
+        setTimeout(() => {
+          playInterval();
+          setHasAnswered(false);
+        }, 1000);
+      }
     }
   };
 
   const fetchTopScores = async () => {
+    if (mode === 'practice') return;
     try {
       const response = await fetch(`${process.env.REACT_APP_API_URL}/scores/top/oyun2`);
       const data = await response.json();
@@ -172,6 +182,7 @@ const IntervalGame = () => {
   };
 
   const saveScore = useCallback(async () => {
+    if (mode === 'practice') return;
     const user = JSON.parse(localStorage.getItem("user"));
     if (!user) return;
     try {
@@ -186,11 +197,11 @@ const IntervalGame = () => {
     } catch (error) {
       console.error("Skor API isteğinde hata:", error);
     }
-  }, [score]);
+  }, [score, mode]);
 
   useEffect(() => {
     fetchTopScores();
-  }, []);
+  }, [mode]);
 
   const startGame = () => {
     if (!piano) {
@@ -198,7 +209,7 @@ const IntervalGame = () => {
       return;
     }
     setScore(0);
-    setLives(3);
+    setLives(mode === 'game' ? 3 : Infinity);
     setLevel(1);
     setStreak(0);
     setMessage("");
@@ -213,6 +224,18 @@ const IntervalGame = () => {
     setOpenModal(true);
   };
 
+  const handleModeChange = (event) => {
+    setMode(event.target.checked ? 'practice' : 'game');
+    setLives(event.target.checked ? Infinity : 3);
+    setScore(0);
+    setLevel(1);
+    setStreak(0);
+    setMessage("");
+    setGameActive(false);
+    setHasAnswered(false);
+    setTargetNote(null);
+  };
+
   return (
     <Box
       minHeight="100vh"
@@ -224,22 +247,36 @@ const IntervalGame = () => {
       padding="20px"
       marginTop="0px"
     >
-<Box textAlign="center" mb={3}>
-  <Typography
-    variant="h4"
-    gutterBottom={false}
-    style={{ fontFamily: "'Press Start 2P', cursive" }}
-  >
-    Aralık Oyunu
-  </Typography>
-  <Typography
-    variant="h5"
-    color="primary"
-    style={{ fontFamily: "'Press Start 2P', cursive" }}
-  >
-    Level {level}
-  </Typography>
-</Box>
+      <Box display="flex" justifyContent="space-between" alignItems="center" width="100%" maxWidth="400px" mb={3}>
+        <Typography
+          variant="h4"
+          gutterBottom={false}
+          style={{ fontFamily: "'Press Start 2P', cursive" }}
+        >
+          Aralık Oyunu
+        </Typography>
+        <FormControlLabel
+          control={
+            <Switch
+              checked={mode === 'practice'}
+              onChange={handleModeChange}
+              color="primary"
+              inputProps={{ 'aria-label': 'Mode Switch' }}
+            />
+          }
+          label={mode === 'game' ? "Oyun" : "Pratik"}
+          labelPlacement="start"
+          sx={{ marginLeft: "10px", fontFamily: "'Press Start 2P', cursive" }}
+        />
+      </Box>
+      <Typography
+        variant="h5"
+        color="primary"
+        style={{ fontFamily: "'Press Start 2P', cursive" }}
+        mb={3}
+      >
+        Level {level}
+      </Typography>
 
       {/* Level ve Puan Bilgisi */}
       <Box width="100%" maxWidth="400px" mb={2}>
@@ -272,7 +309,7 @@ const IntervalGame = () => {
         mb={2}
       >
         <Box display="flex" alignItems="center">
-          {[1, 2, 3].map((heart) => (
+          {mode === 'game' && [1, 2, 3].map((heart) => (
             <Box key={heart} mr={1}>
               {lives >= heart ? (
                 <FavoriteIcon color="error" />
@@ -281,6 +318,9 @@ const IntervalGame = () => {
               )}
             </Box>
           ))}
+          {mode === 'practice' && (
+            <FavoriteIcon color="error" />
+          )}
         </Box>
         <Box textAlign="right">
           <Typography variant="h6">
@@ -302,14 +342,16 @@ const IntervalGame = () => {
         width="100%"
         maxWidth="400px"
       >
-        <Button
-          variant="outlined"
-          color="primary"
-          onClick={() => setOpenScoreboard(true)}
-          fullWidth
-        >
-          Skorboard
-        </Button>
+        {mode === 'game' && (
+          <Button
+            variant="outlined"
+            color="primary"
+            onClick={() => setOpenScoreboard(true)}
+            fullWidth
+          >
+            Skorboard
+          </Button>
+        )}
         <Button
           variant="contained"
           color="primary"
@@ -425,7 +467,7 @@ const IntervalGame = () => {
           </Typography>
           {topScores.length > 0 ? (
             <Box>
-{topScores.map((entry, index) => (
+              {topScores.map((entry, index) => (
                 <Typography key={index} variant="body1" sx={{ mb: 1 }}>
                   {index + 1}. {entry.user?.name || "-"} {entry.user?.surname || "-"}: {entry.maxScore || "-"}
                 </Typography>
