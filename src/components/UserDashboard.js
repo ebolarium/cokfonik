@@ -1,3 +1,5 @@
+// src/components/UserDashboard.js
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -11,6 +13,8 @@ import {
   Fade,
   Button,
   Badge,
+  Checkbox,
+  FormControlLabel,
 } from '@mui/material';
 import EventNoteIcon from '@mui/icons-material/EventNote';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
@@ -20,6 +24,21 @@ import MusicNoteIcon from '@mui/icons-material/MusicNote';
 import LibraryMusicIcon from '@mui/icons-material/LibraryMusic';
 import HearingIcon from '@mui/icons-material/Hearing';
 import Confetti from 'react-confetti';
+
+const urlBase64ToUint8Array = (base64String) => {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding)
+    .replace(/-/g, '+')
+    .replace(/_/g, '/');
+
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+};
 
 const UserDashboard = () => {
   const navigate = useNavigate();
@@ -33,6 +52,13 @@ const UserDashboard = () => {
   // Konfeti & Animasyon State
   const [showConfetti, setShowConfetti] = useState(false);
   const [phase, setPhase] = useState('idle'); // 'idle' | 'fadingIn' | 'steady' | 'fadingOut'
+
+  // Push Bildirim Modal State
+  const [pushModalOpen, setPushModalOpen] = useState(false);
+  const [pushPermission, setPushPermission] = useState(false);
+
+  // Public VAPID Key
+  const PUBLIC_VAPID_KEY = process.env.REACT_APP_PUBLIC_VAPID_KEY;
 
   // Kullanıcı bilgisini localStorage'dan al
   const user = JSON.parse(localStorage.getItem('user'));
@@ -75,21 +101,21 @@ const UserDashboard = () => {
       const isBirthday =
         today.getDate() === birthDate.getDate() &&
         today.getMonth() === birthDate.getMonth();
-  
+
       if (isBirthday) {
         const userId = user._id;
         // Bugünü YYYY-MM-DD formatında string yap
         const todayString = today.toISOString().split('T')[0]; 
         const birthdayKey = `birthdayConfettiShown_${userId}_${todayString}`;
-  
+
         // 1) localStorage kontrolü
         const alreadyShown = localStorage.getItem(birthdayKey);
-  
+
         if (!alreadyShown) {
           // Confetti göster
           setShowConfetti(true);
           setPhase('fadingIn');
-  
+
           // 2) Gördüğünü kaydet
           localStorage.setItem(birthdayKey, 'true');
           
@@ -101,7 +127,6 @@ const UserDashboard = () => {
       }
     }
   }, [user?.birthDate]);
-  
 
   // Kapanış tıklaması
   const handleClickClose = () => {
@@ -113,6 +138,74 @@ const UserDashboard = () => {
     }, 1000); // 1sn sonra DOM'dan kaldır
   };
 
+  // Push Bildirim İzni Modali Açma
+  useEffect(() => {
+    const pushPermissionKey = `pushPermission_${user?._id}`;
+    const permissionStatus = localStorage.getItem(pushPermissionKey);
+
+    if (!permissionStatus) {
+      setPushModalOpen(true);
+    }
+  }, [user?._id]);
+
+  // Push Bildirim İzni Alma
+  const handlePushPermissionChange = async (event) => {
+    const { checked } = event.target;
+    setPushPermission(checked);
+
+    if (checked) {
+      try {
+        if ('serviceWorker' in navigator) {
+          const registration = await navigator.serviceWorker.ready;
+
+          const permission = await Notification.requestPermission();
+          if (permission === 'granted') {
+            if (!PUBLIC_VAPID_KEY) {
+              console.error('PUBLIC_VAPID_KEY tanımlı değil.');
+              alert('Sunucu tarafından sağlanan VAPID anahtarı bulunamadı.');
+              return;
+            }
+
+            const subscription = await registration.pushManager.subscribe({
+              userVisibleOnly: true,
+              applicationServerKey: urlBase64ToUint8Array(PUBLIC_VAPID_KEY),
+            });
+
+            // Aboneliği backend'e gönder
+            const response = await fetch(`${process.env.REACT_APP_API_URL}/subscribe`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(subscription),
+            });
+
+            if (response.ok) {
+              console.log('Push aboneliği başarılı.');
+              const pushPermissionKey = `pushPermission_${user?._id}`;
+              localStorage.setItem(pushPermissionKey, 'granted');
+            } else {
+              console.error('Abonelik backend\'e gönderilemedi.');
+              alert('Push aboneliği başarısız oldu. Lütfen tekrar deneyin.');
+            }
+          } else {
+            console.error('Push bildirimi izni reddedildi.');
+            const pushPermissionKey = `pushPermission_${user?._id}`;
+            localStorage.setItem(pushPermissionKey, 'denied');
+          }
+        }
+      } catch (error) {
+        console.error('Push aboneliği başarısız:', error);
+        alert('Push aboneliği sırasında bir hata oluştu. Lütfen tekrar deneyin.');
+      }
+    } else {
+      // Kullanıcı push bildirimlerini reddederse veya iptal ederse
+      const pushPermissionKey = `pushPermission_${user?._id}`;
+      localStorage.setItem(pushPermissionKey, 'denied');
+    }
+
+    setPushModalOpen(false);
+  };
 
   // Duyuru Okundu
   const markAsRead = async (id) => {
@@ -218,44 +311,63 @@ const UserDashboard = () => {
     },
   ];
 
+  // Public VAPID Key'in Doğruluğunu Kontrol Etme
+  useEffect(() => {
+    if (PUBLIC_VAPID_KEY) {
+      try {
+        // VAPID key'i doğru şekilde decode edilebiliyorsa
+        urlBase64ToUint8Array(PUBLIC_VAPID_KEY);
+      } catch (error) {
+        console.error('VAPID Public Key doğru formatta değil:', error);
+      }
+    } else {
+      console.error('PUBLIC_VAPID_KEY tanımlı değil.');
+    }
+  }, [PUBLIC_VAPID_KEY]);
+
+  // Public VAPID Key'i Loglama (Debug için)
+  useEffect(() => {
+    console.log('PUBLIC_VAPID_KEY:', PUBLIC_VAPID_KEY);
+  }, [PUBLIC_VAPID_KEY]);
+
   return (
     <Box minHeight="100vh" position="relative">
-    {/* Konfeti & Mesaj */}
-    {showConfetti && (
-      <Box
-        onClick={handleClickClose}
-        sx={{
-          position: 'fixed',
-          inset: 0,
-          pointerEvents: 'auto', // Tıklamayı yakalayabilelim
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          transition: 'opacity 1s ease-in-out',
-          opacity: phase === 'fadingIn' || phase === 'steady' ? 1 : 0,
-          cursor: 'pointer',  // Kapanış için tıklandığını belirtmek adına
-          zIndex: 9999,
-        }}
-      >
-        <Confetti gravity={0.02} numberOfPieces={250} />
-        
-        {/* Mesaj Kutusu */}
+      {/* Konfeti & Mesaj */}
+      {showConfetti && (
         <Box
+          onClick={handleClickClose}
           sx={{
-            position: 'absolute',
-            maxWidth: '300px',
-            textAlign: 'center',
-            color: '#000',
-            fontSize: { xs: '18px', md: '24px' },
-            textShadow: '1px 1px 4px rgba(0,0,0,0.6)',
-            backgroundColor: 'rgba(255, 255, 255, 0.8)',
-            p: 2,
-            borderRadius: 2,
-            whiteSpace: 'pre-line', // Satır atlamaları için
-            transform: 'translateY(-5%)' // Biraz yukarı kaydırmak istersen
+            position: 'fixed',
+            inset: 0,
+            pointerEvents: 'auto', // Tıklamayı yakalayabilelim
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            transition: 'opacity 1s ease-in-out',
+            opacity: phase === 'fadingIn' || phase === 'steady' ? 1 : 0,
+            cursor: 'pointer',  // Kapanış için tıklandığını belirtmek adına
+            zIndex: 9999,
           }}
         >
-          {`Sevgili ${userName},\n
+          <Confetti gravity={0.02} numberOfPieces={250} />
+          
+          {/* Mesaj Kutusu */}
+          <Box
+            sx={{
+              position: 'absolute',
+              maxWidth: '300px',
+              textAlign: 'center',
+              color: '#000',
+              fontSize: { xs: '18px', md: '24px' },
+              textShadow: '1px 1px 4px rgba(0,0,0,0.6)',
+              backgroundColor: 'rgba(255, 255, 255, 0.8)',
+              p: 2,
+              borderRadius: 2,
+              whiteSpace: 'pre-line', // Satır atlamaları için
+              transform: 'translateY(-5%)' // Biraz yukarı kaydırmak istersen
+            }}
+          >
+            {`Sevgili ${userName},\n
 Koromuzun değerli bir üyesi olarak yeni yaşını tüm kalbimizle kutluyoruz!
 Dileriz ki bu yıl dileklerinin hepsini sana getirsin, 
 sesinle ve gülüşünle hepimizi aydınlattığın gibi 
@@ -264,9 +376,63 @@ Neşeyle, sağlıkla ve müzikle dolu bir yaş olsun!\n
 İyi ki doğdun, iyi ki varsın!\n
 🥳🎶❤️
 `}
-        </Box>
+          </Box>
         </Box>
       )}
+
+      {/* Push Bildirim İzni Modali */}
+      <Modal
+        open={pushModalOpen}
+        onClose={() => setPushModalOpen(false)}
+        closeAfterTransition
+        BackdropComponent={Backdrop}
+        BackdropProps={{ timeout: 500 }}
+      >
+        <Fade in={pushModalOpen}>
+          <Box
+            sx={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              bgcolor: 'background.paper',
+              boxShadow: 24,
+              p: 4,
+              borderRadius: 2,
+              maxWidth: 400,
+              width: '90%',
+            }}
+          >
+            <Typography variant="h6" gutterBottom>
+              Bildirim İzinleri
+            </Typography>
+            <Typography variant="body2" gutterBottom>
+              Uygulamanızdan güncellemeler ve duyurular almak için push bildirimlerine izin vermek ister misiniz?
+            </Typography>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={pushPermission}
+                  onChange={handlePushPermissionChange}
+                  name="pushPermission"
+                  color="primary"
+                />
+              }
+              label="Push bildirimlerine izin veriyorum"
+            />
+            <Box mt={2} display="flex" justifyContent="flex-end">
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={() => setPushModalOpen(false)}
+                disabled={!pushPermission}
+              >
+                Onayla
+              </Button>
+            </Box>
+          </Box>
+        </Fade>
+      </Modal>
 
       <Box p={3}>
         <Grid container spacing={3}>
@@ -317,7 +483,7 @@ Neşeyle, sağlıkla ve müzikle dolu bir yaş olsun!\n
           ))}
         </Grid>
 
-        {/* Modal (Duyuru) */}
+        {/* Duyuru Modal */}
         <Modal
           open={open}
           onClose={handleClose}
@@ -346,9 +512,18 @@ Neşeyle, sağlıkla ve müzikle dolu bir yaş olsun!\n
               <Typography variant="body2" color="textSecondary" gutterBottom>
                 {selectedAnnouncement?.content}
               </Typography>
-              <Button variant="contained" color="primary" fullWidth onClick={handleClose}>
-                Kapat
-              </Button>
+              <Box mt={2} display="flex" justifyContent="space-between">
+                <Button variant="contained" color="primary" onClick={handleClose}>
+                  Kapat
+                </Button>
+                <Button
+                  variant="outlined"
+                  color="secondary"
+                  onClick={() => hideAnnouncement(selectedAnnouncement._id)}
+                >
+                  Gizle
+                </Button>
+              </Box>
             </Box>
           </Fade>
         </Modal>
