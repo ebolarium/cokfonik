@@ -1,25 +1,45 @@
+// server.js
+
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const cron = require('node-cron');
 const path = require('path');
+const webPush = require('web-push');
+
+dotenv.config(); // .env dosyasını proje kök dizininden yükler
+
 const User = require('./models/User'); // User modeli
 const Fee = require('./models/Fee'); // Aidat modeli
-
-
-require('dotenv').config({ path: '../.env' }); // Üst klasördeki .env dosyasını yükle
-
-dotenv.config();
+const Announcement = require('./models/Announcement'); // Announcement modeli
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
 // MongoDB Bağlantısı
-mongoose.connect(process.env.MONGO_URI, {})
+mongoose.connect(process.env.MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
   .then(() => console.log('MongoDB Connected'))
-  .catch((err) => console.error(err));
+  .catch((err) => console.error('MongoDB Connection Error:', err));
+
+// VAPID anahtarlarını ayarlayın
+const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY;
+const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY;
+
+if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
+  console.error('VAPID_PUBLIC_KEY ve VAPID_PRIVATE_KEY ortam değişkenleri ayarlanmalı.');
+  process.exit(1);
+}
+
+webPush.setVapidDetails(
+  'mailto:your-email@example.com',
+  VAPID_PUBLIC_KEY,
+  VAPID_PRIVATE_KEY
+);
 
 // API Rotaları
 const userRoutes = require('./routes/userRoutes');
@@ -30,15 +50,20 @@ const attendanceRoutes = require('./routes/attendanceRoutes');
 app.use('/api/attendance', attendanceRoutes);
 const eventRoutes = require('./routes/eventRoutes');
 app.use('/api/events', eventRoutes);
-// Statik Dosya Yolu
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
 const announcementRoutes = require('./routes/announcementRoutes');
 app.use('/api/announcements', announcementRoutes);
+
+// Yeni Subscription Routes'ı Ekleyin
+const subscriptionRoutes = require('./routes/subscriptionRoutes');
+app.use('/api', subscriptionRoutes); // /api/subscribe
+
 const scoreRoutes = require('./routes/scoreRoutes');
 app.use('/api/scores', scoreRoutes);
 
-// Login Endpoint
+// Statik Dosya Yolu
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Login Endpoint (bcrypt kaldırıldı)
 app.post('/api/login', async (req, res) => {
   const { email, password } = req.body;
 
@@ -48,6 +73,7 @@ app.post('/api/login', async (req, res) => {
       return res.status(401).json({ message: 'Kullanıcı bulunamadı.' });
     }
 
+    // Şifreyi doğrudan karşılaştırma
     if (password !== user.password) {
       return res.status(401).json({ message: 'Hatalı şifre.' });
     }
@@ -83,8 +109,6 @@ cron.schedule('0 0 1 * *', async () => {
     console.error('Aidat kayıtları oluşturulurken hata:', error.message);
   }
 });
-
-
 
 // React Build Dosyalarını Sun (Backend klasöründen bir üst dizindeki build klasörüne erişiyoruz)
 app.use(express.static(path.join(__dirname, '../build')));

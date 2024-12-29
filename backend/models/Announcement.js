@@ -1,3 +1,5 @@
+// backend/models/Announcement.js
+
 const mongoose = require('mongoose');
 
 const AnnouncementSchema = new mongoose.Schema({
@@ -7,7 +9,8 @@ const AnnouncementSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
   readBy: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }], // Okuyan kullanıcıların ID'leri
   hiddenBy: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }], // Gizleyen kullanıcıların ID'leri
-
 });
 
-module.exports = mongoose.model('Announcement', AnnouncementSchema);
+const Announcement = mongoose.model('Announcement', AnnouncementSchema);
+
+module.exports = Announcement;
