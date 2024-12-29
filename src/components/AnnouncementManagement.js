@@ -42,28 +42,38 @@ const AnnouncementManagement = () => {
     const user = JSON.parse(localStorage.getItem('user'));
     if (!user) {
       console.error('Kullanıcı bilgisi bulunamadı.');
+      alert('Kullanıcı bilgisi bulunamadı.');
       return;
     }
     const userId = user._id;
-
+  
+    if (!title.trim() || !content.trim()) {
+      alert('Başlık ve içerik boş bırakılamaz.');
+      return;
+    }
+  
     try {
       const response = await fetch(`${process.env.REACT_APP_API_URL}/announcements`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, content, createdBy: userId }),
+        body: JSON.stringify({ title, content, userId }), // 'createdBy' yerine 'userId' kullanıldı
       });
-
+  
       if (response.ok) {
-        console.log("Duyuru oluşturuldu:", await response.json());
+        const data = await response.json();
+        console.log("Duyuru oluşturuldu:", data);
         setTitle('');
         setContent('');
         setModalOpen(true);
         fetchAnnouncements();
       } else {
-        console.error("Duyuru oluşturulamadı.");
+        const errorData = await response.json();
+        console.error("Duyuru oluşturulamadı:", errorData);
+        alert(`Duyuru oluşturulamadı: ${errorData.message}`);
       }
     } catch (error) {
       console.error("Duyuru oluşturulurken hata:", error);
+      alert('Duyuru oluşturulurken bir hata oluştu.');
     }
   };
 
