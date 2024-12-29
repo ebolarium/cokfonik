@@ -36,7 +36,7 @@ if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
 }
 
 webPush.setVapidDetails(
-  'mailto:your-email@example.com',
+  'mailto:barisboga@gmail.com',
   VAPID_PUBLIC_KEY,
   VAPID_PRIVATE_KEY
 );
