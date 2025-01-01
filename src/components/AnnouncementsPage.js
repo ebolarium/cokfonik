@@ -247,13 +247,12 @@ const AnnouncementsPage = () => {
                     Kapat
                   </Button>
                   <Button
-                    variant="contained"
-                    color={selectedAnnouncement.thumbUpBy?.includes(userId) ? 'primary' : 'default'}
-                    startIcon={<ThumbUpIcon />}
-                    onClick={() => thumbUpAnnouncement(selectedAnnouncement._id)}
-                  >
-                    {selectedAnnouncement.thumbUpBy?.includes(userId) ? '👍' : '👍'}
-                  </Button>
+  variant="contained"
+  color={selectedAnnouncement.thumbUpBy?.includes(userId) ? 'primary' : 'default'}
+  onClick={() => thumbUpAnnouncement(selectedAnnouncement._id)}
+>
+  {selectedAnnouncement.thumbUpBy?.includes(userId) ? '👍' : '👍'}
+</Button>
                 </Box>
               </>
             ) : (
