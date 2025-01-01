@@ -29,7 +29,6 @@ import Game from './components/Game';
 import Game2 from './components/Game2';
 import ConductorDashboard from './components/ConductorDashboard';
 import ConductorAttendance from './components/ConductorAttendance';
-import MidiPlayer from './components/MidiPlayer';
 
 
 const App = () => {
@@ -126,7 +125,6 @@ const App = () => {
           <Route path="/announcements" element={<AnnouncementsPage />} />
           <Route path="/game" element={<Game />} />
           <Route path="/game2" element={<Game2 />} />
-          <Route path="/midi-player" element={<MidiPlayer />} />
         </>
       );
     }
@@ -146,7 +144,6 @@ const App = () => {
           <Route path="/announcements" element={<AnnouncementsPage />} />
           <Route path="/game" element={<Game />} />
           <Route path="/game2" element={<Game2 />} />
-          <Route path="/midi-player" element={<MidiPlayer />} />
           <Route path="/fee-management" element={<FeeManagement />} />
           <Route path="/attendance-management" element={<AttendanceManagement />} />
 
