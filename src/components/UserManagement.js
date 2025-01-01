@@ -185,9 +185,11 @@ const UserManagement = () => {
               <TableRow
                 key={user._id}
                 sx={{
-                  backgroundColor: user.isActive
-                    ? 'rgba(177, 233, 177, 0.5)'
-                    : 'rgba(255, 182, 193, 0.5)',
+                  backgroundColor: user.frozen
+                    ? 'rgba(173, 216, 230, 0.5)' // Açık mavi renk (dondurulmuş kullanıcılar)
+                    : user.isActive
+                    ? 'rgba(177, 233, 177, 0.5)' // Aktif kullanıcılar için yeşil
+                    : 'rgba(255, 182, 193, 0.5)', // Pasif kullanıcılar için pembe
                 }}
               >
                 <TableCell sx={{ padding: '4px 8px' }}>{user.name}</TableCell>
@@ -306,6 +308,8 @@ const UserManagement = () => {
               <option value="Yönetim Kurulu">Yönetim Kurulu</option>
               <option value="Korist">Korist</option>
               <option value="Şef">Şef</option>
+              <option value="Yoklama">Yoklama</option>
+              <option value="Aidat">Aidat</option>
             </TextField>
 
             <TextField
@@ -472,6 +476,9 @@ const UserManagement = () => {
               <option value="Yönetim Kurulu">Yönetim Kurulu</option>
               <option value="Korist">Korist</option>
               <option value="Şef">Şef</option>
+              <option value="Yoklama">Yoklama</option>
+              <option value="Aidat">Aidat</option> 
+
             </TextField>
 
             <TextField

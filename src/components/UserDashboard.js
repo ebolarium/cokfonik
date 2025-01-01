@@ -24,6 +24,9 @@ import MusicNoteIcon from '@mui/icons-material/MusicNote';
 import LibraryMusicIcon from '@mui/icons-material/LibraryMusic';
 import HearingIcon from '@mui/icons-material/Hearing';
 import Confetti from 'react-confetti';
+import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+import PaymentsIcon from '@mui/icons-material/Payments';
+
 
 const urlBase64ToUint8Array = (base64String) => {
   const padding = '='.repeat((4 - base64String.length % 4) % 4);
@@ -309,7 +312,33 @@ const UserDashboard = () => {
       icon: <LibraryMusicIcon style={{ fontSize: 50 }} />,
       bgColor: '#e6e6ff',
     },
+//    {
+//      title: '?????',
+//      path: '/#',
+//      icon: <HelpOutlineIcon style={{ fontSize: 50 }} />,
+//      bgColor: '#d9f7be',
+//    },
+  
   ];
+
+  if (user.role === 'Yoklama') {
+    dashboardItems.push({
+      title: 'Yoklama Yönetimi',
+      path: '/attendance-management',
+      icon: <AssignmentTurnedInIcon style={{ fontSize: 50 }} />,
+      bgColor: '#f0f8ff',
+    });
+  }
+  
+  if (user.role === 'Aidat') {
+    dashboardItems.push({
+      title: 'Aidat Yönetimi',
+      path: '/fee-management',
+      icon: <PaymentsIcon style={{ fontSize: 50 }} />,
+      bgColor: '#e6ffe6',
+    });
+  }
+
 
   // Public VAPID Key'in Doğruluğunu Kontrol Etme
   useEffect(() => {

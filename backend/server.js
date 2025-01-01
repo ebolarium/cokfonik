@@ -7,6 +7,8 @@ const dotenv = require('dotenv');
 const cron = require('node-cron');
 const path = require('path');
 const webPush = require('web-push');
+const multer = require('multer');
+const upload = multer({ dest: 'uploads/' });
 
 dotenv.config(); // .env dosyasını proje kök dizininden yükler
 
@@ -20,8 +22,7 @@ app.use(express.json());
 
 // MongoDB Bağlantısı
 mongoose.connect(process.env.MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
+
 })
   .then(() => console.log('MongoDB Connected'))
   .catch((err) => console.error('MongoDB Connection Error:', err));
@@ -86,6 +87,11 @@ app.post('/api/login', async (req, res) => {
     console.error('Login endpoint error:', error);
     res.status(500).json({ message: 'Sunucu hatası oluştu.' });
   }
+});
+
+
+app.post('/api/upload-musicxml', upload.single('file'), (req, res) => {
+  res.json({ filePath: req.file.path });
 });
 
 // Cron Job - Yeni Aidat Kayıtları
