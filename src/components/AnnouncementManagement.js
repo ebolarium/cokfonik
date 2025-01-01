@@ -1,10 +1,26 @@
 // src/components/AnnouncementManagement.js
 
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, TextField, Button, Card, CardContent, IconButton, Modal, Fade } from '@mui/material';
+import { 
+  Box, 
+  Typography, 
+  TextField, 
+  Button, 
+  Card, 
+  CardContent, 
+  IconButton, 
+  Modal, 
+  Fade,
+  Backdrop, 
+  List, 
+  ListItem, 
+  ListItemText, 
+  CircularProgress 
+} from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
+import ThumbUpIcon from '@mui/icons-material/ThumbUp';
 
-const PUBLIC_VAPID_KEY = 'BAIdhbD-cr8SiVsNTz5t2htyJGdUL-5mlVLBUOR_zcJiKqTWFDTslPVHr5d38nnvC3_DYfalgoyAUm8HvxwsffA'; // Oluşturduğunuz gerçek Public Key'i buraya ekleyin
+const PUBLIC_VAPID_KEY = process.env.REACT_APP_PUBLIC_VAPID_KEY;
 
 const urlBase64ToUint8Array = (base64String) => {
   const padding = '='.repeat((4 - base64String.length % 4) % 4);
@@ -26,7 +42,13 @@ const AnnouncementManagement = () => {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
-  const [subscription, setSubscription] = useState(null);
+  const [readByUsers, setReadByUsers] = useState([]);
+  const [thumbUpUsers, setThumbUpUsers] = useState([]);
+  const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
+  const [loading, setLoading] = useState(false); // Yükleniyor durumu
+
+  const user = JSON.parse(localStorage.getItem('user'));
+  const userId = user?._id;
 
   const fetchAnnouncements = async () => {
     try {
@@ -39,33 +61,31 @@ const AnnouncementManagement = () => {
   };
 
   const handleCreateAnnouncement = async () => {
-    const user = JSON.parse(localStorage.getItem('user'));
     if (!user) {
       console.error('Kullanıcı bilgisi bulunamadı.');
       alert('Kullanıcı bilgisi bulunamadı.');
       return;
     }
-    const userId = user._id;
-  
+
     if (!title.trim() || !content.trim()) {
       alert('Başlık ve içerik boş bırakılamaz.');
       return;
     }
-  
+
     try {
       const response = await fetch(`${process.env.REACT_APP_API_URL}/announcements`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, content, userId }), // 'createdBy' yerine 'userId' kullanıldı
+        body: JSON.stringify({ title, content, userId }),
       });
-  
+
       if (response.ok) {
         const data = await response.json();
         console.log("Duyuru oluşturuldu:", data);
         setTitle('');
         setContent('');
-        setModalOpen(true);
         fetchAnnouncements();
+        alert('Duyuru başarıyla oluşturuldu!');
       } else {
         const errorData = await response.json();
         console.error("Duyuru oluşturulamadı:", errorData);
@@ -78,6 +98,7 @@ const AnnouncementManagement = () => {
   };
 
   const handleDeleteAnnouncement = async (id) => {
+    if (!window.confirm('Bu duyuruyu silmek istediğinize emin misiniz?')) return;
     try {
       const response = await fetch(`${process.env.REACT_APP_API_URL}/announcements/${id}`, {
         method: 'DELETE',
@@ -87,10 +108,78 @@ const AnnouncementManagement = () => {
         fetchAnnouncements();
       } else {
         console.error('Duyuru silinemedi.');
+        alert('Duyuru silinemedi.');
       }
     } catch (error) {
       console.error('Duyuru silinirken hata:', error);
+      alert('Duyuru silinirken bir hata oluştu.');
     }
+  };
+
+  const thumbUpAnnouncement = async (id) => {
+    if (!user) {
+      alert('Kullanıcı bilgisi bulunamadı.');
+      return;
+    }
+
+    try {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/announcements/${id}/thumbup`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
+      });
+
+      if (response.ok) {
+        setAnnouncements((prev) =>
+          prev.map((announcement) =>
+            announcement._id === id
+              ? { 
+                  ...announcement, 
+                  thumbUpBy: announcement.thumbUpBy.includes(userId) 
+                    ? announcement.thumbUpBy 
+                    : [...(announcement.thumbUpBy || []), userId] 
+                }
+              : announcement
+          )
+        );
+      } else {
+        console.error('Thumb up işlemi gerçekleştirilemedi.');
+        alert('Thumb up işlemi gerçekleştirilemedi.');
+      }
+    } catch (error) {
+      console.error('Thumb up yapılırken hata:', error);
+      alert('Thumb up yapılırken bir hata oluştu.');
+    }
+  };
+
+  const handleAnnouncementClick = async (announcement) => {
+    setLoading(true);
+    try {
+      // Detayları al
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/announcements/${announcement._id}/details`);
+      if (response.ok) {
+        const data = await response.json();
+        setReadByUsers(data.readBy);
+        setThumbUpUsers(data.thumbUpBy);
+        setSelectedAnnouncement(announcement);
+        setModalOpen(true);
+      } else {
+        console.error('Duyuru detayları getirilemedi.');
+        alert('Duyuru detayları getirilemedi.');
+      }
+    } catch (error) {
+      console.error('Duyuru detayları getirilirken hata:', error);
+      alert('Duyuru detayları getirilirken bir hata oluştu.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCloseModal = () => {
+    setModalOpen(false);
+    setReadByUsers([]);
+    setThumbUpUsers([]);
+    setSelectedAnnouncement(null);
   };
 
   useEffect(() => {
@@ -113,8 +202,6 @@ const AnnouncementManagement = () => {
             applicationServerKey: urlBase64ToUint8Array(PUBLIC_VAPID_KEY),
           });
 
-          setSubscription(subscription);
-
           // Aboneliği backend'e gönder
           const response = await fetch(`${process.env.REACT_APP_API_URL}/subscribe`, {
             method: 'POST',
@@ -134,11 +221,7 @@ const AnnouncementManagement = () => {
     };
 
     subscribeUser();
-  }, []);
-
-  const handleCloseModal = () => {
-    setModalOpen(false);
-  };
+  }, [PUBLIC_VAPID_KEY, userId]);
 
   return (
     <Box p={3} bgcolor="#f9f9f9" minHeight="100vh">
@@ -163,26 +246,50 @@ const AnnouncementManagement = () => {
         </Button>
       </Box>
       <Typography variant="h6" gutterBottom>Mevcut Duyurular</Typography>
-      {announcements.map((announcement) => (
-        <Card key={announcement._id} sx={{ mb: 2 }}>
-          <CardContent>
-            <Typography variant="subtitle1" fontWeight="bold">{announcement.title}</Typography>
-            <Typography variant="body2">{announcement.content}</Typography>
-            <IconButton
-              color="error"
-              onClick={() => handleDeleteAnnouncement(announcement._id)}
-            >
-              <DeleteIcon />
-            </IconButton>
-          </CardContent>
-        </Card>
-      ))}
+      {announcements.length === 0 ? (
+        <Typography variant="body1">Henüz herhangi bir duyuru yok.</Typography>
+      ) : (
+        announcements.map((announcement) => (
+          <Card 
+            key={announcement._id} 
+            sx={{ mb: 2, cursor: 'pointer', position: 'relative' }}
+            onClick={() => handleAnnouncementClick(announcement)}
+          >
+            <CardContent>
+              <Typography variant="subtitle1" fontWeight="bold">{announcement.title}</Typography>
+              <Typography variant="body2">{announcement.content}</Typography>
+              <Box sx={{ position: 'absolute', top: 10, right: 10 }}>
+                <IconButton
+                  color="error"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteAnnouncement(announcement._id);
+                  }}
+                >
+                  <DeleteIcon />
+                </IconButton>
+                <IconButton
+                  color={announcement.thumbUpBy?.includes(userId) ? 'primary' : 'default'}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    thumbUpAnnouncement(announcement._id);
+                  }}
+                >
+                  <ThumbUpIcon />
+                </IconButton>
+              </Box>
+            </CardContent>
+          </Card>
+        ))
+      )}
 
       {/* Modal */}
       <Modal
         open={modalOpen}
         onClose={handleCloseModal}
         closeAfterTransition
+        BackdropComponent={Backdrop}
+        BackdropProps={{ timeout: 500 }}
       >
         <Fade in={modalOpen}>
           <Box
@@ -195,13 +302,60 @@ const AnnouncementManagement = () => {
               boxShadow: 24,
               p: 4,
               borderRadius: 2,
-              textAlign: 'center',
+              width: { xs: '90%', sm: 500 }, // Responsive genişlik
+              maxHeight: '80vh',
+              overflowY: 'auto',
             }}
           >
-            <Typography variant="h6" gutterBottom>Duyuru Kaydedildi!</Typography>
-            <Button variant="contained" color="primary" onClick={handleCloseModal}>
-              Tamam
-            </Button>
+            {loading ? (
+              <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
+                <CircularProgress />
+              </Box>
+            ) : selectedAnnouncement ? (
+              <>
+                <Typography variant="subtitle1" gutterBottom>
+                  Okuyanlar:
+                </Typography>
+                {readByUsers.length > 0 ? (
+                  <List>
+                    {readByUsers.map((user) => (
+                      <ListItem key={user._id} dense>
+                        <ListItemText
+                          primary={`${user.name} ${user.surname}`} // İsim ve Soyisim
+                          primaryTypographyProps={{ fontWeight: 'bold' }}
+                        />
+                      </ListItem>
+                    ))}
+                  </List>
+                ) : (
+                  <Typography variant="body2">Henüz kimse bu duyuruyu okumamış.</Typography>
+                )}
+                <Typography variant="subtitle1" gutterBottom mt={2}>
+                  Beğenenler:
+                </Typography>
+                {thumbUpUsers.length > 0 ? (
+                  <List>
+                    {thumbUpUsers.map((user) => (
+                      <ListItem key={user._id} dense>
+                        <ListItemText
+                          primary={`${user.name} ${user.surname}`} // İsim ve Soyisim
+                          primaryTypographyProps={{ fontWeight: 'bold' }}
+                        />
+                      </ListItem>
+                    ))}
+                  </List>
+                ) : (
+                  <Typography variant="body2">Henüz kimse bu duyuruyu thumb up yapmamış.</Typography>
+                )}
+                <Box textAlign="right" mt={2}>
+                  <Button variant="contained" color="primary" onClick={handleCloseModal}>
+                    Kapat
+                  </Button>
+                </Box>
+              </>
+            ) : (
+              <Typography variant="h6" gutterBottom>Duyuru Kaydedildi!</Typography>
+            )}
           </Box>
         </Fade>
       </Modal>

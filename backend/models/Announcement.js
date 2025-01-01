@@ -8,6 +8,7 @@ const AnnouncementSchema = new mongoose.Schema({
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   createdAt: { type: Date, default: Date.now },
   readBy: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }], // Okuyan kullanıcıların ID'leri
+  thumbUpBy: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }], // Thumb up yapan kullanıcıların ID'leri
   hiddenBy: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }], // Gizleyen kullanıcıların ID'leri
 });
 

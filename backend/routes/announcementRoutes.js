@@ -1,4 +1,4 @@
-// ./routes/announcementRoutes.js
+// backend/routes/announcementRoutes.js
 
 const express = require('express');
 const router = express.Router();
@@ -57,11 +57,33 @@ router.post('/', async (req, res) => {
 // GET /api/announcements - Tüm Duyuruları Getirme
 router.get('/', async (req, res) => {
   try {
-    const announcements = await Announcement.find().populate('createdBy', 'username email');
+    const announcements = await Announcement.find()
+    .populate('createdBy', 'name surname username email') // Güncellendi
+    .populate('readBy', 'name surname username email')     // Güncellendi
+    .populate('thumbUpBy', 'name surname username email'); // Güncellendi
     res.status(200).json(announcements);
   } catch (error) {
     console.error('Duyurular alınırken hata:', error);
     res.status(500).json({ message: 'Duyurular alınamadı.' });
+  }
+});
+
+// GET /api/announcements/:id/details - Duyuru Detaylarını Getirme (readBy ve thumbUpBy)
+router.get('/:id/details', async (req, res) => {
+  try {
+    const announcement = await Announcement.findById(req.params.id)
+    .populate('readBy', 'name surname username email')     // Güncellendi
+    .populate('thumbUpBy', 'name surname username email'); // Güncellendi
+    if (!announcement) {
+      return res.status(404).json({ message: 'Duyuru bulunamadı.' });
+    }
+    res.json({
+      readBy: announcement.readBy,
+      thumbUpBy: announcement.thumbUpBy,
+    });
+  } catch (error) {
+    console.error('Duyuru detayları getirilirken hata:', error);
+    res.status(500).json({ message: 'Sunucu hatası.' });
   }
 });
 
@@ -89,6 +111,33 @@ router.patch('/:id/read', async (req, res) => {
   } catch (error) {
     console.error('Duyuru okundu olarak işaretlenirken hata:', error);
     res.status(500).json({ message: 'Duyuru işaretlenemedi.' });
+  }
+});
+
+// PATCH /api/announcements/:id/thumbup - Duyuruya Thumb Up Yapma
+router.patch('/:id/thumbup', async (req, res) => {
+  const { id } = req.params;
+  const { userId } = req.body;
+
+  if (!userId) {
+    return res.status(400).json({ message: 'Kullanıcı ID\'si gereklidir.' });
+  }
+
+  try {
+    const announcement = await Announcement.findById(id);
+    if (!announcement) {
+      return res.status(404).json({ message: 'Duyuru bulunamadı.' });
+    }
+
+    if (!announcement.thumbUpBy.includes(userId)) {
+      announcement.thumbUpBy.push(userId);
+      await announcement.save();
+    }
+
+    res.status(200).json({ message: 'Duyuruya thumb up yapıldı.', announcement });
+  } catch (error) {
+    console.error('Duyuruya thumb up yapılırken hata:', error);
+    res.status(500).json({ message: 'Thumb up işlemi gerçekleştirilemedi.' });
   }
 });
 
