@@ -109,25 +109,15 @@ const FeeManagement = () => {
 
   const getLastSixMonths = () => {
     const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
-    
-    return Array.from({ length: 6 }, (_, i) => {
-      let monthIndex = currentMonth - i;
-      let year = currentYear;
-      
-      // Ay indeksi negatif olduğunda bir önceki yıla geç
-      if (monthIndex < 0) {
-        monthIndex += 12;
-        year -= 1;
-      }
-      
-      const date = new Date(year, monthIndex);
+    const months = Array.from({ length: 6 }, (_, i) => {
+      const date = new Date();
+      date.setMonth(now.getMonth() - i);
       return {
         month: date.toLocaleString('tr-TR', { month: 'long' }).toLowerCase(),
-        year: date.getFullYear()
+        year: date.getFullYear(),
       };
     }).reverse();
+    return months;
   };
 
   const handleOpenModal = (userId) => {
@@ -187,8 +177,14 @@ const FeeManagement = () => {
           const userFees = fees.filter((fee) => fee.userId?._id === user._id);
 
           return (
-            <Box key={user._id} sx={{ mb: 1 }}>
-              <Grid container spacing={1} alignItems="center">
+    <Box
+      key={user._id}
+      sx={{
+        mb: 1,
+        backgroundColor: user.frozen ? 'lightblue' : 'transparent', // Frozen kullanıcılar için açık mavi
+
+      }}
+    >              <Grid container spacing={1} alignItems="center">
                 <Grid item xs={6}>
                   <Typography
                     variant="body1"
@@ -211,20 +207,20 @@ const FeeManagement = () => {
               <Divider sx={{ my: 1, borderColor: 'lightgray' }} />
 
               <Box display="flex" gap={0.5} flexWrap="nowrap">
-                {getLastSixMonths().map((monthYear, index) => {
-                  const fee = userFees.find(
-                    (f) =>
-                      f.month.toLowerCase() === monthYear.month.toLowerCase() &&
-                    f.year === monthYear.year
-                  );
-                  return (
-                    <Tooltip title={`${monthYear.month} ${monthYear.year}`} key={index}>
-                      <FeeBox
-                        isPaid={fee?.isPaid || false}
-                        isInactive={!fee}
-                        onClick={() => fee && toggleFeeStatus(fee._id, fee.isPaid)}
-                      />
-                    </Tooltip>
+              {getLastSixMonths().map((monthYear, index) => {
+  const fee = userFees.find(
+    (f) =>
+      f.month.toLowerCase() === monthYear.month &&
+      f.year === monthYear.year
+  );
+  return (
+    <Tooltip title={`${monthYear.month} ${monthYear.year}`} key={index}>
+      <FeeBox
+        isPaid={fee?.isPaid || false}
+        isInactive={!fee}
+        onClick={() => fee && toggleFeeStatus(fee._id, fee.isPaid)}
+      />
+    </Tooltip>
                   );
                 })}
               </Box>
