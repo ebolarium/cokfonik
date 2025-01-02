@@ -56,7 +56,16 @@ router.post('/', async (req, res) => {
 // Devamsızlık Statüsünü Güncelle
 router.put('/:id', async (req, res) => {
   try {
-    const updatedAttendance = await Attendance.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const { status, explanation } = req.body;
+    const updateData = { status };
+    
+    if (status === 'MAZERETLI' && explanation) {
+      updateData.explanation = explanation;
+    } else if (status !== 'MAZERETLI') {
+      updateData.explanation = null; // Diğer durumlarda açıklamayı temizle
+    }
+
+    const updatedAttendance = await Attendance.findByIdAndUpdate(req.params.id, updateData, { new: true });
     res.json(updatedAttendance);
   } catch (error) {
     res.status(400).json({ message: error.message });

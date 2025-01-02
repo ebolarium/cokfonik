@@ -5,6 +5,8 @@ const AttendanceSchema = new mongoose.Schema({
   date: { type: Date, required: true },
   event: { type: mongoose.Schema.Types.ObjectId, ref: 'Event' },
   status: { type: String, enum: ['Geldi', 'Gelmedi', 'Mazeretli'], default: 'Gelmedi' },
+  explanation: { type: String, default: null },
+
 });
 
 module.exports = mongoose.model('Attendance', AttendanceSchema);

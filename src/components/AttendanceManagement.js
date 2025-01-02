@@ -1,4 +1,3 @@
-// AttendanceManagement.js
 import React, { useEffect, useState, useRef } from 'react';
 import {
   Box,
@@ -21,6 +20,7 @@ import {
   Button,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
+import SaveIcon from '@mui/icons-material/Save';
 import { styled } from '@mui/system';
 import * as ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
@@ -31,17 +31,39 @@ const attendanceStatuses = {
   MAZERETLI: 'yellow',
 };
 
+const AttendanceBoxWrapper = styled('div')({
+  display: 'flex',
+  alignItems: 'center',
+  gap: '8px',
+  position: 'relative',
+  minHeight: '28px',
+});
+
 const AttendanceBox = styled('div')(({ status }) => ({
   width: 20,
   height: 20,
   backgroundColor: attendanceStatuses[status] || 'grey',
-  margin: '2px',
+  margin: '2px 0',
   borderRadius: 5,
   cursor: 'pointer',
   ':hover': {
     opacity: 0.8,
   },
 }));
+
+const ExplanationBox = styled('div')({
+  display: 'flex',
+  alignItems: 'center',
+  gap: '4px',
+  position: 'absolute',
+  left: '28px',
+  zIndex: 1000,
+  backgroundColor: 'white',
+  padding: '4px',
+  borderRadius: '4px',
+  boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+
+});
 
 const AttendanceManagement = () => {
   const [attendances, setAttendances] = useState([]);
@@ -52,9 +74,9 @@ const AttendanceManagement = () => {
   const scrollContainerRef = useRef(null);
   const [order, setOrder] = useState('asc');
   const [orderBy, setOrderBy] = useState('name');
-
-  // Bu state kaç çalışmayı göstereceğimizi tutuyor
   const [lastCount, setLastCount] = useState('4');
+  const [explanations, setExplanations] = useState({}); // { attendanceId: explanation }
+  const [visibleExplanations, setVisibleExplanations] = useState({}); // { attendanceId: boolean }
 
   const fetchAttendances = async () => {
     try {
@@ -70,12 +92,20 @@ const AttendanceManagement = () => {
     try {
       const response = await fetch(`${process.env.REACT_APP_API_URL}/users`);
       const data = await response.json();
-
-      // ‘isActive: false’ olan kullanıcıları filtrele
       const activeUsers = data.filter((user) => user.isActive && user.role !== 'Şef');
       setUsers(activeUsers);
     } catch (error) {
       console.error('Kullanıcı verileri alınırken hata:', error);
+    }
+  };
+
+  const fetchEvents = async () => {
+    try {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/events`);
+      const data = await response.json();
+      setEvents(data);
+    } catch (error) {
+      console.error('Etkinlik verileri alınırken hata oluştu:', error);
     }
   };
 
@@ -100,31 +130,90 @@ const AttendanceManagement = () => {
     return 0;
   });
 
-  const fetchEvents = async () => {
-    try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/events`);
-      const data = await response.json();
-      setEvents(data);
-    } catch (error) {
-      console.error('Etkinlik verileri alınırken hata oluştu:', error);
-    }
-  };
-
   const toggleAttendanceStatus = async (attendanceId, currentStatus) => {
     const statuses = ['GELMEDI', 'GELDI', 'MAZERETLI'];
     const nextStatus = statuses[(statuses.indexOf(currentStatus) + 1) % statuses.length];
+    
+    const explanation = explanations[attendanceId];
+    const updateData = {
+      status: nextStatus,
+      explanation: nextStatus === 'MAZERETLI' ? explanation : null
+    };
 
     try {
       await fetch(`${process.env.REACT_APP_API_URL}/attendance/${attendanceId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: nextStatus }),
+        body: JSON.stringify(updateData),
       });
+      
+      if (nextStatus !== 'MAZERETLI') {
+        setExplanations(prev => {
+          const newExplanations = { ...prev };
+          delete newExplanations[attendanceId];
+          return newExplanations;
+        });
+        setVisibleExplanations(prev => {
+          const newVisible = { ...prev };
+          delete newVisible[attendanceId];
+          return newVisible;
+        });
+      }
+      
       fetchAttendances();
     } catch (error) {
       console.error('Devamsızlık durumu güncellenirken hata oluştu:', error);
     }
   };
+
+  const handleExplanationSave = async (attendanceId) => {
+    const explanation = explanations[attendanceId];
+    if (explanation?.trim()) {
+      try {
+        await fetch(`${process.env.REACT_APP_API_URL}/attendance/${attendanceId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            status: 'MAZERETLI',
+            explanation: explanation
+          }),
+        });
+        
+        setVisibleExplanations(prev => ({
+          ...prev,
+          [attendanceId]: false
+        }));
+        
+        fetchAttendances();
+      } catch (error) {
+        console.error('Mazeret kaydedilirken hata oluştu:', error);
+      }
+    }
+  };
+
+// handleAttendanceClick fonksiyonunu şu şekilde değiştirin
+const handleAttendanceClick = (attendance) => {
+  // Önce durum döngüsünü her zaman işlet
+  toggleAttendanceStatus(attendance._id, attendance.status);
+  
+  // Eğer yeni durum MAZERETLI olacaksa (yani şu an GELDI ise), açıklama kutusunu göster
+  if (attendance.status === 'GELDI') {
+    // Bir sonraki durum MAZERETLI olacağı için textbox'ı göster
+    setTimeout(() => {
+      setVisibleExplanations(prev => ({
+        ...prev,
+        [attendance._id]: true
+      }));
+      // Eğer daha önce bir açıklama varsa, state'e yükle
+      if (attendance.explanation) {
+        setExplanations(prev => ({
+          ...prev,
+          [attendance._id]: attendance.explanation
+        }));
+      }
+    }, 100); // Küçük bir gecikme ekleyerek state güncellemelerinin sırasını garanti altına alıyoruz
+  }
+};
 
   useEffect(() => {
     fetchAttendances();
@@ -152,17 +241,15 @@ const AttendanceManagement = () => {
     return event ? event.type : 'Bilinmiyor';
   };
 
-  // Helper Fonksiyon: Tüm Prova Tarihlerini Al ve Sırala
   const getAllProvaDates = () => {
     const provaEvents = events.filter((e) => e.type === 'Prova');
     const uniqueDates = [
       ...new Set(
         provaEvents.map((e) =>
-          new Date(e.date).toLocaleDateString('en-GB') // DD/MM/YYYY formatında
+          new Date(e.date).toLocaleDateString('en-GB')
         )
       ),
     ];
-    // Tarihleri sıralayın
     uniqueDates.sort((a, b) => {
       const [dayA, monthA, yearA] = a.split('/');
       const [dayB, monthB, yearB] = b.split('/');
@@ -182,22 +269,18 @@ const AttendanceManagement = () => {
     }
   }, [events]);
 
-  // Export Fonksiyonu: Yatay Tablo Yapısına Uygun
   const exportToExcel = async () => {
     try {
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet('Devamsızlıklar');
 
-      // Başlık Satırını Oluştur
       const headerRow = ['İsim', 'Soyisim', 'Partisyon', ...provaDates];
       worksheet.addRow(headerRow);
 
-      // Başlık Satırını Stil Ver
       const firstRow = worksheet.getRow(1);
       firstRow.font = { bold: true };
       firstRow.alignment = { vertical: 'middle', horizontal: 'center' };
 
-      // Her Kullanıcı için Satır Ekle
       users.forEach((user) => {
         const row = [user.name, user.surname, user.part || '-'];
 
@@ -212,15 +295,14 @@ const AttendanceManagement = () => {
           if (attendance) {
             row.push(attendance.status);
           } else {
-            row.push('N/A'); // Devamsızlık kaydı yoksa 'N/A' olarak ekle
+            row.push('N/A');
           }
         });
 
         const addedRow = worksheet.addRow(row);
 
-        // Tarih Sütunlarını Renklendir
         provaDates.forEach((date, index) => {
-          const cell = addedRow.getCell(4 + index); // İlk üç sütun İsim, Soyisim, Partisyon
+          const cell = addedRow.getCell(4 + index);
           const attendance = attendances.find(
             (a) =>
               a.userId?._id === user._id &&
@@ -233,40 +315,37 @@ const AttendanceManagement = () => {
               cell.fill = {
                 type: 'pattern',
                 pattern: 'solid',
-                fgColor: { argb: 'FF00FF00' }, // Yeşil
+                fgColor: { argb: 'FF00FF00' },
               };
             } else if (attendance.status === 'GELMEDI') {
               cell.fill = {
                 type: 'pattern',
                 pattern: 'solid',
-                fgColor: { argb: 'FFFF0000' }, // Kırmızı
+                fgColor: { argb: 'FFFF0000' },
               };
             } else if (attendance.status === 'MAZERETLI') {
+            
               cell.fill = {
                 type: 'pattern',
                 pattern: 'solid',
-                fgColor: { argb: 'FFFFFF00' }, // Sarı
+                fgColor: { argb: 'FFFFFF00' },
               };
             }
           } else {
-            // 'N/A' hücreleri gri renkle işaretleyebilirsiniz
             cell.fill = {
               type: 'pattern',
               pattern: 'solid',
-              fgColor: { argb: 'FFCCCCCC' }, // Açık Gri
+              fgColor: { argb: 'FFCCCCCC' },
             };
           }
 
-          // Hücreyi Ortala
           cell.alignment = { vertical: 'middle', horizontal: 'center' };
         });
       });
 
-      // Excel Dosyasını Oluştur ve İndir
       const buffer = await workbook.xlsx.writeBuffer();
       const blob = new Blob([buffer], {
-        type:
-          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       });
       saveAs(blob, 'Devamsizliklar.xlsx');
     } catch (error) {
@@ -276,7 +355,6 @@ const AttendanceManagement = () => {
   };
 
   const renderAttendanceGrid = (userId) => {
-    // Önce bu kullanıcıya ait, geçmiş tarihli ve "Prova" türünde olanları çekiyoruz
     let userAttendances = attendances
       .filter(
         (a) =>
@@ -286,7 +364,6 @@ const AttendanceManagement = () => {
       )
       .sort((a, b) => new Date(a.date) - new Date(b.date));
 
-    // Eğer son kaç çalışma gösterilsin alanı boş değilse, userAttendances'ın son X tanesini alıyoruz
     if (lastCount.trim() !== '') {
       const count = parseInt(lastCount, 10);
       if (!isNaN(count) && count > 0) {
@@ -311,17 +388,50 @@ const AttendanceManagement = () => {
             title={new Date(attendance.date).toLocaleDateString()}
             key={attendance._id}
           >
-            <AttendanceBox
-              status={attendance.status}
-              onClick={() =>
-                toggleAttendanceStatus(attendance._id, attendance.status)
-              }
-            />
+            <AttendanceBoxWrapper>
+              <AttendanceBox
+                status={attendance.status}
+                onClick={() => handleAttendanceClick(attendance)}
+              />
+              {attendance.status === 'MAZERETLI' && visibleExplanations[attendance._id] && (
+                <ExplanationBox>
+                  <TextField
+                    variant="outlined"
+                    size="small"
+                    placeholder="Mazeret açıklaması..."
+                    value={explanations[attendance._id] || ''}
+                    onChange={(e) => setExplanations(prev => ({
+                      ...prev,
+                      [attendance._id]: e.target.value
+                    }))}
+                    autoFocus
+                    sx={{ width: '150px' }}
+                  />
+                  <IconButton
+                    size="small"
+                    color="primary"
+                    onClick={() => handleExplanationSave(attendance._id)}
+                  >
+                    <SaveIcon />
+                  </IconButton>
+                  <IconButton
+                    size="small"
+                    onClick={() => setVisibleExplanations(prev => ({
+                      ...prev,
+                      [attendance._id]: false
+                    }))}
+                  >
+                    <CloseIcon />
+                  </IconButton>
+                </ExplanationBox>
+              )}
+            </AttendanceBoxWrapper>
           </Tooltip>
         ))}
       </Box>
     );
   };
+
 
   return (
     <Box
@@ -484,13 +594,15 @@ const AttendanceManagement = () => {
                 .filter((attendance) => getEventType(attendance.date) === 'Prova')
                 .map((attendance) => (
                   <ListItem key={attendance._id}>
-                    <ListItemText
-                      primary={`${new Date(attendance.date).toLocaleDateString()} - ${
-                        attendance.status
-                      }`}
-                      secondary="🎤 Prova"
-                    />
-                  </ListItem>
+                  <ListItemText
+                    primary={`${new Date(attendance.date).toLocaleDateString()} - ${attendance.status}`}
+                    secondary={
+                      attendance.status === 'MAZERETLI'
+                        ? `Mazeret: ${attendance.explanation}`
+                        : ""
+                    }
+                  />
+                </ListItem>
                 ))}
             </List>
           </Box>
