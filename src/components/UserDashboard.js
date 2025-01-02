@@ -397,13 +397,11 @@ const UserDashboard = () => {
             }}
           >
             {`Sevgili ${userName},\n
-Koromuzun değerli bir üyesi olarak yeni yaşını tüm kalbimizle kutluyoruz!
-Dileriz ki bu yıl dileklerinin hepsini sana getirsin, 
-sesinle ve gülüşünle hepimizi aydınlattığın gibi 
-kendi hayatını da güzelleştirsin.\n
-Neşeyle, sağlıkla ve müzikle dolu bir yaş olsun!\n
-İyi ki doğdun, iyi ki varsın!\n
-🥳🎶❤️
+Doğum gününü en içten duygularla tüm kalbimizle kutlarız 💝🎈🎊🎂🥂\n
+Aramızda olduğun ve Çokfonik'e değer kattığın için çok mutluyuz😊\n
+Sesinle ve gülüşünle Çokfonik'e adeta bir can suyu oldun🍀💧\n
+Neşeyle sağlıkla ve müzikle dolu bir yaş dileriz 🎶🎵🎼🥁🎉🥂\n
+İyi ki doğdun, iyi ki varsın 🌻💐🌹
 `}
           </Box>
         </Box>
