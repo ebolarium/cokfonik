@@ -90,6 +90,37 @@ const UserManagement = () => {
     }
   };
 
+
+  const [deleteUserId, setDeleteUserId] = useState(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  
+  const handleOpenDeleteModal = (id) => {
+    setDeleteUserId(id);
+    setDeleteModalOpen(true);
+  };
+  
+  const handleCloseDeleteModal = () => {
+    setDeleteUserId(null);
+    setDeleteModalOpen(false);
+  };
+  
+  const confirmDeleteUser = async () => {
+    if (deleteUserId) {
+      try {
+        await fetch(`${process.env.REACT_APP_API_URL}/users/${deleteUserId}`, {
+          method: 'DELETE',
+        });
+        fetchUsers();
+        handleCloseDeleteModal();
+      } catch (error) {
+        console.error(error);
+      }
+    }
+  };
+  
+
+
+
   // Kullanıcı Düzenle
   const handleEditSubmit = async (e) => {
     e.preventDefault();
@@ -198,12 +229,13 @@ const UserManagement = () => {
                   {user.role === 'Yönetim Kurulu' ? 'Yönetim' : user.role}
                 </TableCell>
                 <TableCell sx={{ padding: '2px 4px', textAlign: 'center' }}>
-                  <Button
-                    onClick={() => handleDeleteUser(user._id)}
-                    sx={{ minWidth: 0, padding: 0 }}
-                  >
-                    <Delete color="error" />
-                  </Button>
+                <Button
+  onClick={() => handleOpenDeleteModal(user._id)}
+  sx={{ minWidth: 0, padding: 0 }}
+>
+  <Delete color="error" />
+</Button>
+
                   <Button
                     onClick={() => setEditUser(user)}
                     sx={{ minWidth: 0, padding: 0, marginLeft: 1 }}
@@ -216,6 +248,41 @@ const UserManagement = () => {
           </TableBody>
         </Table>
       </TableContainer>
+
+
+      <Dialog
+  open={deleteModalOpen}
+  onClose={handleCloseDeleteModal}
+  fullWidth
+  maxWidth="xs"
+>
+  <DialogTitle>Kullanıcıyı Sil</DialogTitle>
+  <DialogContent>
+    <Typography>
+      Bu kullanıcıyı silmek istediğinize emin misiniz? Bu işlem geri alınamaz.
+    </Typography>
+  </DialogContent>
+  <Box
+    display="flex"
+    justifyContent="space-between"
+    px={3}
+    pb={2}
+    mt={1}
+  >
+    <Button onClick={handleCloseDeleteModal} color="primary">
+      İptal
+    </Button>
+    <Button
+      onClick={confirmDeleteUser}
+      color="error"
+      variant="contained"
+    >
+      Sil
+    </Button>
+  </Box>
+</Dialog>
+
+
 
       {/* Yeni Kullanıcı Modal'ı */}
       <Dialog open={open} onClose={() => setOpen(false)} fullWidth maxWidth="sm">

@@ -27,7 +27,7 @@ import Confetti from 'react-confetti';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import PaymentsIcon from '@mui/icons-material/Payments';
 
-
+// Yardımcı Fonksiyon: Base64 stringi Uint8Array'e çevirir
 const urlBase64ToUint8Array = (base64String) => {
   const padding = '='.repeat((4 - base64String.length % 4) % 4);
   const base64 = (base64String + padding)
@@ -50,7 +50,6 @@ const UserDashboard = () => {
   const [announcements, setAnnouncements] = useState([]);
   const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
   const [open, setOpen] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
 
   // Konfeti & Animasyon State
   const [showConfetti, setShowConfetti] = useState(false);
@@ -63,7 +62,7 @@ const UserDashboard = () => {
   // Public VAPID Key
   const PUBLIC_VAPID_KEY = process.env.REACT_APP_PUBLIC_VAPID_KEY;
 
-  // Kullanıcı bilgisini localStorage'dan al
+  // Kullanıcı bilgilerini localStorage'dan al
   const user = JSON.parse(localStorage.getItem('user'));
   // Hoş geldin mesajında kullanmak için
   const userName = user?.name || '';
@@ -82,12 +81,7 @@ const UserDashboard = () => {
           (announcement) => !announcement.hiddenBy?.includes(userId)
         );
 
-        const unreadAnnouncements = visibleAnnouncements.filter(
-          (announcement) => !announcement.readBy.includes(userId)
-        );
-
         setAnnouncements(visibleAnnouncements);
-        setUnreadCount(unreadAnnouncements.length);
       } catch (error) {
         console.error('Duyurular yüklenemedi:', error);
       }
@@ -96,6 +90,12 @@ const UserDashboard = () => {
     fetchAnnouncements();
   }, [user?._id]);
 
+  // unreadCount'u dinamik olarak hesapla
+  const unreadCount = announcements.filter(
+    (announcement) => !announcement.readBy.includes(user?._id)
+  ).length;
+
+  // Konfeti Gösterme Mantığı
   useEffect(() => {
     if (user?.birthDate) {
       const today = new Date();
@@ -122,7 +122,7 @@ const UserDashboard = () => {
           // 2) Gördüğünü kaydet
           localStorage.setItem(birthdayKey, 'true');
           
-          // … fade in/out veya tıklanarak kapanma mantığını devam ettir …
+          // Fade in/out veya tıklanarak kapanma mantığını devam ettir
           setTimeout(() => {
             setPhase('steady');
           }, 1000);
@@ -131,7 +131,7 @@ const UserDashboard = () => {
     }
   }, [user?.birthDate]);
 
-  // Kapanış tıklaması
+  // Konfeti Kapanış Tıklaması
   const handleClickClose = () => {
     // fade out
     setPhase('fadingOut');
@@ -226,7 +226,7 @@ const UserDashboard = () => {
             : ann
         );
         setAnnouncements(updated);
-        setUnreadCount((prev) => prev - 1);
+        // Artık unreadCount otomatik olarak hesaplanacak
       }
     } catch (error) {
       console.error('Duyuru okundu olarak işaretlenirken hata:', error);
@@ -244,6 +244,7 @@ const UserDashboard = () => {
       });
       if (response.ok) {
         setAnnouncements((prev) => prev.filter((a) => a._id !== id));
+        // unreadCount otomatik olarak hesaplanacak
       }
     } catch (error) {
       console.error('Duyuru gizlenirken hata:', error);
@@ -312,15 +313,15 @@ const UserDashboard = () => {
       icon: <LibraryMusicIcon style={{ fontSize: 50 }} />,
       bgColor: '#e6e6ff',
     },
-//    {
-//      title: '?????',
-//      path: '/#',
-//      icon: <HelpOutlineIcon style={{ fontSize: 50 }} />,
-//      bgColor: '#d9f7be',
-//    },
-  
+    // {
+    //   title: '?????',
+    //   path: '/#',
+    //   icon: <HelpOutlineIcon style={{ fontSize: 50 }} />,
+    //   bgColor: '#d9f7be',
+    // },
   ];
 
+  // Roller baz alınarak ek kartlar ekle
   if (user.role === 'Yoklama') {
     dashboardItems.push({
       title: 'Yoklama Yönetimi',
@@ -329,7 +330,7 @@ const UserDashboard = () => {
       bgColor: '#f0f8ff',
     });
   }
-  
+
   if (user.role === 'Aidat') {
     dashboardItems.push({
       title: 'Aidat Yönetimi',
@@ -338,7 +339,6 @@ const UserDashboard = () => {
       bgColor: '#e6ffe6',
     });
   }
-
 
   // Public VAPID Key'in Doğruluğunu Kontrol Etme
   useEffect(() => {
@@ -379,7 +379,7 @@ const UserDashboard = () => {
           }}
         >
           <Confetti gravity={0.02} numberOfPieces={250} />
-          
+
           {/* Mesaj Kutusu */}
           <Box
             sx={{
