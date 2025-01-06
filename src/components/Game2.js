@@ -6,7 +6,7 @@ import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 
 const level1Notes = ["C4", "D4", "E4", "F4", "G4", "A4", "B4"];
 const level2Notes = [
-  "C4", "C#4", "D4", "D#4", "E4", "F4", "F#4", 
+  "C4", "C#4", "D4", "D#4", "E4", "F4", "F#4",
   "G4", "G#4", "A4", "A#4", "B4"
 ];
 const level3Notes = [
@@ -15,12 +15,12 @@ const level3Notes = [
 ];
 
 const noteNames = {
-  "C3": "Do₃", "C#3": "Do#₃", "D3": "Re₃", "D#3": "Re#₃", "E3": "Mi₃",
+  "C3": "Do₃", "C#3": "Do#₃", "D3": "Re₃", "D#3": "Mi♭₃", "E3": "Mi₃",
   "F3": "Fa₃", "F#3": "Fa#₃", "G3": "Sol₃", "G#3": "Sol#₃", "A3": "La₃",
-  "A#3": "La#₃", "B3": "Si₃",
-  "C4": "Do₄", "C#4": "Do#₄", "D4": "Re₄", "D#4": "Re#₄", "E4": "Mi₄",
+  "A#3": "Si♭₃", "B3": "Si₃",
+  "C4": "Do₄", "C#4": "Do#₄", "D4": "Re₄", "D#4": "Mi♭₄", "E4": "Mi₄",
   "F4": "Fa₄", "F#4": "Fa#₄", "G4": "Sol₄", "G#4": "Sol#₄", "A4": "La₄",
-  "A#4": "La#₄", "B4": "Si₄"
+  "A#4": "Si♭₄", "B4": "Si₄"
 };
 
 const LEVEL_THRESHOLDS = {
@@ -28,8 +28,25 @@ const LEVEL_THRESHOLDS = {
   3: 90
 };
 
+// Bu yardımcı fonksiyon, parametre olarak verilen level'a göre notalar listesini döndürüyor.
+// (Eski getCurrentNotes'u, parametreli hale getirdik.)
+const getNotesForLevel = (lvl) => {
+  switch (lvl) {
+    case 1:
+      return level1Notes;
+    case 2:
+      return level2Notes;
+    case 3:
+      return level3Notes;
+    default:
+      return level1Notes;
+  }
+};
+
 const IntervalGame = () => {
   const [piano, setPiano] = useState(null);
+  // currentNote, ekranda "Çalan ilk nota" diye gösterdiğin do sabit olsun diye?
+  // İstersen manuel resetlersin, istersen her soruda random gibi yaparsın.
   const [currentNote, setCurrentNote] = useState("C4");
   const [targetNote, setTargetNote] = useState(null);
   const [message, setMessage] = useState("");
@@ -59,31 +76,21 @@ const IntervalGame = () => {
     });
   }, []);
 
-  const getCurrentNotes = () => {
-    switch (level) {
-      case 1:
-        return level1Notes;
-      case 2:
-        return level2Notes;
-      case 3:
-        return level3Notes;
-      default:
-        return level1Notes;
-    }
-  };
+  // generateRandomNote, artık opsiyonel bir overrideLevel parametresi alıyor.
+  const generateRandomNote = (overrideLevel) => {
+    // eğer overrideLevel gelmezse, mevcut state.level'ı kullan
+    const usedLevel = overrideLevel ?? level;
+    console.log('GenerateRandomNote => Using level:', usedLevel);
 
-  const getNextLevelThreshold = () => {
-    if (level === 1) return LEVEL_THRESHOLDS[2];
-    if (level === 2) return LEVEL_THRESHOLDS[3];
-    return null;
-  };
+    const currentNotes = getNotesForLevel(usedLevel);
+    console.log('Available notes:', currentNotes);
 
-  const generateRandomNote = () => {
-    const currentNotes = getCurrentNotes();
     let randomNote;
     do {
       randomNote = currentNotes[Math.floor(Math.random() * currentNotes.length)];
     } while (randomNote === targetNote);
+    console.log('Selected note:', randomNote);
+
     setTargetNote(randomNote);
     setHasAnswered(false);
   };
@@ -108,6 +115,12 @@ const IntervalGame = () => {
       playInterval();
     }
   }, [targetNote, gameActive]);
+
+  const getNextLevelThreshold = () => {
+    if (level === 1) return LEVEL_THRESHOLDS[2];
+    if (level === 2) return LEVEL_THRESHOLDS[3];
+    return null;
+  };
 
   const calculateBonus = () => {
     return Math.floor(streak / 3);
@@ -137,10 +150,16 @@ const IntervalGame = () => {
         return newScore;
       });
 
+      // Doğru cevap sonrası, 1 saniye sonra yeni nota
       setTimeout(() => {
+        // Burada overrideLevel parametresi vermiyoruz.
+        // Çünkü kullanıcı belki yeni level'a geçtiyse
+        // generateRandomNote otomatik olarak state.level'ı kullanacak.
         generateRandomNote();
       }, 1000);
+
     } else {
+      // Yanlış cevap
       if (mode === 'game') {
         setMessage("Yanlış! ❌");
       } else {
@@ -208,17 +227,28 @@ const IntervalGame = () => {
       setMessage("Piano yükleniyor, lütfen biraz bekleyin...");
       return;
     }
+    // Level'ı kesin olarak 1'e çekiyoruz.
+    setLevel(1);
+    console.log('Game started with level: 1 (override)');
+
     setScore(0);
     setLives(mode === 'game' ? 3 : Infinity);
-    setLevel(1);
     setStreak(0);
     setMessage("");
     setGameActive(true);
     setHasAnswered(false);
-    generateRandomNote();
+
+    // 0 ms gecikmeyle de olsa, setState tamamlanmadan
+    // "Level 1" listesinden yeni nota seçmek istiyoruz:
+    setTimeout(() => {
+      // currentNote da istersen sıfırlamak için:
+      setCurrentNote("C4");
+      generateRandomNote(1);
+    }, 0);
   };
 
   const endGame = () => {
+    console.log('Game ended at level:', level);
     setGameActive(false);
     saveScore();
     setOpenModal(true);
@@ -285,14 +315,14 @@ const IntervalGame = () => {
           {level === 2 && "Diyez/Bemol Notalar"}
           {level === 3 && "İki Oktav"}
         </Typography>
-        
+
         {getNextLevelThreshold() && (
           <>
             <Typography variant="caption" display="block" textAlign="center" mb={1}>
               Level {level + 1}'e: {getNextLevelThreshold() - score} puan kaldı
             </Typography>
             <LinearProgress 
-              variant="determinate" 
+              variant="determinate"
               value={(score / getNextLevelThreshold()) * 100}
               sx={{ height: 10, borderRadius: 5 }}
             />
@@ -378,7 +408,7 @@ const IntervalGame = () => {
         maxWidth="600px"
         width="100%"
       >
-        {getCurrentNotes().map((n) => (
+        {getNotesForLevel(level).map((n) => (
           <Button
             key={n}
             variant="contained"
@@ -445,7 +475,7 @@ const IntervalGame = () => {
           </Button>
         </Paper>
       </Modal>
-      
+
       {/* Scoreboard Modal */}
       <Modal open={openScoreboard} onClose={() => setOpenScoreboard(false)}>
         <Paper

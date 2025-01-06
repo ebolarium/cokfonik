@@ -67,33 +67,97 @@ const UserDashboard = () => {
   // Hoş geldin mesajında kullanmak için
   const userName = user?.name || '';
 
-  // Duyuruları çek
-  useEffect(() => {
-    const fetchAnnouncements = async () => {
-      try {
-        const response = await fetch(`${process.env.REACT_APP_API_URL}/announcements`);
-        const data = await response.json();
 
-        const userId = user?._id;
-        if (!userId) throw new Error('User ID not found in localStorage');
 
-        const visibleAnnouncements = data.filter(
-          (announcement) => !announcement.hiddenBy?.includes(userId)
-        );
+  
+// Duyuruları çek
+useEffect(() => {
+  const fetchAnnouncements = async () => {
+    try {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/announcements`);
+      const data = await response.json();
 
-        setAnnouncements(visibleAnnouncements);
-      } catch (error) {
-        console.error('Duyurular yüklenemedi:', error);
-      }
-    };
+      const userId = user?._id;
+      if (!userId) throw new Error('User ID not found in localStorage');
 
-    fetchAnnouncements();
-  }, [user?._id]);
+      // Gizlenmiş duyuruları filtrele
+      const visibleAnnouncements = data.filter(
+        (announcement) => !announcement.hiddenBy?.includes(userId)
+      );
+      setAnnouncements(visibleAnnouncements);
+    } catch (error) {
+      console.error('Duyurular yüklenemedi:', error);
+    }
+  };
 
-  // unreadCount'u dinamik olarak hesapla
-  const unreadCount = announcements.filter(
-    (announcement) => !announcement.readBy.includes(user?._id)
-  ).length;
+  fetchAnnouncements();
+}, [user?._id]);
+
+// Okunmamış duyuru sayısı
+const unreadCount = announcements.filter((announcement) => {
+  // readBy'daki her ID'yi string'e çevir
+  const readByStringArray = announcement.readBy.map((id) => String(id));
+  return !readByStringArray.includes(String(user?._id));
+}).length;
+
+// Duyuru okundu
+const markAsRead = async (id) => {
+  const userId = user?._id;
+  try {
+    const response = await fetch(`${process.env.REACT_APP_API_URL}/announcements/${id}/read`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId }),
+    });
+    if (response.ok) {
+      setAnnouncements((prev) =>
+        prev.map((ann) =>
+          ann._id === id
+            ? { ...ann, readBy: [...ann.readBy, userId] }
+            : ann
+        )
+      );
+    }
+  } catch (error) {
+    console.error('Duyuru okundu olarak işaretlenirken hata:', error);
+  }
+};
+
+// Duyuru gizle
+const hideAnnouncement = async (id) => {
+  const userId = user?._id;
+  try {
+    const response = await fetch(`${process.env.REACT_APP_API_URL}/announcements/${id}/hide`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId }),
+    });
+    if (response.ok) {
+      // Başarıyla gizlenmiş duyuruyu local state'ten çıkar
+      setAnnouncements((prev) => prev.filter((a) => a._id !== id));
+    }
+  } catch (error) {
+    console.error('Duyuru gizlenirken hata:', error);
+  }
+};
+
+// Duyuru modal aç/kapat
+const handleOpen = (announcement) => {
+  // Okundu mu kontrolü için yine string dönüşümü
+  const readByStringArray = announcement.readBy.map((id) => String(id));
+  if (!readByStringArray.includes(String(user?._id))) {
+    markAsRead(announcement._id);
+  }
+  setSelectedAnnouncement(announcement);
+  setOpen(true);
+};
+
+const handleClose = () => {
+  setOpen(false);
+  setSelectedAnnouncement(null);
+};
+
+
 
   // Konfeti Gösterme Mantığı
   useEffect(() => {
@@ -210,60 +274,7 @@ const UserDashboard = () => {
     setPushModalOpen(false);
   };
 
-  // Duyuru Okundu
-  const markAsRead = async (id) => {
-    const userId = user?._id;
-    try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/announcements/${id}/read`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId }),
-      });
-      if (response.ok) {
-        const updated = announcements.map((ann) =>
-          ann._id === id
-            ? { ...ann, readBy: [...ann.readBy, userId] }
-            : ann
-        );
-        setAnnouncements(updated);
-        // Artık unreadCount otomatik olarak hesaplanacak
-      }
-    } catch (error) {
-      console.error('Duyuru okundu olarak işaretlenirken hata:', error);
-    }
-  };
 
-  // Duyuru Gizle
-  const hideAnnouncement = async (id) => {
-    const userId = user?._id;
-    try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/announcements/${id}/hide`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId }),
-      });
-      if (response.ok) {
-        setAnnouncements((prev) => prev.filter((a) => a._id !== id));
-        // unreadCount otomatik olarak hesaplanacak
-      }
-    } catch (error) {
-      console.error('Duyuru gizlenirken hata:', error);
-    }
-  };
-
-  // Modal Aç/Kapat
-  const handleOpen = (announcement) => {
-    setSelectedAnnouncement(announcement);
-    setOpen(true);
-    if (!announcement.readBy.includes(user?._id)) {
-      markAsRead(announcement._id);
-    }
-  };
-
-  const handleClose = () => {
-    setOpen(false);
-    setSelectedAnnouncement(null);
-  };
 
   // Dashboard Kartları
   const dashboardItems = [
@@ -356,7 +367,6 @@ const UserDashboard = () => {
 
   // Public VAPID Key'i Loglama (Debug için)
   useEffect(() => {
-    console.log('PUBLIC_VAPID_KEY:', PUBLIC_VAPID_KEY);
   }, [PUBLIC_VAPID_KEY]);
 
   return (
