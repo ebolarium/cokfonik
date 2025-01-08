@@ -50,6 +50,11 @@ const UserDashboard = () => {
   const [announcements, setAnnouncements] = useState([]);
   const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
   const [open, setOpen] = useState(false);
+  const [unpaidFeesModalOpen, setUnpaidFeesModalOpen] = useState(false);
+  const [unpaidCount, setUnpaidCount] = useState(0);
+  const [modalDismissed, setModalDismissed] = useState(false);
+
+
 
   // Konfeti & Animasyon State
   const [showConfetti, setShowConfetti] = useState(false);
@@ -66,6 +71,34 @@ const UserDashboard = () => {
   const user = JSON.parse(localStorage.getItem('user'));
   // Hoş geldin mesajında kullanmak için
   const userName = user?.name || '';
+
+
+
+
+  useEffect(() => {
+    const checkUnpaidFees = async () => {
+      try {
+        const response = await fetch(`${process.env.REACT_APP_API_URL}/fees/check-unpaid/${user._id}`);
+        if (!response.ok) throw new Error('API yanıtı başarılı değil.');
+
+        const data = await response.json();
+        if (data.hasUnpaidFees && !modalDismissed) {
+          setUnpaidCount(data.unpaidCount);
+          setUnpaidFeesModalOpen(true);
+        }
+      } catch (error) {
+        console.error('Aidat borcu kontrol edilirken hata oluştu:', error);
+      }
+    };
+
+    if (user) checkUnpaidFees();
+  }, [user, modalDismissed]); // modalDismissed state'ini dependency array'e ekledik
+
+  // Modal kapatma fonksiyonu
+  const handleCloseModal = () => {
+    setUnpaidFeesModalOpen(false);
+    setModalDismissed(true); // Modalın tekrar açılmasını engelle
+  };
 
 
 
@@ -276,6 +309,10 @@ const handleClose = () => {
 
 
 
+
+
+
+
   // Dashboard Kartları
   const dashboardItems = [
     {
@@ -287,7 +324,11 @@ const handleClose = () => {
     {
       title: 'Aidat',
       path: '/my-fees',
-      icon: <AccountBalanceIcon style={{ fontSize: 50 }} />,
+      icon: (
+        <Badge badgeContent={unpaidCount} color="error">
+          <AccountBalanceIcon style={{ fontSize: 50 }} />
+        </Badge>
+      ),
       bgColor: '#e6ffe6',
     },
     {
@@ -416,6 +457,47 @@ Neşeyle sağlıkla ve müzikle dolu bir yaş dileriz 🎶🎵🎼🥁🎉🥂\n
           </Box>
         </Box>
       )}
+
+
+
+ {/* Aidat Borcu Modal */}
+ <Modal
+        open={unpaidFeesModalOpen}
+        onClose={handleCloseModal}
+      >
+        <Box
+sx={{
+  position: 'absolute',
+  top: '50%',
+  left: '50%',
+  transform: 'translate(-50%, -50%)',
+  bgcolor: 'background.paper',
+  boxShadow: 24,
+  p: 2,
+  borderRadius: 2,
+  textAlign: 'center',
+  fontSize: '16px', // Genel font büyüklüğü
+  width: { xs: '90%', sm: '400px', md: '500px' }, // Responsive genişlik
+  maxWidth: '90vw', // Ekran genişliğine göre sınırlama
+}}
+        >
+<Typography variant="h5" gutterBottom sx={{ fontSize: '24px', fontWeight: 'bold' }}>
+  ⚠️ Aidat Bildirimi
+</Typography>
+<Typography gutterBottom sx={{ fontSize: '18px' }}>
+  Ödenmemiş {unpaidCount} aylık aidatınız var. 😱
+</Typography>
+          <Button variant="contained" color="primary" onClick={handleCloseModal}>
+            Tamam
+          </Button>
+        </Box>
+      </Modal>
+
+
+
+
+
+
 
       {/* Push Bildirim İzni Modali */}
       <Modal

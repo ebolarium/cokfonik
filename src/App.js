@@ -30,7 +30,6 @@ import Game2 from './components/Game2';
 import ConductorDashboard from './components/ConductorDashboard';
 import ConductorAttendance from './components/ConductorAttendance';
 
-
 const App = () => {
   const location = useLocation();
   const navigate = useNavigate();

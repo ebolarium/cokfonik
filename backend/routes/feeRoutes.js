@@ -1,14 +1,16 @@
 const express = require('express');
 const Fee = require('../models/Fee');
+
+
+
 const router = express.Router();
 
-// Son Altı Aya Ait Aidatları Getir
+// ÖNEMLİ: Spesifik route'ları önce tanımlayın
 router.get('/last-six-months', async (req, res) => {
   try {
     const now = new Date();
     const sixMonthsAgo = new Date();
     sixMonthsAgo.setMonth(now.getMonth() - 6);
-
 
     const fees = await Fee.find({
       $or: [
@@ -28,6 +30,27 @@ router.get('/last-six-months', async (req, res) => {
   }
 });
 
+
+// Kullanıcının aidat borcunu kontrol et
+router.get('/check-unpaid/:userId', async (req, res) => {
+  const { userId } = req.params;
+  try {
+    const unpaidFees = await Fee.find({ userId, isPaid: false });
+    if (unpaidFees.length > 0) {
+      res.status(200).json({ hasUnpaidFees: true, unpaidCount: unpaidFees.length });
+    } else {
+      res.status(200).json({ hasUnpaidFees: false });
+    }
+  } catch (error) {
+    console.error('Error checking unpaid fees:', error);
+    res.status(500).json({ message: 'Sunucu hatası oluştu.' });
+  }
+});
+
+
+
+
+// Aidat güncelleme route'u
 router.put('/:id', async (req, res) => {
   try {
     const updatedFee = await Fee.findByIdAndUpdate(req.params.id, req.body, { new: true });
@@ -41,7 +64,7 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// Belirli Bir Kullanıcıya Ait Aidatları Getir
+// Kullanıcıya ait aidatları getir - en sona koyulmalı çünkü en genel route
 router.get('/:userId', async (req, res) => {
   const { userId } = req.params;
   try {

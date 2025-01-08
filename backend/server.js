@@ -89,7 +89,6 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-
 app.post('/api/upload-musicxml', upload.single('file'), (req, res) => {
   res.json({ filePath: req.file.path });
 });
@@ -115,6 +114,10 @@ cron.schedule('0 0 1 * *', async () => {
     console.error('Aidat kayıtları oluşturulurken hata:', error.message);
   }
 });
+
+
+
+
 
 // React Build Dosyalarını Sun (Backend klasöründen bir üst dizindeki build klasörüne erişiyoruz)
 app.use(express.static(path.join(__dirname, '../build')));
