@@ -61,12 +61,22 @@ const MyAttendance = () => {
     .sort((a, b) => new Date(b.date) - new Date(a.date)); // En yakın tarihten en eskiye sıralama
 
   // Infografik Verilerini Hesaplama
-  const totalWorkdays = attendances.filter((a) => a.event?.type === 'Prova').length;
+  const today = new Date();
+
+  const totalWorkdays = attendances.filter((a) => {
+    return (
+      a.event?.type === 'Prova' && 
+      new Date(a.date) <= today
+    );
+  }).length;
+
+  
   const daysAttended = attendances.filter((a) => a.status === 'GELDI' && a.event?.type === 'Prova').length;
   const daysMissed = attendances.filter((a) => a.status === 'GELMEDI' && a.event?.type === 'Prova').length;
   const daysExcused = attendances.filter((a) => a.status === 'MAZERETLI' && a.event?.type === 'Prova').length;
-  const absencePercentage = totalWorkdays > 0 ? ((daysMissed / totalWorkdays) * 100).toFixed(2) : '0';
-
+  const absencePercentage = totalWorkdays > 0
+  ? (((daysMissed + daysExcused) / totalWorkdays) * 100).toFixed(2)
+  : '0';
   // Grafik Verisi
   const pieData = [
     { name: 'Geldi', value: daysAttended },

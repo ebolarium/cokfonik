@@ -365,12 +365,12 @@ const handleClose = () => {
       icon: <LibraryMusicIcon style={{ fontSize: 50 }} />,
       bgColor: '#e6e6ff',
     },
-    // {
-    //   title: '?????',
-    //   path: '/#',
-    //   icon: <HelpOutlineIcon style={{ fontSize: 50 }} />,
-    //   bgColor: '#d9f7be',
-    // },
+    {
+       title: '?????',
+       path: '/midi-player',
+       icon: <HelpOutlineIcon style={{ fontSize: 50 }} />,
+       bgColor: '#d9f7be',
+     },
   ];
 
   // Roller baz alınarak ek kartlar ekle

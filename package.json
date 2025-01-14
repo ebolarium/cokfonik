@@ -5,12 +5,15 @@
   "dependencies": {
     "@emotion/react": "^11.13.5",
     "@emotion/styled": "^11.13.5",
+    "@magenta/music": "^1.23.1",
     "@mui/icons-material": "^6.1.10",
     "@mui/material": "^6.1.10",
     "axios": "^1.7.9",
     "bootstrap": "^5.3.3",
     "exceljs": "^4.4.0",
     "file-saver": "^2.0.5",
+    "opensheetmusicdisplay": "^1.8.9",
+    "osmd-audio-player": "^0.7.0",
     "react": "18.2.0",
     "react-big-calendar": "^1.16.3",
     "react-confetti": "^6.1.0",
@@ -21,6 +24,7 @@
     "recharts": "^2.15.0",
     "serve": "^14.2.4",
     "soundfont-player": "^0.12.0",
+    "tone": "^15.0.4",
     "vexflow": "^4.2.5",
     "web-push": "^3.6.7",
     "web-vitals": "^4.2.4"

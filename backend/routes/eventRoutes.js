@@ -28,6 +28,7 @@ router.post('/', async (req, res) => {
       const users = await User.find();
       const attendanceRecords = users.map(user => ({
         userId: user._id,
+        event: newEvent._id,
         date: newEvent.date,
         status: 'Gelmedi',
       }));
