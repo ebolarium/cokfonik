@@ -92,7 +92,11 @@ const AttendanceManagement = () => {
     try {
       const response = await fetch(`${process.env.REACT_APP_API_URL}/users`);
       const data = await response.json();
-      const activeUsers = data.filter((user) => user.isActive && user.role !== 'Şef');
+      const activeUsers = data.filter((user) => 
+        user.isActive && 
+        user.role !== 'Şef' && 
+        !user.frozen // frozen olmayanlar
+      );
       setUsers(activeUsers);
     } catch (error) {
       console.error('Kullanıcı verileri alınırken hata:', error);

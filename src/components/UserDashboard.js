@@ -367,7 +367,7 @@ const handleClose = () => {
     },
     {
        title: '?????',
-       path: '/midi-player',
+       //path: '/midi-player',
        icon: <HelpOutlineIcon style={{ fontSize: 50 }} />,
        bgColor: '#d9f7be',
      },
