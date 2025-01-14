@@ -53,6 +53,9 @@ const eventRoutes = require('./routes/eventRoutes');
 app.use('/api/events', eventRoutes);
 const announcementRoutes = require('./routes/announcementRoutes');
 app.use('/api/announcements', announcementRoutes);
+const managementRoutes = require('./routes/managementRoutes');
+app.use('/api/management', managementRoutes);
+
 
 // Yeni Subscription Routes'ı Ekleyin
 const subscriptionRoutes = require('./routes/subscriptionRoutes');
