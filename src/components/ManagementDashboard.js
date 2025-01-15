@@ -6,29 +6,39 @@ import {
   Grid,
   Card,
   CardContent,
-  CircularProgress // Spinner bileşenini içe aktar
+  CircularProgress,
+  Modal,
+  List,
+  ListItem,
+  ListItemText,
+  IconButton
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import PaymentsIcon from '@mui/icons-material/Payments';
 import PersonOffIcon from '@mui/icons-material/PersonOff';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import CampaignIcon from '@mui/icons-material/Campaign';
-// Eklenen icon
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import CloseIcon from '@mui/icons-material/Close';
 
 const ManagementDashboard = () => {
   const navigate = useNavigate();
 
-  // Mevcut state'ler
   const [totalUsers, setTotalUsers] = useState(0);
   const [frozenUsers, setFrozenUsers] = useState(0);
 
-  // YENİ: Uyarı state'leri ve loading state
-  const [overdueFeeCount, setOverdueFeeCount] = useState(0);     // 2 aydır aidat ödemeyen
-  const [repeatedAbsCount, setRepeatedAbsCount] = useState(0);   // 4 çalışma üst üste gelmeyen
-  const [loadingSummary, setLoadingSummary] = useState(true);    // Yüklenme durumu
+  const [overdueFeeCount, setOverdueFeeCount] = useState(0);
+  const [repeatedAbsCount, setRepeatedAbsCount] = useState(0);
+  const [loadingSummary, setLoadingSummary] = useState(true);
 
-  // Dashboard öğeleri (Aynı kalabilir)
+  // Yeni: Kullanıcı listelerini saklamak için state'ler
+  const [overdueUserDetails, setOverdueUserDetails] = useState([]);
+  const [absentUserDetails, setAbsentUserDetails] = useState([]);
+
+  // Modal kontrol state'leri
+  const [openOverdueModal, setOpenOverdueModal] = useState(false);
+  const [openAbsentModal, setOpenAbsentModal] = useState(false);
+
   const dashboardItems = [
     {
       title: 'Aidat Durumu',
@@ -56,7 +66,6 @@ const ManagementDashboard = () => {
     },
   ];
 
-  // Kullanıcı verisi çek (mevcut)
   useEffect(() => {
     const fetchUsersCount = async () => {
       try {
@@ -66,7 +75,6 @@ const ManagementDashboard = () => {
         }
         const data = await response.json();
         setTotalUsers(data.length);
-        // frozen === true olanları say
         const frozenCount = data.filter((user) => user.frozen === true).length;
         setFrozenUsers(frozenCount);
       } catch (error) {
@@ -77,7 +85,6 @@ const ManagementDashboard = () => {
     fetchUsersCount();
   }, []);
 
-  // YENİ: 2 aydır aidat ödemeyen ve 4 çalışma üst üste gelmeyen kişi sayısı
   useEffect(() => {
     const fetchSummary = async () => {
       try {
@@ -85,22 +92,37 @@ const ManagementDashboard = () => {
         if (!response.ok) {
           throw new Error(`API Error: ${response.status}`);
         }
-        const data = await response.json(); 
-        // data => { overdueFeeCount, repeatedAbsCount }
-
+        const data = await response.json();
         setOverdueFeeCount(data.overdueFeeCount);
         setRepeatedAbsCount(data.repeatedAbsCount);
-        setLoadingSummary(false); // Yüklenme tamamlandı
+
+        // Yeni: Kullanıcı detaylarını state'e ata
+        setOverdueUserDetails(data.overdueUserDetails);
+        setAbsentUserDetails(data.absentUserDetails);
+
+        setLoadingSummary(false);
       } catch (error) {
         console.error('Management summary hata:', error);
-        setLoadingSummary(false); // Hata olsa bile yüklenme tamamlandı
+        setLoadingSummary(false);
       }
     };
 
     fetchSummary();
   }, []);
 
-  
+  // Modal stil ayarları
+  const modalStyle = {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: 'translate(-50%, -50%)',
+    width: 300,
+    bgcolor: 'background.paper',
+    border: '2px solid #000',
+    boxShadow: 24,
+    p: 4,
+  };
+
   return (
     <Box
       p={3}
@@ -115,38 +137,51 @@ const ManagementDashboard = () => {
         Yönetim Paneli
       </Typography>
 
-      {/* Üye ve Donduran sayısını göster (mevcut) */}
       <Typography variant="body1" gutterBottom>
         Üye: {totalUsers} | Donduran: {frozenUsers}
       </Typography>
 
-      {/* YENİ: Tek sarı kart içinde iki satırlık uyarı */}
       <Card sx={{ backgroundColor: '#fffde7', mb: 3 }}> 
-        <CardContent>
-          {/* 1. Satır: Aidat uyarısı */}
-          <Typography
-            variant="subtitle1"
-            color="text.primary"
-            display="flex"
-            alignItems="center"
-          >
-            <WarningAmberIcon sx={{ mr: 1 }} />
-            2 aydır aidat ödemeyen {loadingSummary ? <CircularProgress size={20} /> : overdueFeeCount} kişi!
-          </Typography>
+  <CardContent>
+    {/* Aidat Uyarısı */}
+    <Typography
+      variant="subtitle1"
+      color="text.primary"
+      display="flex"
+      alignItems="center"
+      mb={1}
+    >
+      <WarningAmberIcon sx={{ mr: 1 }} />
+      Aidat Sınırında&nbsp;&nbsp;
+      <span 
+        style={{ textDecoration: 'underline', color: 'blue', cursor: 'pointer' }}
+        onClick={() => setOpenOverdueModal(true)}
+      >
+        {loadingSummary ? <CircularProgress size={20} /> : `${overdueFeeCount} kişi`}
+      </span>
+      &nbsp;&nbsp;var!
+    </Typography>
 
-          {/* 2. Satır: Devamsızlık uyarısı */}
-          <Typography
-            variant="subtitle1"
-            color="text.primary"
-            display="flex"
-            alignItems="center"
-            mt={1}  // Biraz dikey boşluk
-          >
-            <WarningAmberIcon sx={{ mr: 1 }} />
-            4 çalışma üst üste gelmeyen {loadingSummary ? <CircularProgress size={20} /> : repeatedAbsCount} kişi!
-          </Typography>
-        </CardContent>
-      </Card>
+    {/* Devamsızlık Uyarısı */}
+    <Typography
+  variant="subtitle1"
+  color="text.primary"
+  display="flex"
+  alignItems="center"
+  mt={1}
+>
+  <WarningAmberIcon sx={{ mr: 1 }} />
+  Devamsızlık Sınırında&nbsp;&nbsp;
+  <span 
+    style={{ textDecoration: 'underline', color: 'blue', cursor: 'pointer' }}
+    onClick={() => setOpenAbsentModal(true)}
+  >
+    {loadingSummary ? <CircularProgress size={20} /> : `${repeatedAbsCount} kişi`}
+  </span>
+  &nbsp;&nbsp;var!
+</Typography>
+  </CardContent>
+</Card>
 
       <Grid container spacing={3}>
         {dashboardItems.map((item, index) => (
@@ -175,6 +210,66 @@ const ManagementDashboard = () => {
           </Grid>
         ))}
       </Grid>
+
+      {/* Aidat ödemeyen kullanıcıları gösteren modal */}
+      <Modal
+        open={openOverdueModal}
+        onClose={() => setOpenOverdueModal(false)}
+        aria-labelledby="overdue-modal-title"
+        aria-describedby="overdue-modal-description"
+      >
+        <Box sx={modalStyle}>
+          <Box display="flex" justifyContent="space-between" alignItems="center">
+            <Typography id="overdue-modal-title" variant="h6">
+              2 Aydır Aidat Ödemeyenler
+            </Typography>
+            <IconButton onClick={() => setOpenOverdueModal(false)}>
+              <CloseIcon />
+            </IconButton>
+          </Box>
+          <List>
+            {overdueUserDetails.length > 0 ? (
+              overdueUserDetails.map((user) => (
+                <ListItem key={user._id}>
+  <ListItemText primary={`${user.name} ${user.surname}`} />
+  </ListItem>
+              ))
+            ) : (
+              <Typography id="overdue-modal-description">Hiç kullanıcı yok.</Typography>
+            )}
+          </List>
+        </Box>
+      </Modal>
+
+      {/* Devamsızlık yapan kullanıcıları gösteren modal */}
+      <Modal
+        open={openAbsentModal}
+        onClose={() => setOpenAbsentModal(false)}
+        aria-labelledby="absent-modal-title"
+        aria-describedby="absent-modal-description"
+      >
+        <Box sx={modalStyle}>
+          <Box display="flex" justifyContent="space-between" alignItems="center">
+            <Typography id="absent-modal-title" variant="h6">
+              4 Çalışma Üst Üste Gelmeyenler
+            </Typography>
+            <IconButton onClick={() => setOpenAbsentModal(false)}>
+              <CloseIcon />
+            </IconButton>
+          </Box>
+          <List>
+            {absentUserDetails.length > 0 ? (
+              absentUserDetails.map((user) => (
+                <ListItem key={user._id}>
+  <ListItemText primary={`${user.name} ${user.surname}`} />
+                </ListItem>
+              ))
+            ) : (
+              <Typography id="absent-modal-description">Hiç kullanıcı yok.</Typography>
+            )}
+          </List>
+        </Box>
+      </Modal>
     </Box>
   );
 };

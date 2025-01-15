@@ -7,18 +7,16 @@ const User = require('../models/User');
 router.get('/summary', async (req, res) => {
   try {
     const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const currentYear = now.getFullYear();
     const currentMonthIndex = now.getMonth();
 
-    // Aidat aylarımızın string listesi
     const turkishMonths = [
       'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
       'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'
     ];
 
-    // --------------------------------------------------------
     // 1) İKİ AYDIR AİDAT VERMEME DURUMU
-    // --------------------------------------------------------
     const unpaidItems = await Fee.find({ isPaid: false });
     const overdueUsers = new Set();
 
@@ -33,17 +31,20 @@ router.get('/summary', async (req, res) => {
     }
     const overdueFeeCount = overdueUsers.size;
 
-    // --------------------------------------------------------
-    // 2) SON 4 TARIHTE DEVMASIZLIK KONTROLÜ
-    // --------------------------------------------------------
+    // İlgili kullanıcıların detaylarını getir
+    const overdueUserDetails = await User.find(
+      { _id: { $in: Array.from(overdueUsers) } },
+      'name surname'
+    );
+
+    // 2) SON 4 TARIHTE DEVMASIZLIK KONTROLÜ (Bugün hariç)
     const allUsers = await User.find({ isActive: true, role: { $ne: 'Şef' }, frozen: false });
     const activeUserIds = allUsers.map(user => user._id.toString());
 
-    // Bugünden önceki son 4 benzersiz tarihe sahip kayıtları al
     const last4DatesAgg = await Attendance.aggregate([
       { 
         $match: { 
-          date: { $lt: now } 
+          date: { $lt: todayStart }
         } 
       },
       { 
@@ -70,9 +71,6 @@ router.get('/summary', async (req, res) => {
         status: { $in: ["GELMEDI", "gelmedi", "Gelmedi"] }
       }).sort({ date: -1 });
 
-      
-
-      // Eğer kullanıcı son 4 tarihte de gelmediyse ekle
       if (userAttendances.length === 4) {
         absentUsers.add(userId);
       }
@@ -80,9 +78,18 @@ router.get('/summary', async (req, res) => {
 
     const repeatedAbsCount = absentUsers.size;
 
+    // Devamsızlık yapan kullanıcıların detaylarını getir
+    const absentUserDetails = await User.find(
+      { _id: { $in: Array.from(absentUsers) } },
+      'name surname'  // Sadece isim alanını getiriyoruz
+    );
 
-
-    res.json({ overdueFeeCount, repeatedAbsCount });
+    res.json({ 
+      overdueFeeCount, 
+      repeatedAbsCount, 
+      overdueUserDetails, 
+      absentUserDetails 
+    });
 
   } catch (error) {
     console.error('Sunucu hatası:', error);

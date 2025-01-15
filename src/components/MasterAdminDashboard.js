@@ -1,7 +1,20 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Typography, Card, CardContent, Grid, CircularProgress } from '@mui/material';
+import {
+  Box,
+  Typography,
+  Card,
+  CardContent,
+  Grid,
+  CircularProgress,
+  Modal,
+  List,
+  ListItem,
+  ListItemText,
+  IconButton
+} from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import CloseIcon from '@mui/icons-material/Close';
 
 // İkonları içe aktarın
 import PeopleIcon from '@mui/icons-material/People';
@@ -18,6 +31,14 @@ const MasterAdminDashboard = () => {
   const [overdueFeeCount, setOverdueFeeCount] = useState(0);
   const [repeatedAbsCount, setRepeatedAbsCount] = useState(0);
   const [loadingSummary, setLoadingSummary] = useState(true);
+
+  // Yeni: Kullanıcı detaylarını saklamak için state'ler
+  const [overdueUserDetails, setOverdueUserDetails] = useState([]);
+  const [absentUserDetails, setAbsentUserDetails] = useState([]);
+
+  // Modal kontrol state'leri
+  const [openOverdueModal, setOpenOverdueModal] = useState(false);
+  const [openAbsentModal, setOpenAbsentModal] = useState(false);
 
   const dashboardItems = [
     {
@@ -76,6 +97,11 @@ const MasterAdminDashboard = () => {
         const data = await response.json();
         setOverdueFeeCount(data.overdueFeeCount);
         setRepeatedAbsCount(data.repeatedAbsCount);
+
+        // Yeni: Kullanıcı detaylarını state'e ata
+        setOverdueUserDetails(data.overdueUserDetails);
+        setAbsentUserDetails(data.absentUserDetails);
+
         setLoadingSummary(false);
       } catch (error) {
         console.error('MasterAdmin summary error:', error);
@@ -84,6 +110,19 @@ const MasterAdminDashboard = () => {
     };
     fetchSummary();
   }, []);
+
+  // Modal stil ayarları
+  const modalStyle = {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: 'translate(-50%, -50%)',
+    width: 300,
+    bgcolor: 'background.paper',
+    border: '2px solid #000',
+    boxShadow: 24,
+    p: 4,
+  };
 
   return (
     <Box
@@ -99,29 +138,52 @@ const MasterAdminDashboard = () => {
         Admin Panel
       </Typography>
 
+
+
       <Card sx={{ backgroundColor: '#fffde7', mb: 3 }}> 
-        <CardContent>
-          <Typography
-            variant="subtitle1"
-            color="text.primary"
-            display="flex"
-            alignItems="center"
-          >
-            <WarningAmberIcon sx={{ mr: 1 }} />
-            2 aydır aidat ödemeyen {loadingSummary ? <CircularProgress size={20} /> : overdueFeeCount} kişi!
-          </Typography>
-          <Typography
-            variant="subtitle1"
-            color="text.primary"
-            display="flex"
-            alignItems="center"
-            mt={1}
-          >
-            <WarningAmberIcon sx={{ mr: 1 }} />
-            4 çalışma üst üste gelmeyen {loadingSummary ? <CircularProgress size={20} /> : repeatedAbsCount} kişi!
-          </Typography>
-        </CardContent>
-      </Card>
+  <CardContent>
+    {/* Aidat Uyarısı */}
+    <Typography
+      variant="subtitle1"
+      color="text.primary"
+      display="flex"
+      alignItems="center"
+      mb={1}
+    >
+      <WarningAmberIcon sx={{ mr: 1 }} />
+      Aidat Sınırında&nbsp;&nbsp;
+      <span 
+        style={{ textDecoration: 'underline', color: 'blue', cursor: 'pointer' }}
+        onClick={() => setOpenOverdueModal(true)}
+      >
+        {loadingSummary ? <CircularProgress size={20} /> : `${overdueFeeCount} kişi`}
+      </span>
+      &nbsp;&nbsp;var!
+    </Typography>
+
+    {/* Devamsızlık Uyarısı */}
+    <Typography
+  variant="subtitle1"
+  color="text.primary"
+  display="flex"
+  alignItems="center"
+  mt={1}
+>
+  <WarningAmberIcon sx={{ mr: 1 }} />
+  Devamsızlık Sınırında&nbsp;&nbsp;
+  <span 
+    style={{ textDecoration: 'underline', color: 'blue', cursor: 'pointer' }}
+    onClick={() => setOpenAbsentModal(true)}
+  >
+    {loadingSummary ? <CircularProgress size={20} /> : `${repeatedAbsCount} kişi`}
+  </span>
+  &nbsp;&nbsp;var!
+</Typography>
+  </CardContent>
+</Card>
+
+
+
 
       <Grid container spacing={3}>
         {dashboardItems.map((item, index) => (
@@ -155,6 +217,66 @@ const MasterAdminDashboard = () => {
           </Grid>
         ))}
       </Grid>
+
+      {/* Aidat ödemeyen kullanıcıları gösteren modal */}
+      <Modal
+        open={openOverdueModal}
+        onClose={() => setOpenOverdueModal(false)}
+        aria-labelledby="overdue-modal-title"
+        aria-describedby="overdue-modal-description"
+      >
+        <Box sx={modalStyle}>
+          <Box display="flex" justifyContent="space-between" alignItems="center">
+            <Typography id="overdue-modal-title" variant="h6">
+              2 Aydır Aidat Ödemeyenler
+            </Typography>
+            <IconButton onClick={() => setOpenOverdueModal(false)}>
+              <CloseIcon />
+            </IconButton>
+          </Box>
+          <List>
+            {overdueUserDetails.length > 0 ? (
+              overdueUserDetails.map((user) => (
+                <ListItem key={user._id}>
+  <ListItemText primary={`${user.name} ${user.surname}`} />
+  </ListItem>
+              ))
+            ) : (
+              <Typography id="overdue-modal-description">Hiç kullanıcı yok.</Typography>
+            )}
+          </List>
+        </Box>
+      </Modal>
+
+      {/* Devamsızlık yapan kullanıcıları gösteren modal */}
+      <Modal
+        open={openAbsentModal}
+        onClose={() => setOpenAbsentModal(false)}
+        aria-labelledby="absent-modal-title"
+        aria-describedby="absent-modal-description"
+      >
+        <Box sx={modalStyle}>
+          <Box display="flex" justifyContent="space-between" alignItems="center">
+            <Typography id="absent-modal-title" variant="h6">
+              4 Çalışma Üst Üste Gelmeyenler
+            </Typography>
+            <IconButton onClick={() => setOpenAbsentModal(false)}>
+              <CloseIcon />
+            </IconButton>
+          </Box>
+          <List>
+            {absentUserDetails.length > 0 ? (
+              absentUserDetails.map((user) => (
+                <ListItem key={user._id}>
+  <ListItemText primary={`${user.name} ${user.surname}`} />
+  </ListItem>
+              ))
+            ) : (
+              <Typography id="absent-modal-description">Hiç kullanıcı yok.</Typography>
+            )}
+          </List>
+        </Box>
+      </Modal>
     </Box>
   );
 };
