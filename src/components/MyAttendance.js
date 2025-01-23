@@ -15,6 +15,11 @@ import {
   DialogContent,
   DialogActions,
   TextField,
+  List,
+  ListItem,
+  ListItemText,
+  Snackbar,
+  Alert,
 } from '@mui/material';
 import { green, red, yellow, blue } from '@mui/material/colors';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -22,6 +27,7 @@ import CancelIcon from '@mui/icons-material/Cancel';
 import EmojiObjectsIcon from '@mui/icons-material/EmojiObjects';
 import PieChartIcon from '@mui/icons-material/PieChart';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
+import EventBusyIcon from '@mui/icons-material/EventBusy';
 
 const MyAttendance = () => {
   const [attendances, setAttendances] = useState([]);
@@ -33,6 +39,15 @@ const MyAttendance = () => {
   const [excuseText, setExcuseText] = useState('');
   const [openExcuseDialog, setOpenExcuseDialog] = useState(false);
   const [selectedExcuse, setSelectedExcuse] = useState(null);
+  const [openFutureDialog, setOpenFutureDialog] = useState(false);
+  const [futureEvents, setFutureEvents] = useState([]);
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [futureExcuseText, setFutureExcuseText] = useState('');
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: '',
+    severity: 'success'
+  });
 
   useEffect(() => {
     if (!user || !user._id) {
@@ -141,8 +156,73 @@ const MyAttendance = () => {
     }
   };
 
+  // Gelecek provaları getir
+  const fetchFutureEvents = async () => {
+    try {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/attendance/${user._id}`);
+      const data = await response.json();
+      
+      // Bugünden sonraki ve sadece prova olan etkinlikleri filtrele
+      const futureData = data
+        .filter(att => 
+          att.event?.type === 'Prova' && 
+          new Date(att.date) > new Date() &&
+          att.status !== 'MAZERETLI'
+        )
+        .sort((a, b) => new Date(a.date) - new Date(b.date));
+      
+      setFutureEvents(futureData);
+    } catch (error) {
+      console.error('Gelecek provalar yüklenirken hata:', error);
+    }
+  };
+
+  // Gelecek mazeret bildirimi
+  const handleFutureExcuseSubmit = async () => {
+    if (!selectedEvent || !futureExcuseText.trim()) return;
+
+    try {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/attendance/excuse/${selectedEvent._id}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          excuse: futureExcuseText,
+          userId: user._id,
+        }),
+      });
+
+      if (response.ok) {
+        setOpenFutureDialog(false);
+        setSelectedEvent(null);
+        setFutureExcuseText('');
+        fetchFutureEvents();
+        // Başarılı mesajı göster
+        setSnackbar({
+          open: true,
+          message: 'Mazeret başarıyla kaydedildi',
+          severity: 'success'
+        });
+      } else {
+        setSnackbar({
+          open: true,
+          message: 'Mazeret bildirimi yapılırken bir hata oluştu',
+          severity: 'error'
+        });
+      }
+    } catch (error) {
+      console.error('Mazeret gönderme hatası:', error);
+      setSnackbar({
+        open: true,
+        message: 'Mazeret bildirimi yapılırken bir hata oluştu',
+        severity: 'error'
+      });
+    }
+  };
+
   return (
-    <Box p={2} sx={{ backgroundColor: '#f5f5f5', minHeight: '100vh',  marginBottom: '50px' }}    >
+    <Box p={2} sx={{ backgroundColor: '#f5f5f5', minHeight: '100vh', marginBottom: '50px' }}>
       <Typography variant={isSmallScreen ? "h5" : "h4"} gutterBottom align="center" color="primary">
         📅 Katılım Geçmişim
       </Typography>
@@ -432,6 +512,145 @@ const MyAttendance = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Gelemiyorum Butonu */}
+      <Box sx={{ position: 'fixed', bottom: 80, right: 20 }}>
+        <Button
+          variant="contained"
+          color="warning"
+          startIcon={<EventBusyIcon />}
+          onClick={() => {
+            fetchFutureEvents();
+            setOpenFutureDialog(true);
+          }}
+          sx={{
+            borderRadius: '20px',
+            padding: '10px 20px',
+            boxShadow: 3,
+            '&:hover': {
+              transform: 'scale(1.05)',
+            },
+          }}
+        >
+          Gelemiyorum
+        </Button>
+      </Box>
+
+      {/* Gelecek Provalar Dialog'u */}
+      <Dialog
+        open={openFutureDialog}
+        onClose={() => {
+          setOpenFutureDialog(false);
+          setSelectedEvent(null);
+          setFutureExcuseText('');
+        }}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          {selectedEvent ? 'Mazeret Bildirimi' : 'Gelemeyeceğiniz Provayı Seçin'}
+        </DialogTitle>
+        <DialogContent>
+          {!selectedEvent ? (
+            <List>
+              {futureEvents.length > 0 ? (
+                futureEvents.map((event) => (
+                  <ListItem
+                    key={event._id}
+                    button
+                    onClick={() => setSelectedEvent(event)}
+                    sx={{
+                      borderBottom: '1px solid #eee',
+                      '&:hover': {
+                        backgroundColor: '#f5f5f5',
+                      },
+                    }}
+                  >
+                    <ListItemText
+                      primary={new Date(event.date).toLocaleDateString('tr-TR', {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                      })}
+                    />
+                  </ListItem>
+                ))
+              ) : (
+                <Typography variant="body2" sx={{ p: 2, textAlign: 'center', color: 'text.secondary' }}>
+                  Gelecek prova bulunmuyor.
+                </Typography>
+              )}
+            </List>
+          ) : (
+            <>
+              <Typography variant="subtitle1" gutterBottom>
+                {new Date(selectedEvent.date).toLocaleDateString('tr-TR', {
+                  weekday: 'long',
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                })}
+              </Typography>
+              <TextField
+                autoFocus
+                margin="dense"
+                label="Mazeret Açıklaması"
+                type="text"
+                fullWidth
+                multiline
+                rows={4}
+                value={futureExcuseText}
+                onChange={(e) => setFutureExcuseText(e.target.value)}
+              />
+            </>
+          )}
+        </DialogContent>
+        <DialogActions>
+          {selectedEvent ? (
+            <>
+              <Button 
+                onClick={() => setSelectedEvent(null)} 
+                color="primary"
+              >
+                Geri
+              </Button>
+              <Button 
+                onClick={handleFutureExcuseSubmit} 
+                color="primary" 
+                variant="contained"
+                disabled={!futureExcuseText.trim()}
+              >
+                Gönder
+              </Button>
+            </>
+          ) : (
+            <Button 
+              onClick={() => setOpenFutureDialog(false)} 
+              color="primary"
+            >
+              Kapat
+            </Button>
+          )}
+        </DialogActions>
+      </Dialog>
+
+      {/* Snackbar bileşenini en alta ekleyelim */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert 
+          onClose={() => setSnackbar(prev => ({ ...prev, open: false }))} 
+          severity={snackbar.severity}
+          variant="filled"
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };
