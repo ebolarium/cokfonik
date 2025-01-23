@@ -9,6 +9,12 @@ import {
   Avatar,
   useMediaQuery,
   useTheme,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
 } from '@mui/material';
 import { green, red, yellow, blue } from '@mui/material/colors';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -22,6 +28,11 @@ const MyAttendance = () => {
   const user = JSON.parse(localStorage.getItem('user')); // Kullanıcı bilgisi
   const theme = useTheme();
   const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
+  const [openDialog, setOpenDialog] = useState(false);
+  const [selectedAttendance, setSelectedAttendance] = useState(null);
+  const [excuseText, setExcuseText] = useState('');
+  const [openExcuseDialog, setOpenExcuseDialog] = useState(false);
+  const [selectedExcuse, setSelectedExcuse] = useState(null);
 
   useEffect(() => {
     if (!user || !user._id) {
@@ -85,6 +96,50 @@ const MyAttendance = () => {
   ];
 
   const COLORS = [green[500], red[500], yellow[700]];
+
+  const handleExcuseSubmit = async () => {
+    if (!selectedAttendance || !excuseText.trim()) return;
+
+    try {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/attendance/excuse/${selectedAttendance._id}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          excuse: excuseText,
+          userId: user._id,
+        }),
+      });
+
+      if (response.ok) {
+        // Listeyi güncelle
+        const updatedAttendances = attendances.map(att =>
+          att._id === selectedAttendance._id ? { ...att, status: 'MAZERETLI' } : att
+        );
+        setAttendances(updatedAttendances);
+        setOpenDialog(false);
+        setExcuseText('');
+        setSelectedAttendance(null);
+      } else {
+        alert('Mazeret bildirimi yapılırken bir hata oluştu.');
+      }
+    } catch (error) {
+      console.error('Mazeret gönderme hatası:', error);
+      alert('Mazeret bildirimi yapılırken bir hata oluştu.');
+    }
+  };
+
+  // Mazeret detayını göstermek için yeni fonksiyon
+  const handleExcuseClick = (attendance) => {
+    if (attendance.status === 'MAZERETLI') {
+      setSelectedExcuse({
+        date: attendance.date,
+        excuse: attendance.excuse || 'Mazeret detayı bulunmuyor'
+      });
+      setOpenExcuseDialog(true);
+    }
+  };
 
   return (
     <Box p={2} sx={{ backgroundColor: '#f5f5f5', minHeight: '100vh',  marginBottom: '50px' }}    >
@@ -263,7 +318,9 @@ const MyAttendance = () => {
                       '&:hover': {
                         transform: 'scale(1.02)',
                       },
+                      cursor: attendance.status === 'MAZERETLI' ? 'pointer' : 'default',
                     }}
+                    onClick={() => handleExcuseClick(attendance)}
                   >
                     <Avatar
                       sx={{
@@ -298,6 +355,21 @@ const MyAttendance = () => {
                         {attendance.status}
                       </Typography>
                     </Box>
+                    {attendance.status === 'GELMEDI' && (
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        color="primary"
+                        sx={{ ml: 'auto' }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedAttendance(attendance);
+                          setOpenDialog(true);
+                        }}
+                      >
+                        Mazeret Bildir
+                      </Button>
+                    )}
                   </Card>
                 </Grid>
               ))
@@ -309,6 +381,57 @@ const MyAttendance = () => {
           </Grid>
         </Box>
       </Box>
+
+      {/* Mazeret Bildirimi Dialog'u */}
+      <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Mazeret Bildirimi</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" gutterBottom>
+            {selectedAttendance && new Date(selectedAttendance.date).toLocaleDateString()} tarihli devamsızlık için mazeret bildirimi
+          </Typography>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="Mazeret Açıklaması"
+            type="text"
+            fullWidth
+            multiline
+            rows={4}
+            value={excuseText}
+            onChange={(e) => setExcuseText(e.target.value)}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenDialog(false)} color="primary">
+            İptal
+          </Button>
+          <Button onClick={handleExcuseSubmit} color="primary" variant="contained">
+            Gönder
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Mazeret Dialog'u ekleyelim */}
+      <Dialog
+        open={openExcuseDialog}
+        onClose={() => setOpenExcuseDialog(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          Mazeret Detayı - {selectedExcuse && new Date(selectedExcuse.date).toLocaleDateString()}
+        </DialogTitle>
+        <DialogContent>
+          <Typography>
+            {selectedExcuse?.excuse}
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenExcuseDialog(false)} color="primary">
+            Kapat
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

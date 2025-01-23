@@ -58,16 +58,23 @@ router.post('/', async (req, res) => {
 // Devamsızlık Statüsünü Güncelle
 router.put('/:id', async (req, res) => {
   try {
-    const { status, explanation } = req.body;
+    const { status, excuse } = req.body;
     const updateData = { status };
     
-    if (status === 'MAZERETLI' && explanation) {
-      updateData.explanation = explanation;
+    if (status === 'MAZERETLI' && excuse) {
+      updateData.excuse = excuse;
+      updateData.excuseDate = new Date();
     } else if (status !== 'MAZERETLI') {
-      updateData.explanation = null; // Diğer durumlarda açıklamayı temizle
+      updateData.excuse = null;
+      updateData.excuseDate = null;
+      updateData.isExcuseApproved = false;
     }
 
-    const updatedAttendance = await Attendance.findByIdAndUpdate(req.params.id, updateData, { new: true });
+    const updatedAttendance = await Attendance.findByIdAndUpdate(
+      req.params.id, 
+      updateData, 
+      { new: true }
+    );
     res.json(updatedAttendance);
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -97,5 +104,44 @@ router.post('/generate-attendance-for-event', async (req, res) => {
   }
 });
 
+// Mazeret Bildirimi Endpoint'i
+router.post('/excuse/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { excuse, userId } = req.body;
+
+    // Devamsızlık kaydının ve kullanıcının kontrolü
+    const attendance = await Attendance.findById(id);
+    
+    if (!attendance) {
+      return res.status(404).json({ message: 'Devamsızlık kaydı bulunamadı.' });
+    }
+
+    if (attendance.userId.toString() !== userId) {
+      return res.status(403).json({ message: 'Bu işlem için yetkiniz yok.' });
+    }
+
+    if (attendance.status !== 'GELMEDI') {
+      return res.status(400).json({ message: 'Bu kayıt için mazeret bildirilemez.' });
+    }
+
+    // Mazeret bildirimini kaydet
+    const updatedAttendance = await Attendance.findByIdAndUpdate(
+      id,
+      {
+        status: 'MAZERETLI',
+        excuse: excuse,
+        excuseDate: new Date(),
+        isExcuseApproved: false
+      },
+      { new: true }
+    );
+
+    res.json(updatedAttendance);
+  } catch (error) {
+    console.error('Mazeret bildirimi hatası:', error);
+    res.status(500).json({ message: 'Mazeret bildirimi yapılırken bir hata oluştu.' });
+  }
+});
 
 module.exports = router;

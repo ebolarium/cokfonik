@@ -88,7 +88,7 @@ const createDefaultAttendance = async (userId) => {
   const attendanceRecords = futureEvents.map((event) => ({
     userId,
     date: event.date,
-    status: 'Gelmedi',
+    status: 'Bekleniyor',
   }));
   await Attendance.insertMany(attendanceRecords);
 };

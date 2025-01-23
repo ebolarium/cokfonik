@@ -138,10 +138,10 @@ const AttendanceManagement = () => {
     const statuses = ['GELMEDI', 'GELDI', 'MAZERETLI'];
     const nextStatus = statuses[(statuses.indexOf(currentStatus) + 1) % statuses.length];
     
-    const explanation = explanations[attendanceId];
+    const excuse = explanations[attendanceId];
     const updateData = {
       status: nextStatus,
-      explanation: nextStatus === 'MAZERETLI' ? explanation : null
+      excuse: nextStatus === 'MAZERETLI' ? excuse : null
     };
 
     try {
@@ -171,15 +171,15 @@ const AttendanceManagement = () => {
   };
 
   const handleExplanationSave = async (attendanceId) => {
-    const explanation = explanations[attendanceId];
-    if (explanation?.trim()) {
+    const excuse = explanations[attendanceId];
+    if (excuse?.trim()) {
       try {
         await fetch(`${process.env.REACT_APP_API_URL}/attendance/${attendanceId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             status: 'MAZERETLI',
-            explanation: explanation
+            excuse: excuse
           }),
         });
         
@@ -209,10 +209,10 @@ const handleAttendanceClick = (attendance) => {
         [attendance._id]: true
       }));
       // Eğer daha önce bir açıklama varsa, state'e yükle
-      if (attendance.explanation) {
+      if (attendance.excuse) {
         setExplanations(prev => ({
           ...prev,
-          [attendance._id]: attendance.explanation
+          [attendance._id]: attendance.excuse
         }));
       }
     }, 100); // Küçük bir gecikme ekleyerek state güncellemelerinin sırasını garanti altına alıyoruz
@@ -596,17 +596,18 @@ const handleAttendanceClick = (attendance) => {
             <List>
               {selectedUserAttendances
                 .filter((attendance) => getEventType(attendance.date) === 'Prova')
+                .sort((a, b) => new Date(b.date) - new Date(a.date))
                 .map((attendance) => (
                   <ListItem key={attendance._id}>
-                  <ListItemText
-                    primary={`${new Date(attendance.date).toLocaleDateString()} - ${attendance.status}`}
-                    secondary={
-                      attendance.status === 'MAZERETLI'
-                        ? `Mazeret: ${attendance.explanation}`
-                        : ""
-                    }
-                  />
-                </ListItem>
+                    <ListItemText
+                      primary={`${new Date(attendance.date).toLocaleDateString()} - ${attendance.status}`}
+                      secondary={
+                        attendance.status === 'MAZERETLI'
+                          ? `Mazeret: ${attendance.excuse || '-'}`
+                          : null
+                      }
+                    />
+                  </ListItem>
                 ))}
             </List>
           </Box>

@@ -30,7 +30,7 @@ router.post('/', async (req, res) => {
         userId: user._id,
         event: newEvent._id,
         date: newEvent.date,
-        status: 'Gelmedi',
+        status: 'Beklemede',
       }));
       await Attendance.insertMany(attendanceRecords);
     }
