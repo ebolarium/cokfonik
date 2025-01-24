@@ -162,11 +162,14 @@ const MyAttendance = () => {
       const response = await fetch(`${process.env.REACT_APP_API_URL}/attendance/${user._id}`);
       const data = await response.json();
       
-      // Bugünden sonraki ve sadece prova olan etkinlikleri filtrele
+      // Bugün ve sonraki provaları filtrele
+      const today = new Date();
+      today.setHours(0, 0, 0, 0); // Bugünün başlangıcını al (saat 00:00)
+      
       const futureData = data
         .filter(att => 
           att.event?.type === 'Prova' && 
-          new Date(att.date) > new Date() &&
+          new Date(att.date) >= today && // Büyük eşit yaptık
           att.status !== 'MAZERETLI'
         )
         .sort((a, b) => new Date(a.date) - new Date(b.date));
@@ -193,24 +196,27 @@ const MyAttendance = () => {
         }),
       });
 
-      if (response.ok) {
-        setOpenFutureDialog(false);
-        setSelectedEvent(null);
-        setFutureExcuseText('');
-        fetchFutureEvents();
-        // Başarılı mesajı göster
+      // Hata durumunda response body'yi görelim
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Hata detayı:', errorData);
         setSnackbar({
           open: true,
-          message: 'Mazeret başarıyla kaydedildi',
-          severity: 'success'
-        });
-      } else {
-        setSnackbar({
-          open: true,
-          message: 'Mazeret bildirimi yapılırken bir hata oluştu',
+          message: errorData.message || 'Mazeret bildirimi yapılırken bir hata oluştu',
           severity: 'error'
         });
+        return;
       }
+
+      setOpenFutureDialog(false);
+      setSelectedEvent(null);
+      setFutureExcuseText('');
+      fetchFutureEvents();
+      setSnackbar({
+        open: true,
+        message: 'Mazeret başarıyla kaydedildi',
+        severity: 'success'
+      });
     } catch (error) {
       console.error('Mazeret gönderme hatası:', error);
       setSnackbar({

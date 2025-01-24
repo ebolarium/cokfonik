@@ -119,7 +119,11 @@ const CalendarView = () => {
 
   // Yaklaşan etkinlikler
   const upcomingEvents = events
-    .filter((event) => event.date > new Date())
+    .filter((event) => {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0); // Bugünün başlangıcını al
+      return event.date >= today; // Bugün ve sonrası
+    })
     .slice(0, 4);
 
   return (
