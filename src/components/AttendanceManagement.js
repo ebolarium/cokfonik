@@ -23,6 +23,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import SaveIcon from '@mui/icons-material/Save';
 import LockIcon from '@mui/icons-material/Lock';
 import LockOpenIcon from '@mui/icons-material/LockOpen';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import { styled } from '@mui/system';
 import * as ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
@@ -498,14 +499,19 @@ const AttendanceManagement = () => {
         >
           {isLocked ? <LockIcon /> : <LockOpenIcon />}
         </IconButton>
-        <Button 
-          variant="contained" 
-          color="primary" 
+        <IconButton 
           onClick={exportToExcel}
-          size="small"
+          color="primary"
+          sx={{ 
+            border: 1, 
+            borderColor: 'grey.300',
+            '&:hover': {
+              backgroundColor: 'primary.light',
+            }
+          }}
         >
-          Excel'e Aktar
-        </Button>
+          <FileDownloadIcon />
+        </IconButton>
       </Box>
 
       <Table sx={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse' }}>

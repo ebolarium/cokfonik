@@ -553,33 +553,38 @@ sx={{
         </Fade>
       </Modal>
 
-      <Box p={3}>
-        <Grid container spacing={3}>
+      <Box 
+        sx={{ 
+          height: { xs: 'auto', sm: '80vh' },
+          overflowY: 'auto',
+          p: 3 
+        }}
+      >
+        <Grid container spacing={2} direction="column">
           {dashboardItems.map((item, index) => (
             <Grid
               item
-              xs={6}
               key={index}
-              style={{
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                marginBottom: '16px',
+              sx={{
+                width: '100%'
               }}
             >
               <Card
-                style={{
-                  width: '85%',
-                  aspectRatio: '1/1',
+                sx={{
+                  width: '100%',
+                  height: '60px', // Sabit yükseklik
                   backgroundColor: item.bgColor,
                   color: '#333',
-                  textAlign: 'center',
-                  borderRadius: 8,
+                  borderRadius: 2,
                   cursor: 'pointer',
                   boxShadow: '0 3px 6px rgba(0,0,0,0.1)',
                   display: 'flex',
-                  justifyContent: 'center',
                   alignItems: 'center',
+                  transition: 'transform 0.2s',
+                  '&:hover': {
+                    transform: 'scale(1.02)',
+                    boxShadow: '0 5px 10px rgba(0,0,0,0.15)',
+                  },
                 }}
                 onClick={() => {
                   if (item.link) {
@@ -590,12 +595,43 @@ sx={{
                 }}
               >
                 <CardContent
-                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}
+                  sx={{
+                    display: 'flex',
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'flex-start',
+                    p: { xs: 2 },
+                    gap: 3,
+                    width: '100%',
+                    '&:last-child': { pb: 2 }, // CardContent'in son padding'ini düzelt
+                  }}
                 >
-                  <Box>{item.icon}</Box>
-                  <Typography variant="h6" style={{ fontSize: '14px', marginTop: '8px' }}>
+                  <Box sx={{ 
+                    '& > *': { 
+                      fontSize: { xs: 25, sm: 30 }
+                    },
+                    display: 'flex',
+                    alignItems: 'center',
+                    color: 'rgba(0, 0, 0, 0.7)'
+                  }}>
+                    {item.icon}
+                  </Box>
+                  <Typography 
+                    variant="h6" 
+                    sx={{ 
+                      fontSize: { xs: '14px', sm: '16px' },
+                      fontWeight: 'medium',
+                      flexGrow: 1
+                    }}
+                  >
                     {item.title}
                   </Typography>
+                  {/* Badge varsa sağ tarafa ekle */}
+                  {item.icon.props?.children?.props?.badgeContent > 0 && (
+                    <Box sx={{ ml: 'auto' }}>
+                      {item.icon.props.children}
+                    </Box>
+                  )}
                 </CardContent>
               </Card>
             </Grid>
