@@ -21,6 +21,8 @@ import {
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import SaveIcon from '@mui/icons-material/Save';
+import LockIcon from '@mui/icons-material/Lock';
+import LockOpenIcon from '@mui/icons-material/LockOpen';
 import { styled } from '@mui/system';
 import * as ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
@@ -77,6 +79,16 @@ const AttendanceManagement = () => {
   const [lastCount, setLastCount] = useState('4');
   const [explanations, setExplanations] = useState({}); // { attendanceId: explanation }
   const [visibleExplanations, setVisibleExplanations] = useState({}); // { attendanceId: boolean }
+  const [isLocked, setIsLocked] = useState(true);
+
+  const getEventType = (date) => {
+    const event = events.find(
+      (e) =>
+        new Date(e.date).toDateString() === new Date(date).toDateString() &&
+        e.type === 'Prova'
+    );
+    return event ? event.type : 'Bilinmiyor';
+  };
 
   const fetchAttendances = async () => {
     try {
@@ -130,6 +142,24 @@ const AttendanceManagement = () => {
       return order === 'asc'
         ? partA.localeCompare(partB)
         : partB.localeCompare(partA);
+    } else if (orderBy === 'attendance') {
+      // Her kullanıcı için katılım yüzdesini hesapla
+      const getAttendancePercentage = (userId) => {
+        const userAttendances = attendances.filter(
+          (a) => a.userId?._id === userId && getEventType(a.date) === 'Prova'
+        );
+        const cameCount = userAttendances.filter((a) => a.status === 'GELDI').length;
+        return userAttendances.length > 0 
+          ? Math.round((cameCount / userAttendances.length) * 100) 
+          : 0;
+      };
+
+      const percentageA = getAttendancePercentage(a._id);
+      const percentageB = getAttendancePercentage(b._id);
+
+      return order === 'asc'
+        ? percentageA - percentageB
+        : percentageB - percentageA;
     }
     return 0;
   });
@@ -195,29 +225,25 @@ const AttendanceManagement = () => {
     }
   };
 
-// handleAttendanceClick fonksiyonunu şu şekilde değiştirin
-const handleAttendanceClick = (attendance) => {
-  // Önce durum döngüsünü her zaman işlet
-  toggleAttendanceStatus(attendance._id, attendance.status);
-  
-  // Eğer yeni durum MAZERETLI olacaksa (yani şu an GELDI ise), açıklama kutusunu göster
-  if (attendance.status === 'GELDI') {
-    // Bir sonraki durum MAZERETLI olacağı için textbox'ı göster
-    setTimeout(() => {
-      setVisibleExplanations(prev => ({
-        ...prev,
-        [attendance._id]: true
-      }));
-      // Eğer daha önce bir açıklama varsa, state'e yükle
-      if (attendance.excuse) {
-        setExplanations(prev => ({
+  const handleAttendanceClick = (attendance) => {
+    if (isLocked) return;
+    toggleAttendanceStatus(attendance._id, attendance.status);
+    
+    if (attendance.status === 'GELDI') {
+      setTimeout(() => {
+        setVisibleExplanations(prev => ({
           ...prev,
-          [attendance._id]: attendance.excuse
+          [attendance._id]: true
         }));
-      }
-    }, 100); // Küçük bir gecikme ekleyerek state güncellemelerinin sırasını garanti altına alıyoruz
-  }
-};
+        if (attendance.excuse) {
+          setExplanations(prev => ({
+            ...prev,
+            [attendance._id]: attendance.excuse
+          }));
+        }
+      }, 100);
+    }
+  };
 
   useEffect(() => {
     fetchAttendances();
@@ -234,15 +260,6 @@ const handleAttendanceClick = (attendance) => {
   const handleCloseModal = () => {
     setOpenModal(false);
     setSelectedUserAttendances([]);
-  };
-
-  const getEventType = (date) => {
-    const event = events.find(
-      (e) =>
-        new Date(e.date).toDateString() === new Date(date).toDateString() &&
-        e.type === 'Prova'
-    );
-    return event ? event.type : 'Bilinmiyor';
   };
 
   const getAllProvaDates = () => {
@@ -453,22 +470,43 @@ const handleAttendanceClick = (attendance) => {
         Devamsızlık Yönetimi
       </Typography>
 
-      {/* Export Butonu */}
-      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
-        <Button variant="contained" color="primary" onClick={exportToExcel}>
+      {/* Son kaç çalışma ve kilit satırı */}
+      <Box sx={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        gap: 2,
+        mb: 2 
+      }}>
+        <TextField
+          label="Son kaç çalışma"
+          variant="outlined"
+          size="small"
+          value={lastCount}
+          onChange={(e) => setLastCount(e.target.value)}
+          sx={{ flexGrow: 1 }}
+        />
+        <IconButton 
+          onClick={() => setIsLocked(!isLocked)}
+          color={isLocked ? "error" : "success"}
+          sx={{ 
+            border: 1, 
+            borderColor: 'grey.300',
+            '&:hover': {
+              backgroundColor: isLocked ? 'error.light' : 'success.light',
+            }
+          }}
+        >
+          {isLocked ? <LockIcon /> : <LockOpenIcon />}
+        </IconButton>
+        <Button 
+          variant="contained" 
+          color="primary" 
+          onClick={exportToExcel}
+          size="small"
+        >
           Excel'e Aktar
         </Button>
       </Box>
-
-      {/* Son kaç çalışma gösterilsin? */}
-      <TextField
-        label="Son kaç çalışma"
-        variant="outlined"
-        size="small"
-        value={lastCount}
-        onChange={(e) => setLastCount(e.target.value)}
-        sx={{ mb: 2 }}
-      />
 
       <Table sx={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse' }}>
         <TableHead>
@@ -506,7 +544,13 @@ const handleAttendanceClick = (attendance) => {
                 width: '25%',
               }}
             >
-              Durum
+              <TableSortLabel
+                active={orderBy === 'attendance'}
+                direction={orderBy === 'attendance' ? order : 'asc'}
+                onClick={() => handleRequestSort('attendance')}
+              >
+                Durum
+              </TableSortLabel>
             </TableCell>
           </TableRow>
         </TableHead>
@@ -517,6 +561,16 @@ const handleAttendanceClick = (attendance) => {
               (a) => a.userId?._id === user._id && getEventType(a.date) === 'Prova'
             );
             const cameCount = userAttendances.filter((a) => a.status === 'GELDI').length;
+            const attendancePercentage = userAttendances.length > 0 
+              ? Math.round((cameCount / userAttendances.length) * 100) 
+              : 0;
+
+            // Renk belirleme fonksiyonu
+            const getPercentageColor = (percentage) => {
+              if (percentage >= 70) return 'success.main';
+              if (percentage >= 60) return 'warning.main';
+              return 'error.main';
+            };
 
             return (
               <React.Fragment key={user._id}>
@@ -540,8 +594,16 @@ const handleAttendanceClick = (attendance) => {
                   <TableCell sx={{ fontSize: '0.85rem', textAlign: 'right', padding: '4px 8px' }}>
                     {user.part || '-'}
                   </TableCell>
-                  <TableCell sx={{ fontSize: '0.85rem', textAlign: 'right', padding: '4px 8px' }}>
-                    {`${cameCount}/${userAttendances.length}`}
+                  <TableCell 
+                    sx={{ 
+                      fontSize: '0.85rem', 
+                      textAlign: 'right', 
+                      padding: '4px 8px',
+                      color: getPercentageColor(attendancePercentage),
+                      fontWeight: 'bold'
+                    }}
+                  >
+                    {`%${attendancePercentage}`}
                   </TableCell>
                 </TableRow>
                 <TableRow>
