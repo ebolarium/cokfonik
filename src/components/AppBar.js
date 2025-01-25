@@ -81,7 +81,7 @@ const CustomAppBar = ({ userName, viewMode }) => {
                 fontSize: '1rem',
               }}
             >
-              {user.name.charAt(0).toUpperCase()}
+               {user.name.charAt(0).toUpperCase()}
             </Avatar>
             <Typography 
               variant="subtitle1" 
@@ -93,7 +93,7 @@ const CustomAppBar = ({ userName, viewMode }) => {
                 letterSpacing: '0.01em'
               }}
             >
-              {user.name}
+             Hoşgeldin, {user.name}
             </Typography>
           </Box>
         )}

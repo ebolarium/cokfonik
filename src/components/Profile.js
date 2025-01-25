@@ -243,202 +243,157 @@ const Profile = () => {
   };
 
   if (loading) return (
-    <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
+    <Box display="flex" justifyContent="center" alignItems="center" minHeight="80vh">
       <CircularProgress />
     </Box>
   );
 
   if (error) return (
-    <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
+    <Box display="flex" justifyContent="center" alignItems="center" minHeight="80vh">
       <Alert severity="error">{error}</Alert>
     </Box>
   );
 
   return (
-    <Box
-      sx={{
-        maxWidth: '800px',
-        margin: '0 auto',
-        padding: { xs: 2, md: 4 },
-        mt: 4
-      }}
-    >
-      {/* Profil Başlığı */}
-      <Paper
-        elevation={0}
-        sx={{
-          p: 4,
-          mb: 3,
-          borderRadius: 2,
-          backgroundColor: 'rgba(255, 255, 255, 0.9)',
-          backdropFilter: 'blur(8px)',
-          border: '1px solid rgba(0, 0, 0, 0.1)',
-        }}
-      >
+    <Box sx={{ maxWidth: '800px', margin: '20px auto', p: 2 }}>
+      <Paper elevation={0} sx={{ p: 3, mb: 2, borderRadius: 2, bgcolor: 'rgba(255, 255, 255, 0.9)' }}>
+        {/* Profil Başlığı - Daha kompakt */}
         <Box sx={{ 
           display: 'flex', 
-          flexDirection: { xs: 'column', sm: 'row' },
           alignItems: 'center',
-          gap: 3
+          gap: 3,
+          mb: 2
         }}>
           <Box sx={{ position: 'relative' }}>
             <Avatar
               src={profilePhoto || '/placeholder-profile.png'}
               alt={`${user.name} ${user.surname}`}
               sx={{
-                width: { xs: 100, sm: 120 },
-                height: { xs: 100, sm: 120 },
-                border: '4px solid #fff',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                width: 80,
+                height: 80,
+                border: '3px solid #fff',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
               }}
             />
             {uploadLoading ? (
-              <CircularProgress
-                size={30}
-                sx={{
-                  position: 'absolute',
-                  bottom: 0,
-                  right: 0,
-                  backgroundColor: 'white',
-                  borderRadius: '50%',
-                  padding: '4px'
-                }}
-              />
+              <CircularProgress size={24} sx={{ position: 'absolute', bottom: 0, right: 0 }} />
             ) : (
               <IconButton
                 component="label"
+                size="small"
                 sx={{
                   position: 'absolute',
-                  bottom: 0,
-                  right: 0,
-                  backgroundColor: '#1976d2',
+                  bottom: -4,
+                  right: -4,
+                  bgcolor: '#1976d2',
                   color: '#fff',
-                  '&:hover': {
-                    backgroundColor: '#1565c0'
-                  },
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+                  '&:hover': { bgcolor: '#1565c0' },
                 }}
               >
-                <CameraAltIcon />
+                <CameraAltIcon fontSize="small" />
                 <input type="file" hidden accept="image/*" onChange={handleProfilePhotoChange} />
               </IconButton>
             )}
           </Box>
-          <Box sx={{ textAlign: { xs: 'center', sm: 'left' } }}>
-            <Typography variant="h4" sx={{ mb: 1, fontWeight: 600 }}>
+          <Box>
+            <Typography variant="h5" sx={{ fontWeight: 600 }}>
               {user.name} {user.surname}
             </Typography>
-            <Typography variant="h6" color="text.secondary">
+            <Typography variant="subtitle1" color="text.secondary">
               {user.part || 'Partisyon belirtilmemiş'}
             </Typography>
           </Box>
         </Box>
-      </Paper>
 
-      {/* İletişim Bilgileri */}
-      <Paper
-        elevation={0}
-        sx={{
-          p: 4,
-          mb: 3,
-          borderRadius: 2,
-          backgroundColor: 'rgba(255, 255, 255, 0.9)',
-          backdropFilter: 'blur(8px)',
-          border: '1px solid rgba(0, 0, 0, 0.1)',
-        }}
-      >
-        <Typography variant="h6" sx={{ mb: 3, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
-          İletişim Bilgileri
-        </Typography>
-        
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <Box sx={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'space-between',
-            p: 2,
-            borderRadius: 1,
-            '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.02)' }
-          }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <EmailIcon color="action" />
-              <Box>
-                <Typography variant="body2" color="text.secondary">Email</Typography>
-                <Typography>{user.email}</Typography>
+        {/* İletişim Bilgileri ve Şifre Değiştirme - Yan Yana */}
+        <Box sx={{ 
+          display: 'grid', 
+          gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, 
+          gap: 3,
+          mt: 3
+        }}>
+          {/* İletişim Bilgileri */}
+          <Box>
+            <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1, fontSize: '1rem' }}>
+              İletişim Bilgileri
+            </Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <Box sx={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'space-between',
+                p: 1.5,
+                bgcolor: 'rgba(0, 0, 0, 0.02)',
+                borderRadius: 1
+              }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <EmailIcon fontSize="small" color="action" />
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">Email</Typography>
+                    <Typography variant="body2">{user.email}</Typography>
+                  </Box>
+                </Box>
+                <IconButton size="small" onClick={() => handleOpenEdit('email')}>
+                  <EditIcon fontSize="small" />
+                </IconButton>
+              </Box>
+
+              <Box sx={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'space-between',
+                p: 1.5,
+                bgcolor: 'rgba(0, 0, 0, 0.02)',
+                borderRadius: 1
+              }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <PhoneIcon fontSize="small" color="action" />
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">Telefon</Typography>
+                    <Typography variant="body2">{user.phone || 'Belirtilmemiş'}</Typography>
+                  </Box>
+                </Box>
+                <IconButton size="small" onClick={() => handleOpenEdit('phone')}>
+                  <EditIcon fontSize="small" />
+                </IconButton>
               </Box>
             </Box>
-            <IconButton onClick={() => handleOpenEdit('email')}>
-              <EditIcon />
-            </IconButton>
           </Box>
 
-          <Box sx={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'space-between',
-            p: 2,
-            borderRadius: 1,
-            '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.02)' }
-          }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <PhoneIcon color="action" />
-              <Box>
-                <Typography variant="body2" color="text.secondary">Telefon</Typography>
-                <Typography>{user.phone || 'Telefon numarası belirtilmemiş'}</Typography>
-              </Box>
+          {/* Şifre Değiştirme */}
+          <Box>
+            <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1, fontSize: '1rem' }}>
+              <LockIcon fontSize="small" /> Şifre Değiştir
+            </Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+              <TextField
+                size="small"
+                label="Yeni Şifre"
+                name="newPassword"
+                type="password"
+                value={passwordData.newPassword}
+                onChange={handlePasswordChange}
+                fullWidth
+              />
+              <TextField
+                size="small"
+                label="Şifreyi Onayla"
+                name="confirmPassword"
+                type="password"
+                value={passwordData.confirmPassword}
+                onChange={handlePasswordChange}
+                fullWidth
+              />
+              <Button
+                size="small"
+                variant="contained"
+                onClick={handlePasswordUpdate}
+                sx={{ mt: 0.5 }}
+              >
+                Güncelle
+              </Button>
             </Box>
-            <IconButton onClick={() => handleOpenEdit('phone')}>
-              <EditIcon />
-            </IconButton>
           </Box>
-        </Box>
-      </Paper>
-
-      {/* Şifre Değiştirme */}
-      <Paper
-        elevation={0}
-        sx={{
-          p: 4,
-          borderRadius: 2,
-          backgroundColor: 'rgba(255, 255, 255, 0.9)',
-          backdropFilter: 'blur(8px)',
-          border: '1px solid rgba(0, 0, 0, 0.1)',
-        }}
-      >
-        <Typography variant="h6" sx={{ mb: 3, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
-          <LockIcon /> Şifre Değiştir
-        </Typography>
-        
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <TextField
-            label="Yeni Şifre"
-            name="newPassword"
-            type="password"
-            value={passwordData.newPassword}
-            onChange={handlePasswordChange}
-            fullWidth
-            variant="outlined"
-          />
-          <TextField
-            label="Şifreyi Onayla"
-            name="confirmPassword"
-            type="password"
-            value={passwordData.confirmPassword}
-            onChange={handlePasswordChange}
-            fullWidth
-            variant="outlined"
-          />
-          <Button
-            variant="contained"
-            onClick={handlePasswordUpdate}
-            sx={{ 
-              mt: 1,
-              bgcolor: '#1976d2',
-              '&:hover': { bgcolor: '#1565c0' }
-            }}
-          >
-            Şifreyi Güncelle
-          </Button>
         </Box>
       </Paper>
 
@@ -465,7 +420,6 @@ const Profile = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Snackbar */}
       <Snackbar
         open={snackbar.open}
         autoHideDuration={6000}
