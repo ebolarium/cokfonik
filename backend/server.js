@@ -8,7 +8,7 @@ const cron = require('node-cron');
 const path = require('path');
 const webPush = require('web-push');
 const multer = require('multer');
-const upload = multer({ dest: 'uploads/' });
+const fs = require('fs');
 
 dotenv.config(); // .env dosyasını proje kök dizininden yükler
 
@@ -19,6 +19,25 @@ const Announcement = require('./models/Announcement'); // Announcement modeli
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// Uploads dizinini oluştur
+const uploadDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+// Multer konfigürasyonu
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, uploadDir);
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({ storage: storage });
 
 // MongoDB Bağlantısı
 mongoose.connect(process.env.MONGO_URI, {

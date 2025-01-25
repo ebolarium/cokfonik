@@ -11,8 +11,16 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  Paper,
+  CircularProgress,
+  Alert,
+  Snackbar,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
+import CameraAltIcon from '@mui/icons-material/CameraAlt';
+import EmailIcon from '@mui/icons-material/Email';
+import PhoneIcon from '@mui/icons-material/Phone';
+import LockIcon from '@mui/icons-material/Lock';
 
 const Profile = () => {
   const [profilePhoto, setProfilePhoto] = useState(null);
@@ -25,6 +33,7 @@ const Profile = () => {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [uploadLoading, setUploadLoading] = useState(false);
   const [passwordData, setPasswordData] = useState({
     newPassword: '',
     confirmPassword: '',
@@ -32,25 +41,26 @@ const Profile = () => {
   const [editField, setEditField] = useState(null);
   const [editedValue, setEditedValue] = useState('');
   const [open, setOpen] = useState(false);
-  const [successModalOpen, setSuccessModalOpen] = useState(false);
-  const [successMessage, setSuccessMessage] = useState(''); // Dinamik modal mesajı için
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: '',
+    severity: 'success'
+  });
 
-  const handleSuccessModalClose = () => {
-    setSuccessModalOpen(false);
+  const handleSnackbarClose = () => {
+    setSnackbar({ ...snackbar, open: false });
   };
 
-  // Backend'den kullanıcı verisini çek
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const userData = JSON.parse(localStorage.getItem('user')); // Kullanıcı verisi localStorage’dan alınır
+        const userData = JSON.parse(localStorage.getItem('user'));
         if (!userData || !userData._id) {
           setError('Kullanıcı bilgisi bulunamadı!');
           setLoading(false);
           return;
         }
   
-        // Backend'den kullanıcı bilgisi çek
         const response = await fetch(`${process.env.REACT_APP_API_URL}/users/${userData._id}/profile`);
         const result = await response.json();
   
@@ -59,8 +69,11 @@ const Profile = () => {
           setLoading(false);
           return;
         }
+
+        if (result.profilePhoto && result.profilePhoto.startsWith('undefined/')) {
+          result.profilePhoto = `${process.env.REACT_APP_API_URL}/${result.profilePhoto.replace('undefined/', '')}`;
+        }
   
-        // State ve localStorage güncelle
         setUser(result);
         setProfilePhoto(result.profilePhoto);
         localStorage.setItem('user', JSON.stringify(result));
@@ -71,16 +84,15 @@ const Profile = () => {
         setLoading(false);
       }
     };
-  
     
     fetchUserData();
   }, []);
-  
 
   const handleProfilePhotoChange = async (e) => {
     const file = e.target.files[0];
     if (file) {
       try {
+        setUploadLoading(true);
         const formData = new FormData();
         formData.append('profilePhoto', file);
 
@@ -92,22 +104,33 @@ const Profile = () => {
 
         const result = await response.json();
         if (!response.ok) {
-          setError(result.message);
-          return;
+          throw new Error(result.message || 'Fotoğraf yüklenemedi');
         }
 
-        // Kullanıcı state ve localStorage güncelle
-        const updatedUser = { ...userData, profilePhoto: result.photoPath };
+        let photoUrl = result.photoUrl;
+        if (photoUrl && photoUrl.startsWith('undefined/')) {
+          photoUrl = `${process.env.REACT_APP_API_URL}/${photoUrl.replace('undefined/', '')}`;
+        }
+
+        const updatedUser = { ...userData, profilePhoto: photoUrl };
         setUser(updatedUser);
-        setProfilePhoto(result.photoPath);
+        setProfilePhoto(photoUrl);
         localStorage.setItem('user', JSON.stringify(updatedUser));
 
-        // Başarı mesajını modal ile göster
-        setSuccessMessage('Profil fotoğrafı başarıyla güncellendi!');
-        setSuccessModalOpen(true);
+        setSnackbar({
+          open: true,
+          message: 'Profil fotoğrafı başarıyla güncellendi!',
+          severity: 'success'
+        });
       } catch (error) {
         console.error('Fotoğraf yüklenirken hata:', error);
-        setError('Fotoğraf yüklenirken bir hata oluştu.');
+        setSnackbar({
+          open: true,
+          message: error.message || 'Fotoğraf yüklenirken bir hata oluştu.',
+          severity: 'error'
+        });
+      } finally {
+        setUploadLoading(false);
       }
     }
   };
@@ -120,7 +143,11 @@ const Profile = () => {
 
   const handleSaveEdit = async () => {
     if (editedValue.trim() === '') {
-      setError('Alan boş bırakılamaz.');
+      setSnackbar({
+        open: true,
+        message: 'Alan boş bırakılamaz.',
+        severity: 'error'
+      });
       return;
     }
 
@@ -136,23 +163,25 @@ const Profile = () => {
 
       const result = await response.json();
       if (!response.ok) {
-        setError(result.message || 'Bilgi güncellenemedi.');
-        return;
+        throw new Error(result.message || 'Bilgi güncellenemedi.');
       }
 
-      // Kullanıcı state ve localStorage güncelle
       const updatedUser = { ...user, [editField]: editedValue };
       setUser(updatedUser);
       localStorage.setItem('user', JSON.stringify(updatedUser));
 
-      // Başarı mesajını modal ile göster
-      setSuccessMessage(`${editField === 'email' ? 'Email' : 'Telefon'} başarıyla güncellendi!`);
-      setSuccessModalOpen(true);
-    } catch (error) {
-      console.error('Bilgi güncellenirken hata:', error);
-      setError('Bilgi güncellenirken bir hata oluştu.');
-    } finally {
+      setSnackbar({
+        open: true,
+        message: `${editField === 'email' ? 'Email' : 'Telefon'} başarıyla güncellendi!`,
+        severity: 'success'
+      });
       setOpen(false);
+    } catch (error) {
+      setSnackbar({
+        open: true,
+        message: error.message || 'Bilgi güncellenirken bir hata oluştu.',
+        severity: 'error'
+      });
     }
   };
 
@@ -163,11 +192,19 @@ const Profile = () => {
 
   const handlePasswordUpdate = async () => {
     if (passwordData.newPassword !== passwordData.confirmPassword) {
-      setError('Şifreler eşleşmiyor!');
+      setSnackbar({
+        open: true,
+        message: 'Şifreler eşleşmiyor!',
+        severity: 'error'
+      });
       return;
     }
     if (passwordData.newPassword.length < 6) {
-      setError('Şifre en az 6 karakter olmalıdır!');
+      setSnackbar({
+        open: true,
+        message: 'Şifre en az 6 karakter olmalıdır!',
+        severity: 'error'
+      });
       return;
     }
 
@@ -187,184 +224,263 @@ const Profile = () => {
       );
       const result = await response.json();
       if (!response.ok) {
-        setError(result.message);
-        return;
+        throw new Error(result.message);
       }
 
       setPasswordData({ newPassword: '', confirmPassword: '' });
-      setSuccessMessage('Şifre başarıyla güncellendi!');
-      setSuccessModalOpen(true);
+      setSnackbar({
+        open: true,
+        message: 'Şifre başarıyla güncellendi!',
+        severity: 'success'
+      });
     } catch (error) {
-      console.error('Şifre güncellenirken hata:', error);
-      setError('Sunucuya bağlanılamadı.');
+      setSnackbar({
+        open: true,
+        message: error.message || 'Şifre güncellenirken bir hata oluştu.',
+        severity: 'error'
+      });
     }
   };
 
-  const handleCloseDialog = () => {
-    setOpen(false);
-  };
+  if (loading) return (
+    <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
+      <CircularProgress />
+    </Box>
+  );
 
-  if (loading) return <div>Yükleniyor...</div>;
-  if (error) return <div>{error}</div>;
+  if (error) return (
+    <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
+      <Alert severity="error">{error}</Alert>
+    </Box>
+  );
 
   return (
     <Box
       sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '16px',
-        padding: '16px',
-        backgroundColor: '#f5f5f5',
-        borderRadius: '8px',
-        maxWidth: '400px',
+        maxWidth: '800px',
         margin: '0 auto',
-        boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.1)',
+        padding: { xs: 2, md: 4 },
+        mt: 4
       }}
     >
-      {/* Profil Kartı */}
-      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-        <Box sx={{ position: 'relative', cursor: 'pointer' }}>
-          <Avatar
-            src={profilePhoto || '/placeholder-profile.png'}
-            alt="Profil Fotoğrafı"
-            sx={{
-              width: '64px',
-              height: '64px',
-              border: '2px solid #1976d2',
-            }}
-          />
-          <Button
-            component="label"
-            sx={{
-              position: 'absolute',
-              bottom: 0,
-              right: 0,
-              backgroundColor: '#1976d2',
-              color: '#fff',
-              borderRadius: '50%',
-              width: '20px',
-              height: '20px',
-              minWidth: 0,
-              padding: 0,
-              fontSize: '14px',
-              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
-              '&:hover': { backgroundColor: '#115293' },
-            }}
-          >
-            +
-            <input type="file" hidden accept="image/*" onChange={handleProfilePhotoChange} />
-          </Button>
-        </Box>
-        <Box sx={{ marginLeft: '16px' }}>
-          <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-            {user.name} {user.surname}
-          </Typography>
-          <Typography variant="body2" sx={{ color: '#666' }}>
-            Partisyon: {user.part}
-          </Typography>
-        </Box>
-      </Box>
-
-      <Divider />
-
-      {/* İletişim Bilgileri */}
-      <Box
+      {/* Profil Başlığı */}
+      <Paper
+        elevation={0}
         sx={{
-          padding: '16px',
-          backgroundColor: '#fff',
-          borderRadius: '8px',
-          boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
+          p: 4,
+          mb: 3,
+          borderRadius: 2,
+          backgroundColor: 'rgba(255, 255, 255, 0.9)',
+          backdropFilter: 'blur(8px)',
+          border: '1px solid rgba(0, 0, 0, 0.1)',
         }}
       >
-        <Typography variant="h6" sx={{ fontWeight: 'bold', marginBottom: '8px' }}>
+        <Box sx={{ 
+          display: 'flex', 
+          flexDirection: { xs: 'column', sm: 'row' },
+          alignItems: 'center',
+          gap: 3
+        }}>
+          <Box sx={{ position: 'relative' }}>
+            <Avatar
+              src={profilePhoto || '/placeholder-profile.png'}
+              alt={`${user.name} ${user.surname}`}
+              sx={{
+                width: { xs: 100, sm: 120 },
+                height: { xs: 100, sm: 120 },
+                border: '4px solid #fff',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+              }}
+            />
+            {uploadLoading ? (
+              <CircularProgress
+                size={30}
+                sx={{
+                  position: 'absolute',
+                  bottom: 0,
+                  right: 0,
+                  backgroundColor: 'white',
+                  borderRadius: '50%',
+                  padding: '4px'
+                }}
+              />
+            ) : (
+              <IconButton
+                component="label"
+                sx={{
+                  position: 'absolute',
+                  bottom: 0,
+                  right: 0,
+                  backgroundColor: '#1976d2',
+                  color: '#fff',
+                  '&:hover': {
+                    backgroundColor: '#1565c0'
+                  },
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+                }}
+              >
+                <CameraAltIcon />
+                <input type="file" hidden accept="image/*" onChange={handleProfilePhotoChange} />
+              </IconButton>
+            )}
+          </Box>
+          <Box sx={{ textAlign: { xs: 'center', sm: 'left' } }}>
+            <Typography variant="h4" sx={{ mb: 1, fontWeight: 600 }}>
+              {user.name} {user.surname}
+            </Typography>
+            <Typography variant="h6" color="text.secondary">
+              {user.part || 'Partisyon belirtilmemiş'}
+            </Typography>
+          </Box>
+        </Box>
+      </Paper>
+
+      {/* İletişim Bilgileri */}
+      <Paper
+        elevation={0}
+        sx={{
+          p: 4,
+          mb: 3,
+          borderRadius: 2,
+          backgroundColor: 'rgba(255, 255, 255, 0.9)',
+          backdropFilter: 'blur(8px)',
+          border: '1px solid rgba(0, 0, 0, 0.1)',
+        }}
+      >
+        <Typography variant="h6" sx={{ mb: 3, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
           İletişim Bilgileri
         </Typography>
-        <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
-          <Typography variant="body2" sx={{ color: '#666', flexGrow: 1 }}>
-            <strong>Email:</strong> {user.email}
-          </Typography>
-          <IconButton size="small" onClick={() => handleOpenEdit('email')}>
-            <EditIcon fontSize="small" />
-          </IconButton>
-        </Box>
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          <Typography variant="body2" sx={{ color: '#666', flexGrow: 1 }}>
-            <strong>Telefon:</strong> {user.phone}
-          </Typography>
-          <IconButton size="small" onClick={() => handleOpenEdit('phone')}>
-            <EditIcon fontSize="small" />
-          </IconButton>
-        </Box>
-      </Box>
+        
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <Box sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'space-between',
+            p: 2,
+            borderRadius: 1,
+            '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.02)' }
+          }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <EmailIcon color="action" />
+              <Box>
+                <Typography variant="body2" color="text.secondary">Email</Typography>
+                <Typography>{user.email}</Typography>
+              </Box>
+            </Box>
+            <IconButton onClick={() => handleOpenEdit('email')}>
+              <EditIcon />
+            </IconButton>
+          </Box>
 
-      <Divider />
+          <Box sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'space-between',
+            p: 2,
+            borderRadius: 1,
+            '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.02)' }
+          }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <PhoneIcon color="action" />
+              <Box>
+                <Typography variant="body2" color="text.secondary">Telefon</Typography>
+                <Typography>{user.phone || 'Telefon numarası belirtilmemiş'}</Typography>
+              </Box>
+            </Box>
+            <IconButton onClick={() => handleOpenEdit('phone')}>
+              <EditIcon />
+            </IconButton>
+          </Box>
+        </Box>
+      </Paper>
 
-      {/* Şifre Güncelle */}
-      <Box sx={{ padding: '16px', backgroundColor: '#fff', borderRadius: '8px' }}>
-        <Typography variant="h6" sx={{ fontWeight: 'bold', marginBottom: '8px' }}>
-          Şifre Güncelle
+      {/* Şifre Değiştirme */}
+      <Paper
+        elevation={0}
+        sx={{
+          p: 4,
+          borderRadius: 2,
+          backgroundColor: 'rgba(255, 255, 255, 0.9)',
+          backdropFilter: 'blur(8px)',
+          border: '1px solid rgba(0, 0, 0, 0.1)',
+        }}
+      >
+        <Typography variant="h6" sx={{ mb: 3, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
+          <LockIcon /> Şifre Değiştir
         </Typography>
-        <TextField
-          label="Yeni Şifre"
-          name="newPassword"
-          type="password"
-          value={passwordData.newPassword}
-          onChange={handlePasswordChange}
-          fullWidth
-          margin="dense"
-          size="small"
-        />
-        <TextField
-          label="Şifreyi Onayla"
-          name="confirmPassword"
-          type="password"
-          value={passwordData.confirmPassword}
-          onChange={handlePasswordChange}
-          fullWidth
-          margin="dense"
-          size="small"
-        />
-        {error && <Typography color="error">{error}</Typography>}
-        <Button
-          variant="contained"
-          color="primary"
-          fullWidth
-          sx={{ marginTop: '16px' }}
-          onClick={handlePasswordUpdate}
-        >
-          Güncelle
-        </Button>
-      </Box>
-
-      {/* Genel Başarı Modali */}
-      <Dialog open={successModalOpen} onClose={handleSuccessModalClose}>
-        <DialogTitle>Güncelleme Başarılı</DialogTitle>
-        <DialogContent>
-          <Typography>{successMessage}</Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleSuccessModalClose} color="primary">
-            Tamam
+        
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <TextField
+            label="Yeni Şifre"
+            name="newPassword"
+            type="password"
+            value={passwordData.newPassword}
+            onChange={handlePasswordChange}
+            fullWidth
+            variant="outlined"
+          />
+          <TextField
+            label="Şifreyi Onayla"
+            name="confirmPassword"
+            type="password"
+            value={passwordData.confirmPassword}
+            onChange={handlePasswordChange}
+            fullWidth
+            variant="outlined"
+          />
+          <Button
+            variant="contained"
+            onClick={handlePasswordUpdate}
+            sx={{ 
+              mt: 1,
+              bgcolor: '#1976d2',
+              '&:hover': { bgcolor: '#1565c0' }
+            }}
+          >
+            Şifreyi Güncelle
           </Button>
-        </DialogActions>
-      </Dialog>
+        </Box>
+      </Paper>
 
-      {/* Dialog */}
-      <Dialog open={open} onClose={handleCloseDialog}>
-        <DialogTitle>Düzenle</DialogTitle>
+      {/* Düzenleme Dialog'u */}
+      <Dialog open={open} onClose={() => setOpen(false)}>
+        <DialogTitle>
+          {editField === 'email' ? 'Email Güncelle' : 'Telefon Güncelle'}
+        </DialogTitle>
         <DialogContent>
           <TextField
-            label="Yeni Değer"
+            autoFocus
+            margin="dense"
+            label={editField === 'email' ? 'Yeni Email' : 'Yeni Telefon'}
+            type={editField === 'email' ? 'email' : 'tel'}
+            fullWidth
+            variant="outlined"
             value={editedValue}
             onChange={(e) => setEditedValue(e.target.value)}
-            fullWidth
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseDialog}>İptal</Button>
-          <Button onClick={handleSaveEdit}>Kaydet</Button>
+          <Button onClick={() => setOpen(false)}>İptal</Button>
+          <Button onClick={handleSaveEdit} variant="contained">Kaydet</Button>
         </DialogActions>
       </Dialog>
+
+      {/* Snackbar */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={handleSnackbarClose}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert 
+          onClose={handleSnackbarClose} 
+          severity={snackbar.severity}
+          variant="filled"
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

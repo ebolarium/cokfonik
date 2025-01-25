@@ -71,6 +71,8 @@ const CustomAppBar = ({ userName, viewMode }) => {
             gap: 1.5,
           }}>
             <Avatar 
+              src={user.profilePhoto || ''}
+              alt={user.name}
               sx={{ 
                 width: 38, 
                 height: 38,

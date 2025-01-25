@@ -42,13 +42,13 @@ router.post('/:id/upload-photo', upload.single('profilePhoto'), async (req, res)
     }
 
     // Profil fotoğrafı tam yolunu oluştur
-    const filePath = `${process.env.BASE_URL}/uploads/${req.file.filename}`;
-    user.profilePhoto = filePath; // Fotoğraf tam URL ile kaydedilir
+    const photoUrl = `${process.env.BASE_URL}/uploads/${req.file.filename}`;
+    user.profilePhoto = photoUrl;
     await user.save();
 
     res.status(200).json({
       message: 'Fotoğraf başarıyla yüklendi.',
-      photoPath: filePath, // Frontend için dönen tam URL
+      photoUrl: photoUrl
     });
   } catch (error) {
     console.error('Fotoğraf yüklenirken hata:', error);
