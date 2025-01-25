@@ -147,7 +147,10 @@ const AttendanceManagement = () => {
       // Her kullanıcı için katılım yüzdesini hesapla
       const getAttendancePercentage = (userId) => {
         const userAttendances = attendances.filter(
-          (a) => a.userId?._id === userId && getEventType(a.date) === 'Prova'
+          (a) => 
+            a.userId?._id === userId && 
+            getEventType(a.date) === 'Prova' &&
+            a.status !== 'BEKLEMEDE' // Beklemede olanları filtrele
         );
         const cameCount = userAttendances.filter((a) => a.status === 'GELDI').length;
         return userAttendances.length > 0 
@@ -562,9 +565,11 @@ const AttendanceManagement = () => {
         </TableHead>
         <TableBody>
           {sortedUsers.map((user) => {
-            // Sadece "Prova" etkinliklerini filtreleyin
             const userAttendances = attendances.filter(
-              (a) => a.userId?._id === user._id && getEventType(a.date) === 'Prova'
+              (a) => 
+                a.userId?._id === user._id && 
+                getEventType(a.date) === 'Prova' &&
+                a.status !== 'BEKLEMEDE' // Beklemede olanları filtrele
             );
             const cameCount = userAttendances.filter((a) => a.status === 'GELDI').length;
             const attendancePercentage = userAttendances.length > 0 
