@@ -15,6 +15,7 @@ import {
   Badge,
   Checkbox,
   FormControlLabel,
+  CircularProgress,
 } from '@mui/material';
 import EventNoteIcon from '@mui/icons-material/EventNote';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
@@ -26,6 +27,8 @@ import HearingIcon from '@mui/icons-material/Hearing';
 import Confetti from 'react-confetti';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import PaymentsIcon from '@mui/icons-material/Payments';
+import CampaignIcon from '@mui/icons-material/Campaign';
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 
 // Yardımcı Fonksiyon: Base64 stringi Uint8Array'e çevirir
 const urlBase64ToUint8Array = (base64String) => {
@@ -45,16 +48,17 @@ const urlBase64ToUint8Array = (base64String) => {
 
 const UserDashboard = () => {
   const navigate = useNavigate();
+  const [unpaidCount, setUnpaidCount] = useState(0);
+  const [modalDismissed, setModalDismissed] = useState(false);
+  const [attendancePercentage, setAttendancePercentage] = useState(null);
+  const user = JSON.parse(localStorage.getItem('user'));
+  const userName = user?.name || '';
 
   // Duyuru State
   const [announcements, setAnnouncements] = useState([]);
   const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
   const [open, setOpen] = useState(false);
   const [unpaidFeesModalOpen, setUnpaidFeesModalOpen] = useState(false);
-  const [unpaidCount, setUnpaidCount] = useState(0);
-  const [modalDismissed, setModalDismissed] = useState(false);
-
-
 
   // Konfeti & Animasyon State
   const [showConfetti, setShowConfetti] = useState(false);
@@ -67,13 +71,52 @@ const UserDashboard = () => {
   // Public VAPID Key
   const PUBLIC_VAPID_KEY = process.env.REACT_APP_PUBLIC_VAPID_KEY;
 
-  // Kullanıcı bilgilerini localStorage'dan al
-  const user = JSON.parse(localStorage.getItem('user'));
-  // Hoş geldin mesajında kullanmak için
-  const userName = user?.name || '';
+  // Devam yüzdesini hesapla
+  const fetchAttendancePercentage = async () => {
+    try {
+      const [attendancesRes, eventsRes] = await Promise.all([
+        fetch(`${process.env.REACT_APP_API_URL}/attendance/${user._id}`),
+        fetch(`${process.env.REACT_APP_API_URL}/events`)
+      ]);
 
+      const attendances = await attendancesRes.json();
+      const events = await eventsRes.json();
 
+      // Prova türündeki ve beklemede olmayan katılımları filtrele
+      const provaAttendances = attendances.filter(a => 
+        events.some(e => 
+          e._id === a.event?._id && 
+          e.type === 'Prova'
+        ) && 
+        a.status !== 'BEKLEMEDE'
+      );
 
+      // Gelinen prova sayısı
+      const cameCount = provaAttendances.filter(a => a.status === 'GELDI').length;
+      
+      // Yüzde hesapla
+      const percentage = provaAttendances.length > 0
+        ? Math.round((cameCount / provaAttendances.length) * 100)
+        : 0;
+
+      setAttendancePercentage(percentage);
+    } catch (error) {
+      console.error('Devam yüzdesi hesaplanırken hata:', error);
+    }
+  };
+
+  useEffect(() => {
+    if (user?._id) {
+      fetchAttendancePercentage();
+    }
+  }, []);
+
+  // Yüzde rengini belirle
+  const getPercentageColor = (percentage) => {
+    if (percentage >= 70) return '#4caf50'; // yeşil
+    if (percentage >= 60) return '#ff9800'; // turuncu
+    return '#f44336'; // kırmızı
+  };
 
   useEffect(() => {
     const checkUnpaidFees = async () => {
@@ -100,97 +143,92 @@ const UserDashboard = () => {
     setModalDismissed(true); // Modalın tekrar açılmasını engelle
   };
 
+  // Duyuruları çek
+  useEffect(() => {
+    const fetchAnnouncements = async () => {
+      try {
+        const response = await fetch(`${process.env.REACT_APP_API_URL}/announcements`);
+        const data = await response.json();
 
+        const userId = user?._id;
+        if (!userId) throw new Error('User ID not found in localStorage');
 
-  
-// Duyuruları çek
-useEffect(() => {
-  const fetchAnnouncements = async () => {
+        // Gizlenmiş duyuruları filtrele
+        const visibleAnnouncements = data.filter(
+          (announcement) => !announcement.hiddenBy?.includes(userId)
+        );
+        setAnnouncements(visibleAnnouncements);
+      } catch (error) {
+        console.error('Duyurular yüklenemedi:', error);
+      }
+    };
+
+    fetchAnnouncements();
+  }, [user?._id]);
+
+  // Okunmamış duyuru sayısı
+  const unreadCount = announcements.filter((announcement) => {
+    // readBy'daki her ID'yi string'e çevir
+    const readByStringArray = announcement.readBy.map((id) => String(id));
+    return !readByStringArray.includes(String(user?._id));
+  }).length;
+
+  // Duyuru okundu
+  const markAsRead = async (id) => {
+    const userId = user?._id;
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/announcements`);
-      const data = await response.json();
-
-      const userId = user?._id;
-      if (!userId) throw new Error('User ID not found in localStorage');
-
-      // Gizlenmiş duyuruları filtrele
-      const visibleAnnouncements = data.filter(
-        (announcement) => !announcement.hiddenBy?.includes(userId)
-      );
-      setAnnouncements(visibleAnnouncements);
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/announcements/${id}/read`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
+      });
+      if (response.ok) {
+        setAnnouncements((prev) =>
+          prev.map((ann) =>
+            ann._id === id
+              ? { ...ann, readBy: [...ann.readBy, userId] }
+              : ann
+          )
+        );
+      }
     } catch (error) {
-      console.error('Duyurular yüklenemedi:', error);
+      console.error('Duyuru okundu olarak işaretlenirken hata:', error);
     }
   };
 
-  fetchAnnouncements();
-}, [user?._id]);
-
-// Okunmamış duyuru sayısı
-const unreadCount = announcements.filter((announcement) => {
-  // readBy'daki her ID'yi string'e çevir
-  const readByStringArray = announcement.readBy.map((id) => String(id));
-  return !readByStringArray.includes(String(user?._id));
-}).length;
-
-// Duyuru okundu
-const markAsRead = async (id) => {
-  const userId = user?._id;
-  try {
-    const response = await fetch(`${process.env.REACT_APP_API_URL}/announcements/${id}/read`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId }),
-    });
-    if (response.ok) {
-      setAnnouncements((prev) =>
-        prev.map((ann) =>
-          ann._id === id
-            ? { ...ann, readBy: [...ann.readBy, userId] }
-            : ann
-        )
-      );
+  // Duyuru gizle
+  const hideAnnouncement = async (id) => {
+    const userId = user?._id;
+    try {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/announcements/${id}/hide`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
+      });
+      if (response.ok) {
+        // Başarıyla gizlenmiş duyuruyu local state'ten çıkar
+        setAnnouncements((prev) => prev.filter((a) => a._id !== id));
+      }
+    } catch (error) {
+      console.error('Duyuru gizlenirken hata:', error);
     }
-  } catch (error) {
-    console.error('Duyuru okundu olarak işaretlenirken hata:', error);
-  }
-};
+  };
 
-// Duyuru gizle
-const hideAnnouncement = async (id) => {
-  const userId = user?._id;
-  try {
-    const response = await fetch(`${process.env.REACT_APP_API_URL}/announcements/${id}/hide`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId }),
-    });
-    if (response.ok) {
-      // Başarıyla gizlenmiş duyuruyu local state'ten çıkar
-      setAnnouncements((prev) => prev.filter((a) => a._id !== id));
+  // Duyuru modal aç/kapat
+  const handleOpen = (announcement) => {
+    // Okundu mu kontrolü için yine string dönüşümü
+    const readByStringArray = announcement.readBy.map((id) => String(id));
+    if (!readByStringArray.includes(String(user?._id))) {
+      markAsRead(announcement._id);
     }
-  } catch (error) {
-    console.error('Duyuru gizlenirken hata:', error);
-  }
-};
+    setSelectedAnnouncement(announcement);
+    setOpen(true);
+  };
 
-// Duyuru modal aç/kapat
-const handleOpen = (announcement) => {
-  // Okundu mu kontrolü için yine string dönüşümü
-  const readByStringArray = announcement.readBy.map((id) => String(id));
-  if (!readByStringArray.includes(String(user?._id))) {
-    markAsRead(announcement._id);
-  }
-  setSelectedAnnouncement(announcement);
-  setOpen(true);
-};
-
-const handleClose = () => {
-  setOpen(false);
-  setSelectedAnnouncement(null);
-};
-
-
+  const handleClose = () => {
+    setOpen(false);
+    setSelectedAnnouncement(null);
+  };
 
   // Konfeti Gösterme Mantığı
   useEffect(() => {
@@ -307,11 +345,17 @@ const handleClose = () => {
     setPushModalOpen(false);
   };
 
+  // Aidat sayısı güncelleme event listener'ı
+  useEffect(() => {
+    const handleUnpaidCountUpdate = (event) => {
+      setUnpaidCount(event.detail.count);
+    };
 
-
-
-
-
+    window.addEventListener('updateUnpaidCount', handleUnpaidCountUpdate);
+    return () => {
+      window.removeEventListener('updateUnpaidCount', handleUnpaidCountUpdate);
+    };
+  }, []);
 
   // Dashboard Kartları
   const dashboardItems = [
@@ -320,16 +364,72 @@ const handleClose = () => {
       path: '/my-attendance',
       icon: <AssignmentTurnedInIcon style={{ fontSize: 50 }} />,
       bgColor: '#f0f8ff',
+      content: attendancePercentage !== null && (
+        <Box sx={{ 
+          display: 'flex', 
+          alignItems: 'center',
+          gap: 1,
+          mt: 1
+        }}>
+          <Typography 
+            variant="body2" 
+            sx={{ 
+              color: '#2c3e50',
+              fontWeight: 500,
+              fontSize: '0.9rem',
+            }}
+          >
+            Devam:
+          </Typography>
+          <Typography 
+            variant="body2" 
+            sx={{ 
+              color: getPercentageColor(attendancePercentage),
+              fontWeight: 600,
+              fontSize: '0.9rem',
+            }}
+          >
+            %{attendancePercentage}
+          </Typography>
+        </Box>
+      )
     },
     {
       title: 'Aidat',
       path: '/my-fees',
-      icon: (
-        <Badge badgeContent={unpaidCount} color="error">
-          <AccountBalanceIcon style={{ fontSize: 50 }} />
-        </Badge>
-      ),
+      icon: <AccountBalanceIcon style={{ fontSize: 50 }} />,
       bgColor: '#e6ffe6',
+      content: (
+        <Box sx={{ 
+          display: 'flex', 
+          alignItems: 'center',
+          gap: 1
+        }}>
+          <Typography 
+            variant="body2" 
+            sx={{ 
+              color: '#2c3e50',
+              fontWeight: 500,
+              fontSize: '0.9rem',
+            }}
+          >
+            Eksik:
+          </Typography>
+          <Typography 
+            variant="body2" 
+            sx={{ 
+              color: unpaidCount === 0 ? '#2c3e50' : '#e74c3c',
+              fontWeight: 500,
+              fontSize: '0.9rem',
+            }}
+          >
+            {unpaidCount}{' '}
+            {unpaidCount === 0 ? '🎉' : 
+             unpaidCount === 1 ? '😱' : 
+             '🚨'}
+          </Typography>
+        </Box>
+      )
     },
     {
       title: 'Takvim',
@@ -450,54 +550,46 @@ const handleClose = () => {
             {`Sevgili ${userName},\n
 Doğum gününü en içten duygularla tüm kalbimizle kutlarız 💝🎈🎊🎂🥂\n
 Aramızda olduğun ve Çokfonik'e değer kattığın için çok mutluyuz😊\n
-Sesinle ve gülüşünle Çokfonik'e adeta bir can suyu oldun🍀💧\n
-Neşeyle sağlıkla ve müzikle dolu bir yaş dileriz 🎶🎵🎼🥁🎉🥂\n
+Sesinle ve gülüşünle Çokfonik'e adeta bir can suyu oldun💧\n
+Neşeyle sağlıkla ve müzikle dolu bir yaş dileriz 🎶🎵🎼🥁🥂\n
 İyi ki doğdun, iyi ki varsın 🌻💐🌹
 `}
           </Box>
         </Box>
       )}
 
-
-
- {/* Aidat Borcu Modal */}
- <Modal
+      {/* Aidat Borcu Modal */}
+      <Modal
         open={unpaidFeesModalOpen}
         onClose={handleCloseModal}
       >
         <Box
-sx={{
-  position: 'absolute',
-  top: '50%',
-  left: '50%',
-  transform: 'translate(-50%, -50%)',
-  bgcolor: 'background.paper',
-  boxShadow: 24,
-  p: 2,
-  borderRadius: 2,
-  textAlign: 'center',
-  fontSize: '16px', // Genel font büyüklüğü
-  width: { xs: '90%', sm: '400px', md: '500px' }, // Responsive genişlik
-  maxWidth: '90vw', // Ekran genişliğine göre sınırlama
-}}
+          sx={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            bgcolor: 'background.paper',
+            boxShadow: 24,
+            p: 2,
+            borderRadius: 2,
+            textAlign: 'center',
+            fontSize: '16px', // Genel font büyüklüğü
+            width: { xs: '90%', sm: '400px', md: '500px' }, // Responsive genişlik
+            maxWidth: '90vw', // Ekran genişliğine göre sınırlama
+          }}
         >
-<Typography variant="h5" gutterBottom sx={{ fontSize: '24px', fontWeight: 'bold' }}>
-  ⚠️ Aidat Bildirimi
-</Typography>
-<Typography gutterBottom sx={{ fontSize: '18px' }}>
-  Ödenmemiş {unpaidCount} aylık aidatınız var. 😱
-</Typography>
+          <Typography variant="h5" gutterBottom sx={{ fontSize: '24px', fontWeight: 'bold' }}>
+            ⚠️ Aidat Bildirimi
+          </Typography>
+          <Typography gutterBottom sx={{ fontSize: '18px' }}>
+            Ödenmemiş {unpaidCount} aylık aidatınız var. 😱
+          </Typography>
           <Button variant="contained" color="primary" onClick={handleCloseModal}>
             Tamam
           </Button>
         </Box>
       </Modal>
-
-
-
-
-
-
 
       {/* Push Bildirim İzni Modali */}
       <Modal
@@ -560,38 +652,20 @@ sx={{
           p: 3 
         }}
       >
-        <Grid container spacing={2} direction="column">
+        <Grid container spacing={2}>
           {dashboardItems.map((item, index) => (
-            <Grid
-              item
-              key={index}
-              sx={{
-                width: '100%'
-              }}
-            >
+            <Grid item xs={12} key={index}>
               <Card
+                onClick={() => item.path ? navigate(item.path) : window.open(item.link, '_blank')}
                 sx={{
-                  width: '100%',
-                  height: '60px', // Sabit yükseklik
                   backgroundColor: item.bgColor,
-                  color: '#333',
-                  borderRadius: 2,
                   cursor: 'pointer',
-                  boxShadow: '0 3px 6px rgba(0,0,0,0.1)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  transition: 'transform 0.2s',
+                  height: '60px',
+                  transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
                   '&:hover': {
-                    transform: 'scale(1.02)',
-                    boxShadow: '0 5px 10px rgba(0,0,0,0.15)',
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
                   },
-                }}
-                onClick={() => {
-                  if (item.link) {
-                    window.open(item.link, '_blank');
-                  } else {
-                    navigate(item.path);
-                  }
                 }}
               >
                 <CardContent
@@ -599,37 +673,35 @@ sx={{
                     display: 'flex',
                     flexDirection: 'row',
                     alignItems: 'center',
-                    justifyContent: 'flex-start',
-                    p: { xs: 2 },
-                    gap: 3,
-                    width: '100%',
-                    '&:last-child': { pb: 2 }, // CardContent'in son padding'ini düzelt
+                    height: '100%',
+                    p: '12px !important',
                   }}
                 >
                   <Box sx={{ 
-                    '& > *': { 
-                      fontSize: { xs: 25, sm: 30 }
-                    },
                     display: 'flex',
                     alignItems: 'center',
-                    color: 'rgba(0, 0, 0, 0.7)'
+                    '& > *': { 
+                      fontSize: { xs: 24, sm: 28 }
+                    },
+                    color: 'rgba(0, 0, 0, 0.7)',
+                    mr: 2
                   }}>
                     {item.icon}
                   </Box>
                   <Typography 
                     variant="h6" 
                     sx={{ 
-                      fontSize: { xs: '14px', sm: '16px' },
-                      fontWeight: 'medium',
+                      fontSize: { xs: '0.9rem', sm: '1rem' },
+                      fontWeight: 500,
+                      color: '#2c3e50',
                       flexGrow: 1
                     }}
                   >
                     {item.title}
                   </Typography>
-                  {/* Badge varsa sağ tarafa ekle */}
-                  {item.icon.props?.children?.props?.badgeContent > 0 && (
-                    <Box sx={{ ml: 'auto' }}>
-                      {item.icon.props.children}
+                  {item.content && (
+                    <Box sx={{ ml: 'auto', mr: 1 }}>
+                      {item.content}
                     </Box>
                   )}
                 </CardContent>

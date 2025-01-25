@@ -30,6 +30,7 @@ import Game2 from './components/Game2';
 import ConductorDashboard from './components/ConductorDashboard';
 import ConductorAttendance from './components/ConductorAttendance';
 import MidiPlayer from './components/MidiPlayer';
+import MusicPlayer from './components/MusicPlayer';
 
 
 const App = () => {
@@ -127,7 +128,7 @@ const App = () => {
           <Route path="/game" element={<Game />} />
           <Route path="/game2" element={<Game2 />} />
           <Route path="/midi-player" element={<MidiPlayer />} />
-
+          <Route path="/music-player" element={<MusicPlayer />} />
         </>
       );
     }
@@ -150,8 +151,7 @@ const App = () => {
           <Route path="/fee-management" element={<FeeManagement />} />
           <Route path="/attendance-management" element={<AttendanceManagement />} />
           <Route path="/midi-player" element={<MidiPlayer />} />
-
-
+          <Route path="/music-player" element={<MusicPlayer />} />
         </>
       );
     }
