@@ -668,7 +668,10 @@ const AttendanceManagement = () => {
             </Typography>
             <List>
               {selectedUserAttendances
-                .filter((attendance) => getEventType(attendance.date) === 'Prova')
+                .filter((attendance) => 
+                  getEventType(attendance.date) === 'Prova' && 
+                  attendance.status !== 'BEKLEMEDE'  // Beklemede olanları filtrele
+                )
                 .sort((a, b) => new Date(b.date) - new Date(a.date))
                 .map((attendance) => (
                   <ListItem key={attendance._id}>
