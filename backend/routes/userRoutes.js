@@ -5,12 +5,10 @@ const Attendance = require('../models/Attendance');
 const Event = require('../models/Event');
 const multer = require('multer');
 const path = require('path');
+const cloudinary = require('cloudinary').v2;
+const fs = require('fs');
 
 const router = express.Router();
-
-
-
-const fs = require('fs');
 
 // Uploads dizininin varlığını kontrol edin
 const uploadDir = path.join(__dirname, '../uploads');
@@ -18,13 +16,17 @@ if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-// Multer Konfigürasyonu
+// Geçici dosya yükleme için multer konfigürasyonu
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, '../uploads'));
+    const tempDir = path.join(__dirname, '../temp');
+    if (!fs.existsSync(tempDir)) {
+      fs.mkdirSync(tempDir, { recursive: true });
+    }
+    cb(null, tempDir);
   },
   filename: (req, file, cb) => {
-    cb(null, `${req.params.id}_${Date.now()}${path.extname(file.originalname)}`); // Benzersiz dosya adı
+    cb(null, `${Date.now()}-${file.originalname}`);
   },
 });
 
@@ -34,28 +36,51 @@ const upload = multer({ storage });
 router.post('/:id/upload-photo', upload.single('profilePhoto'), async (req, res) => {
   try {
     const userId = req.params.id;
+    const tempFilePath = req.file.path;
 
     // Kullanıcıyı bul
     const user = await User.findById(userId);
     if (!user) {
+      // Geçici dosyayı sil
+      fs.unlinkSync(tempFilePath);
       return res.status(404).json({ message: 'Kullanıcı bulunamadı.' });
     }
 
-    // Profil fotoğrafı tam yolunu oluştur
-    const photoUrl = `${process.env.BASE_URL}/uploads/${req.file.filename}`;
-    user.profilePhoto = photoUrl;
+    // Cloudinary'ye yükle
+    const result = await cloudinary.uploader.upload(tempFilePath, {
+      folder: 'profile-photos',
+      public_id: `user-${userId}`,
+      overwrite: true,
+      transformation: [
+        { width: 400, height: 400, crop: "fill" },
+        { quality: "auto" }
+      ]
+    });
+
+    // Geçici dosyayı sil
+    fs.unlinkSync(tempFilePath);
+
+    // Kullanıcı profilini güncelle
+    user.profilePhoto = result.secure_url;
     await user.save();
 
     res.status(200).json({
       message: 'Fotoğraf başarıyla yüklendi.',
-      photoUrl: photoUrl
+      photoUrl: result.secure_url
     });
   } catch (error) {
     console.error('Fotoğraf yüklenirken hata:', error);
+    // Hata durumunda geçici dosyayı silmeyi dene
+    if (req.file && req.file.path) {
+      try {
+        fs.unlinkSync(req.file.path);
+      } catch (unlinkError) {
+        console.error('Geçici dosya silinirken hata:', unlinkError);
+      }
+    }
     res.status(400).json({ message: 'Fotoğraf yüklenirken bir hata oluştu.' });
   }
 });
-
 
 // Kullanıcı Profilini Getir (token veya id üzerinden)
 router.get('/profile', async (req, res) => {
@@ -73,8 +98,6 @@ router.get('/profile', async (req, res) => {
     res.status(500).json({ message: 'Sunucu hatası oluştu.' });
   }
 });
-
-
 
 // Yardımcı Fonksiyon: Güncel Ay ve Yıl Bilgisi
 const getCurrentMonthAndYear = () => {
@@ -135,7 +158,6 @@ router.post('/:id/change-password', async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: 'Kullanıcı bulunamadı.' });
     }
-
 
     // Yeni şifreyi kaydet
     user.password = newPassword;
@@ -245,8 +267,5 @@ router.get('/:id/profile', async (req, res) => {
     res.status(500).json({ message: 'Bir hata oluştu' });
   }
 });
-
-
-
 
 module.exports = router;
