@@ -52,13 +52,23 @@ router.post('/:id/upload-photo', upload.single('profilePhoto'), async (req, res)
       public_id: `user-${userId}`,
       overwrite: true,
       transformation: [
-        { width: 400, height: 400, crop: "fill" },
-        { quality: "auto" }
+        { width: 400, height: 400, crop: "fill", gravity: "face" },
+        { quality: "auto:best", fetch_format: "auto" }
       ]
     });
 
     // Geçici dosyayı sil
     fs.unlinkSync(tempFilePath);
+
+    // Eski fotoğrafı Cloudinary'den sil (eğer varsa)
+    if (user.profilePhoto) {
+      try {
+        const oldPublicId = user.profilePhoto.split('/').pop().split('.')[0];
+        await cloudinary.uploader.destroy(`profile-photos/${oldPublicId}`);
+      } catch (deleteError) {
+        console.error('Eski fotoğraf silinirken hata:', deleteError);
+      }
+    }
 
     // Kullanıcı profilini güncelle
     user.profilePhoto = result.secure_url;

@@ -69,10 +69,6 @@ const Profile = () => {
           setLoading(false);
           return;
         }
-
-        if (result.profilePhoto && result.profilePhoto.startsWith('undefined/')) {
-          result.profilePhoto = `${process.env.REACT_APP_API_URL}/${result.profilePhoto.replace('undefined/', '')}`;
-        }
   
         setUser(result);
         setProfilePhoto(result.profilePhoto);
@@ -107,14 +103,9 @@ const Profile = () => {
           throw new Error(result.message || 'Fotoğraf yüklenemedi');
         }
 
-        let photoUrl = result.photoUrl;
-        if (photoUrl && photoUrl.startsWith('undefined/')) {
-          photoUrl = `${process.env.REACT_APP_API_URL}/${photoUrl.replace('undefined/', '')}`;
-        }
-
-        const updatedUser = { ...userData, profilePhoto: photoUrl };
+        const updatedUser = { ...userData, profilePhoto: result.photoUrl };
         setUser(updatedUser);
-        setProfilePhoto(photoUrl);
+        setProfilePhoto(result.photoUrl);
         localStorage.setItem('user', JSON.stringify(updatedUser));
 
         setSnackbar({
