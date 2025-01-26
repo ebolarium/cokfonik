@@ -86,43 +86,65 @@ const Profile = () => {
 
   const handleProfilePhotoChange = async (e) => {
     const file = e.target.files[0];
-    if (file) {
-      try {
-        setUploadLoading(true);
-        const formData = new FormData();
-        formData.append('profilePhoto', file);
+    if (!file) return;
 
-        const userData = JSON.parse(localStorage.getItem('user'));
-        const response = await fetch(`${process.env.REACT_APP_API_URL}/users/${userData._id}/upload-photo`, {
-          method: 'POST',
-          body: formData,
-        });
+    // Dosya tipi kontrolü
+    if (!file.type.startsWith('image/')) {
+      setSnackbar({
+        open: true,
+        message: 'Lütfen geçerli bir resim dosyası seçin.',
+        severity: 'error'
+      });
+      return;
+    }
 
-        const result = await response.json();
-        if (!response.ok) {
-          throw new Error(result.message || 'Fotoğraf yüklenemedi');
-        }
+    // Dosya boyutu kontrolü (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setSnackbar({
+        open: true,
+        message: 'Dosya boyutu 5MB\'dan küçük olmalıdır.',
+        severity: 'error'
+      });
+      return;
+    }
 
-        const updatedUser = { ...userData, profilePhoto: result.photoUrl };
-        setUser(updatedUser);
-        setProfilePhoto(result.photoUrl);
-        localStorage.setItem('user', JSON.stringify(updatedUser));
+    try {
+      setUploadLoading(true);
+      const formData = new FormData();
+      formData.append('profilePhoto', file);
 
-        setSnackbar({
-          open: true,
-          message: 'Profil fotoğrafı başarıyla güncellendi!',
-          severity: 'success'
-        });
-      } catch (error) {
-        console.error('Fotoğraf yüklenirken hata:', error);
-        setSnackbar({
-          open: true,
-          message: error.message || 'Fotoğraf yüklenirken bir hata oluştu.',
-          severity: 'error'
-        });
-      } finally {
-        setUploadLoading(false);
+      const userData = JSON.parse(localStorage.getItem('user'));
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/users/${userData._id}/upload-photo`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.message || 'Fotoğraf yüklenemedi');
       }
+
+      const updatedUser = { ...userData, profilePhoto: result.photoUrl };
+      setUser(updatedUser);
+      setProfilePhoto(result.photoUrl);
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+
+      setSnackbar({
+        open: true,
+        message: 'Profil fotoğrafı başarıyla güncellendi!',
+        severity: 'success'
+      });
+    } catch (error) {
+      console.error('Fotoğraf yüklenirken hata:', error);
+      setSnackbar({
+        open: true,
+        message: error.message || 'Fotoğraf yüklenirken bir hata oluştu.',
+        severity: 'error'
+      });
+    } finally {
+      setUploadLoading(false);
+      // Input'u sıfırla
+      e.target.value = '';
     }
   };
 

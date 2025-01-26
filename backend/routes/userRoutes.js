@@ -10,31 +10,51 @@ const fs = require('fs');
 
 const router = express.Router();
 
-// Uploads dizininin varlığını kontrol edin
+// Uploads ve temp dizinlerinin varlığını kontrol edin
 const uploadDir = path.join(__dirname, '../uploads');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
+const tempDir = path.join(__dirname, '../temp');
+
+[uploadDir, tempDir].forEach(dir => {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+});
 
 // Geçici dosya yükleme için multer konfigürasyonu
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const tempDir = path.join(__dirname, '../temp');
-    if (!fs.existsSync(tempDir)) {
-      fs.mkdirSync(tempDir, { recursive: true });
-    }
     cb(null, tempDir);
   },
   filename: (req, file, cb) => {
-    cb(null, `${Date.now()}-${file.originalname}`);
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
   },
 });
 
-const upload = multer({ storage });
+const fileFilter = (req, file, cb) => {
+  // Sadece resim dosyalarına izin ver
+  if (file.mimetype.startsWith('image/')) {
+    cb(null, true);
+  } else {
+    cb(new Error('Sadece resim dosyaları yüklenebilir.'), false);
+  }
+};
+
+const upload = multer({ 
+  storage,
+  fileFilter,
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB limit
+  }
+});
 
 // Profil Fotoğrafı Yükleme Endpoint
 router.post('/:id/upload-photo', upload.single('profilePhoto'), async (req, res) => {
   try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'Lütfen bir fotoğraf seçin.' });
+    }
+
     const userId = req.params.id;
     const tempFilePath = req.file.path;
 
@@ -88,7 +108,10 @@ router.post('/:id/upload-photo', upload.single('profilePhoto'), async (req, res)
         console.error('Geçici dosya silinirken hata:', unlinkError);
       }
     }
-    res.status(400).json({ message: 'Fotoğraf yüklenirken bir hata oluştu.' });
+    res.status(400).json({ 
+      message: error.message || 'Fotoğraf yüklenirken bir hata oluştu.',
+      error: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 });
 
