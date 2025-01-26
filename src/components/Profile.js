@@ -281,6 +281,10 @@ const Profile = () => {
             <Avatar
               src={profilePhoto || '/placeholder-profile.png'}
               alt={`${user.name} ${user.surname}`}
+              onError={(e) => {
+                console.error('Profil fotoğrafı yüklenirken hata:', e);
+                e.target.src = '/placeholder-profile.png';
+              }}
               sx={{
                 width: 80,
                 height: 80,
