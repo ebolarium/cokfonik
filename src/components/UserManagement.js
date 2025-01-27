@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import {
   Box, Typography, Button, Table, TableBody, TableCell, TableHead, TableRow,
-  Dialog, DialogTitle, DialogContent, TextField, TableContainer, Paper
+  Dialog, DialogTitle, DialogContent, TextField, TableContainer, Paper, IconButton
 } from '@mui/material';
-import { Delete, Edit } from '@mui/icons-material';
+import { Delete, Edit, PersonAdd } from '@mui/icons-material';
 
 const UserManagement = () => {
   const [users, setUsers] = useState([]);
@@ -173,42 +173,105 @@ const UserManagement = () => {
     <Box
       p={2}
       sx={{
-        marginTop: '64px',
+        marginTop: 0,
         marginBottom: '64px',
         overflow: 'auto'
       }}
     >
-      <Typography variant="h5" gutterBottom align='center'>
+      <Typography 
+        variant="h5" 
+        gutterBottom 
+        align='center'
+        sx={{ mt: 1, mb: 2 }}
+      >
         Kullanıcı Yönetimi
       </Typography>
 
-      <Button variant="contained" color="primary" onClick={() => setOpen(true)}>
+      <Button 
+        variant="contained" 
+        color="primary" 
+        onClick={() => setOpen(true)}
+        startIcon={<PersonAdd />}
+        sx={{
+          mt: 0,
+          mb: 2,
+          borderRadius: '8px',
+          textTransform: 'none',
+          fontWeight: 'bold',
+          padding: '10px 20px',
+          boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+          '&:hover': {
+            boxShadow: '0 4px 6px rgba(0, 0, 0, 0.15)'
+          }
+        }}
+      >
         Yeni Kullanıcı Ekle
       </Button>
 
-      <TableContainer component={Paper} sx={{ mt: 1, overflowX: 'auto' }}>
+      <TableContainer component={Paper} sx={{ 
+        mt: 2, 
+        overflowX: 'auto',
+        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+        borderRadius: '8px'
+      }}>
         <Table>
           <TableHead>
-            <TableRow>
+            <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
               <TableCell
-                sx={{ padding: '4px 4px', fontWeight: 'bold', cursor: 'pointer' }}
+                sx={{
+                  padding: '16px',
+                  fontWeight: 'bold',
+                  fontSize: '1rem',
+                  cursor: 'pointer',
+                  '&:hover': {
+                    backgroundColor: '#eeeeee'
+                  },
+                  width: '40%'
+                }}
                 onClick={() => handleSort('name')}
               >
-                İsim
+                İsim {sortConfig.key === 'name' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
               </TableCell>
               <TableCell
-                sx={{ padding: '4px 4px', fontWeight: 'bold', cursor: 'pointer' }}
+                sx={{
+                  padding: '16px',
+                  fontWeight: 'bold',
+                  fontSize: '1rem',
+                  cursor: 'pointer',
+                  '&:hover': {
+                    backgroundColor: '#eeeeee'
+                  },
+                  width: '20%'
+                }}
                 onClick={() => handleSort('part')}
               >
-                Part
+                Part {sortConfig.key === 'part' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
               </TableCell>
               <TableCell
-                sx={{ padding: '4px 4px', fontWeight: 'bold', cursor: 'pointer' }}
+                sx={{
+                  padding: '16px',
+                  fontWeight: 'bold',
+                  fontSize: '1rem',
+                  cursor: 'pointer',
+                  '&:hover': {
+                    backgroundColor: '#eeeeee'
+                  },
+                  width: '20%'
+                }}
                 onClick={() => handleSort('role')}
               >
-                Rol
+                Rol {sortConfig.key === 'role' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
               </TableCell>
-              <TableCell sx={{ padding: '4px 4px', textAlign: 'center' }}></TableCell>
+              <TableCell 
+                sx={{ 
+                  padding: '16px', 
+                  textAlign: 'center',
+                  width: '20%',
+                  minWidth: '100px'
+                }}
+              >
+                İşlemler
+              </TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -217,31 +280,64 @@ const UserManagement = () => {
                 key={user._id}
                 sx={{
                   backgroundColor: user.frozen
-                    ? 'rgba(173, 216, 230, 0.5)' // Açık mavi renk (dondurulmuş kullanıcılar)
+                    ? 'rgba(173, 216, 230, 0.5)'
                     : user.isActive
-                    ? 'rgba(177, 233, 177, 0.5)' // Aktif kullanıcılar için yeşil
-                    : 'rgba(255, 182, 193, 0.5)', // Pasif kullanıcılar için pembe
+                    ? 'rgba(177, 233, 177, 0.5)'
+                    : 'rgba(255, 182, 193, 0.5)',
+                  '&:hover': {
+                    backgroundColor: user.frozen
+                      ? 'rgba(173, 216, 230, 0.7)'
+                      : user.isActive
+                      ? 'rgba(177, 233, 177, 0.7)'
+                      : 'rgba(255, 182, 193, 0.7)',
+                  },
+                  transition: 'background-color 0.2s ease'
                 }}
               >
-                <TableCell sx={{ padding: '4px 8px' }}>{user.name}</TableCell>
-                <TableCell sx={{ padding: '4px 8px' }}>{user.part}</TableCell>
-                <TableCell sx={{ padding: '4px 8px' }}>
+                <TableCell sx={{ padding: '16px' }}>{user.name}</TableCell>
+                <TableCell sx={{ padding: '16px' }}>{user.part}</TableCell>
+                <TableCell sx={{ padding: '16px' }}>
                   {user.role === 'Yönetim Kurulu' ? 'Yönetim' : user.role}
                 </TableCell>
-                <TableCell sx={{ padding: '2px 4px', textAlign: 'center' }}>
-                <Button
-  onClick={() => handleOpenDeleteModal(user._id)}
-  sx={{ minWidth: 0, padding: 0 }}
->
-  <Delete color="error" />
-</Button>
-
-                  <Button
-                    onClick={() => setEditUser(user)}
-                    sx={{ minWidth: 0, padding: 0, marginLeft: 1 }}
+                <TableCell 
+                  sx={{ 
+                    padding: '12px', 
+                    textAlign: 'center',
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  <Box 
+                    sx={{ 
+                      display: 'flex', 
+                      justifyContent: 'center',
+                      gap: 1
+                    }}
                   >
-                    <Edit color="primary" />
-                  </Button>
+                    <IconButton
+                      onClick={() => handleOpenDeleteModal(user._id)}
+                      size="small"
+                      sx={{
+                        color: 'error.main',
+                        '&:hover': {
+                          backgroundColor: 'rgba(211, 47, 47, 0.1)'
+                        }
+                      }}
+                    >
+                      <Delete fontSize="small" />
+                    </IconButton>
+                    <IconButton
+                      onClick={() => setEditUser(user)}
+                      size="small"
+                      sx={{
+                        color: 'primary.main',
+                        '&:hover': {
+                          backgroundColor: 'rgba(25, 118, 210, 0.1)'
+                        }
+                      }}
+                    >
+                      <Edit fontSize="small" />
+                    </IconButton>
+                  </Box>
                 </TableCell>
               </TableRow>
             ))}

@@ -1,129 +1,157 @@
 import React, { useState, useRef } from 'react';
-import { Box, Button, Typography, IconButton } from '@mui/material';
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-import PauseIcon from '@mui/icons-material/Pause';
-import StopIcon from '@mui/icons-material/Stop';
+import { 
+  Box, 
+  Button, 
+  Typography, 
+  IconButton, 
+  Select, 
+  MenuItem, 
+  FormControl,
+  InputLabel,
+  Slider,
+  Paper
+} from '@mui/material';
+import {
+  PlayArrow,
+  Pause,
+  Stop,
+  SkipPrevious,
+  SkipNext,
+  PictureAsPdf
+} from '@mui/icons-material';
 
-import { OpenSheetMusicDisplay } from 'opensheetmusicdisplay';
-import OsmdAudioPlayer from 'osmd-audio-player';
+const MusicPlayer = () => {
+  const [currentPart, setCurrentPart] = useState('soprano');
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const audioRef = useRef(null);
 
-const MidiPlayer = () => {
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [osmd, setOsmd] = useState(null);
-  const [audioPlayer, setAudioPlayer] = useState(null);
-  const musicContainerRef = useRef(null);
+  const parts = [
+    { id: 'soprano', name: 'Soprano', audioUrl: '', pdfUrl: '' },
+    { id: 'alto', name: 'Alto', audioUrl: '', pdfUrl: '' },
+    { id: 'tenor', name: 'Tenor', audioUrl: '', pdfUrl: '' },
+    { id: 'bass', name: 'Bas', audioUrl: '', pdfUrl: '' },
+  ];
 
-  const handleFileChange = async (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
-    setSelectedFile(file);
-
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      const xmlData = e.target.result;
-
-      // OSMD örneği oluştur
-      const newOsmd = new OpenSheetMusicDisplay(musicContainerRef.current, {
-        autoResize: true,
-        backend: 'svg',
-        drawTitle: true,
-      });
-      await newOsmd.load(xmlData);
-      await newOsmd.render();
-
-      // Audio player oluştur
-      const newAudioPlayer = new OsmdAudioPlayer();
-      
-      // Audio Player'ı piyano sesi için yapılandır
-      newAudioPlayer.soundFontName = 'acoustic_grand_piano';
-      newAudioPlayer.options = {
-        bpm: 120, // Tempo ayarı
-        volume: 1.0, // Ses seviyesi
-        instrument: 'acoustic_grand_piano' // Piyano sesi
-      };
-
-      // OSMD notalarını yükle
-      await newAudioPlayer.loadScore(newOsmd);
-
-      setOsmd(newOsmd);
-      setAudioPlayer(newAudioPlayer);
-      
-      // Debug için log
-      console.log('Audio Player yüklendi:', newAudioPlayer);
-    };
-    reader.readAsText(file);
+  const handlePartChange = (event) => {
+    setCurrentPart(event.target.value);
+    // Burada seçilen part'ın ses dosyasını yükleyebilirsiniz
   };
 
   const handlePlay = () => {
-    if (audioPlayer) {
-      audioPlayer.play();
+    if (audioRef.current) {
+      audioRef.current.play();
+      setIsPlaying(true);
     }
   };
 
   const handlePause = () => {
-    if (audioPlayer) {
-      audioPlayer.pause();
+    if (audioRef.current) {
+      audioRef.current.pause();
+      setIsPlaying(false);
     }
   };
 
   const handleStop = () => {
-    if (audioPlayer) {
-      audioPlayer.stop();
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+      setIsPlaying(false);
     }
   };
 
+  const handleTimeUpdate = () => {
+    if (audioRef.current) {
+      setCurrentTime(audioRef.current.currentTime);
+    }
+  };
+
+  const handleSliderChange = (event, newValue) => {
+    if (audioRef.current) {
+      audioRef.current.currentTime = newValue;
+      setCurrentTime(newValue);
+    }
+  };
+
+  const formatTime = (time) => {
+    const minutes = Math.floor(time / 60);
+    const seconds = Math.floor(time % 60);
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
+
   return (
-    <Box sx={{ p: 3, textAlign: 'center' }}>
-      <Typography variant="h4" gutterBottom>
-        Piano Player
-      </Typography>
-      <Typography variant="body1" gutterBottom>
-        Lütfen bir MusicXML dosyası seçin ve piyano çalmaya başlayın.
+    <Paper elevation={3} sx={{ p: 3, maxWidth: 600, mx: 'auto', mt: 2 }}>
+      <Typography variant="h6" gutterBottom align="center">
+        Parça Adı
       </Typography>
 
-      <Button variant="contained" component="label" sx={{ mb: 2 }}>
-        Dosya Seç
-        <input
-          type="file"
-          hidden
-          accept=".xml,.musicxml"
-          onChange={handleFileChange}
+      <FormControl fullWidth sx={{ mb: 2 }}>
+        <InputLabel>Part Seçin</InputLabel>
+        <Select
+          value={currentPart}
+          onChange={handlePartChange}
+          label="Part Seçin"
+        >
+          {parts.map(part => (
+            <MenuItem key={part.id} value={part.id}>
+              {part.name}
+            </MenuItem>
+          ))}
+        </Select>
+      </FormControl>
+
+      <audio
+        ref={audioRef}
+        onTimeUpdate={handleTimeUpdate}
+        onLoadedMetadata={() => setDuration(audioRef.current.duration)}
+      />
+
+      <Box sx={{ mb: 2 }}>
+        <Slider
+          value={currentTime}
+          max={duration}
+          onChange={handleSliderChange}
+          aria-label="time-indicator"
         />
-      </Button>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+          <Typography variant="body2">{formatTime(currentTime)}</Typography>
+          <Typography variant="body2">{formatTime(duration)}</Typography>
+        </Box>
+      </Box>
 
-      {selectedFile && (
-        <Typography variant="body2" color="textSecondary">
-          Seçilen dosya: {selectedFile.name}
-        </Typography>
-      )}
-
-      <Box sx={{ mt: 3, display: 'flex', justifyContent: 'center', gap: 2 }}>
-        <IconButton 
-          color="primary" 
-          onClick={handlePlay}
-          disabled={!audioPlayer}
-        >
-          <PlayArrowIcon sx={{ fontSize: 40 }} />
+      <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2 }}>
+        <IconButton size="large">
+          <SkipPrevious />
         </IconButton>
-        <IconButton 
-          color="secondary" 
-          onClick={handlePause}
-          disabled={!audioPlayer}
-        >
-          <PauseIcon sx={{ fontSize: 40 }} />
+        {!isPlaying ? (
+          <IconButton size="large" onClick={handlePlay}>
+            <PlayArrow />
+          </IconButton>
+        ) : (
+          <IconButton size="large" onClick={handlePause}>
+            <Pause />
+          </IconButton>
+        )}
+        <IconButton size="large" onClick={handleStop}>
+          <Stop />
         </IconButton>
-        <IconButton 
-          color="error" 
-          onClick={handleStop}
-          disabled={!audioPlayer}
-        >
-          <StopIcon sx={{ fontSize: 40 }} />
+        <IconButton size="large">
+          <SkipNext />
         </IconButton>
       </Box>
 
-      <Box ref={musicContainerRef} sx={{ mt: 3, textAlign: 'left' }} />
-    </Box>
+      <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center' }}>
+        <Button
+          variant="outlined"
+          startIcon={<PictureAsPdf />}
+          onClick={() => window.open(parts.find(p => p.id === currentPart)?.pdfUrl)}
+        >
+          Notaları Görüntüle
+        </Button>
+      </Box>
+    </Paper>
   );
 };
 
-export default MidiPlayer;
+export default MusicPlayer;
