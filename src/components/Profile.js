@@ -69,6 +69,13 @@ const Profile = () => {
           setLoading(false);
           return;
         }
+
+        // Profil fotoğrafı URL'sini güncelle
+        if (result.profilePhoto) {
+          // Cache'i önlemek için timestamp ekle
+          const timestamp = new Date().getTime();
+          result.profilePhoto = `${result.profilePhoto}?t=${timestamp}`;
+        }
   
         setUser(result);
         setProfilePhoto(result.profilePhoto);
@@ -114,16 +121,23 @@ const Profile = () => {
       formData.append('profilePhoto', file);
 
       const userData = JSON.parse(localStorage.getItem('user'));
+      if (!userData || !userData._id) {
+        throw new Error('Kullanıcı bilgisi bulunamadı');
+      }
+
       const response = await fetch(`${process.env.REACT_APP_API_URL}/users/${userData._id}/upload-photo`, {
         method: 'POST',
         body: formData,
       });
 
-      const result = await response.json();
       if (!response.ok) {
-        throw new Error(result.message || 'Fotoğraf yüklenemedi');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Fotoğraf yüklenemedi');
       }
 
+      const result = await response.json();
+      
+      // Kullanıcı bilgilerini güncelle
       const updatedUser = { ...userData, profilePhoto: result.photoUrl };
       setUser(updatedUser);
       setProfilePhoto(result.photoUrl);
@@ -143,8 +157,6 @@ const Profile = () => {
       });
     } finally {
       setUploadLoading(false);
-      // Input'u sıfırla
-      e.target.value = '';
     }
   };
 
@@ -282,7 +294,7 @@ const Profile = () => {
               src={profilePhoto || '/placeholder-profile.png'}
               alt={`${user.name} ${user.surname}`}
               onError={(e) => {
-                console.error('Profil fotoğrafı yüklenirken hata:', e);
+                console.error('Profil fotoğrafı yüklenemedi, varsayılan fotoğraf kullanılıyor');
                 e.target.src = '/placeholder-profile.png';
               }}
               sx={{
@@ -306,9 +318,15 @@ const Profile = () => {
                   color: '#fff',
                   '&:hover': { bgcolor: '#1565c0' },
                 }}
+                onClick={() => {
+                  const input = document.createElement('input');
+                  input.type = 'file';
+                  input.accept = 'image/*';
+                  input.onchange = handleProfilePhotoChange;
+                  input.click();
+                }}
               >
                 <CameraAltIcon fontSize="small" />
-                <input type="file" hidden accept="image/*" onChange={handleProfilePhotoChange} />
               </IconButton>
             )}
           </Box>

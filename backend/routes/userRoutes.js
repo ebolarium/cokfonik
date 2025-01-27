@@ -50,69 +50,64 @@ const upload = multer({
 
 // Profil Fotoğrafı Yükleme Endpoint
 router.post('/:id/upload-photo', upload.single('profilePhoto'), async (req, res) => {
+  let tempFilePath = null;
   try {
     if (!req.file) {
       return res.status(400).json({ message: 'Lütfen bir fotoğraf seçin.' });
     }
 
     const userId = req.params.id;
-    const tempFilePath = req.file.path;
+    tempFilePath = req.file.path;
 
     // Kullanıcıyı bul
     const user = await User.findById(userId);
     if (!user) {
-      // Geçici dosyayı sil
-      fs.unlinkSync(tempFilePath);
-      return res.status(404).json({ message: 'Kullanıcı bulunamadı.' });
+      throw new Error('Kullanıcı bulunamadı.');
     }
 
     // Cloudinary'ye yükle
-    const result = await cloudinary.uploader.upload(tempFilePath, {
+    const uploadResult = await cloudinary.uploader.upload(tempFilePath, {
       folder: 'profile-photos',
-      public_id: `user-${userId}`,
+      public_id: userId, // Sadece userId kullan
       overwrite: true,
-      resource_type: 'auto',
-      transformation: [
-        { width: 400, height: 400, crop: "fill", gravity: "face" },
-        { quality: "auto", format: "jpg" }
-      ]
+      resource_type: 'image',
+      transformation: [{
+        width: 400,
+        height: 400,
+        crop: 'fill',
+        gravity: 'face'
+      }],
+      format: 'jpg',
+      quality: 'auto'
     });
 
-    // Geçici dosyayı sil
-    fs.unlinkSync(tempFilePath);
-
-    // Eski fotoğrafı Cloudinary'den sil (eğer varsa)
-    if (user.profilePhoto) {
-      try {
-        const oldPublicId = user.profilePhoto.split('/').slice(-2).join('/').split('.')[0];
-        await cloudinary.uploader.destroy(oldPublicId);
-      } catch (deleteError) {
-        console.error('Eski fotoğraf silinirken hata:', deleteError);
-      }
-    }
+    // Eski fotoğrafı silmeye gerek yok çünkü overwrite: true kullanıyoruz
 
     // Kullanıcı profilini güncelle
-    user.profilePhoto = result.secure_url;
+    const photoUrl = uploadResult.secure_url;
+    user.profilePhoto = photoUrl;
     await user.save();
 
+    // Başarılı yanıt
     res.status(200).json({
       message: 'Fotoğraf başarıyla yüklendi.',
-      photoUrl: result.secure_url
+      photoUrl: photoUrl
     });
+
   } catch (error) {
     console.error('Fotoğraf yüklenirken hata:', error);
-    // Hata durumunda geçici dosyayı silmeyi dene
-    if (req.file && req.file.path) {
+    res.status(error.message === 'Kullanıcı bulunamadı.' ? 404 : 400).json({ 
+      message: error.message || 'Fotoğraf yüklenirken bir hata oluştu.'
+    });
+  } finally {
+    // Geçici dosyayı temizle
+    if (tempFilePath && fs.existsSync(tempFilePath)) {
       try {
-        fs.unlinkSync(req.file.path);
+        fs.unlinkSync(tempFilePath);
       } catch (unlinkError) {
         console.error('Geçici dosya silinirken hata:', unlinkError);
       }
     }
-    res.status(400).json({ 
-      message: error.message || 'Fotoğraf yüklenirken bir hata oluştu.',
-      error: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    });
   }
 });
 
