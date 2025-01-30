@@ -29,6 +29,7 @@ import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import PaymentsIcon from '@mui/icons-material/Payments';
 import CampaignIcon from '@mui/icons-material/Campaign';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
+import PlayCircleIcon from '@mui/icons-material/PlayCircle';
 
 // Yardımcı Fonksiyon: Base64 stringi Uint8Array'e çevirir
 const urlBase64ToUint8Array = (base64String) => {
@@ -459,18 +460,19 @@ const UserDashboard = () => {
       icon: <HearingIcon style={{ fontSize: 50 }} />,
       bgColor: '#a6a6ff',
     },
+  
+  {
+    title: 'Nota/Midi',
+    link: 'https://drive.google.com/drive/folders/1paeqvHKubfoUEwh9v-4zjL64E0eBHf5r?usp=sharing',
+    icon: <LibraryMusicIcon style={{ fontSize: 50 }} />,
+    bgColor: '#e6e6ff',
+  },
     {
-      title: 'Nota/Midi',
-      link: 'https://drive.google.com/drive/folders/1paeqvHKubfoUEwh9v-4zjL64E0eBHf5r?usp=sharing',
-      icon: <LibraryMusicIcon style={{ fontSize: 50 }} />,
-      bgColor: '#e6e6ff',
+      title: 'Müzik Çalar',
+      path: '/midi-player',
+      icon: <PlayCircleIcon style={{ fontSize: 50 }} />,
+      bgColor: '#d9f7be',
     },
-    {
-       title: '?????',
-       //path: '/midi-player',
-       icon: <HelpOutlineIcon style={{ fontSize: 50 }} />,
-       bgColor: '#d9f7be',
-     },
   ];
 
   // Roller baz alınarak ek kartlar ekle
@@ -708,6 +710,8 @@ Neşeyle sağlıkla ve müzikle dolu bir yaş dileriz 🎶🎵🎼🥁🥂\n
               </Card>
             </Grid>
           ))}
+
+
         </Grid>
 
         {/* Duyuru Modal */}

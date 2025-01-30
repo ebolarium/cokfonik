@@ -59,10 +59,49 @@ cloudinary.config({
 
 // MongoDB Bağlantısı
 mongoose.connect(process.env.MONGO_URI, {
-
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+  serverSelectionTimeoutMS: 5000,
+  socketTimeoutMS: 45000,
 })
-  .then(() => console.log('MongoDB Connected'))
-  .catch((err) => console.error('MongoDB Connection Error:', err));
+.then(() => {
+  console.log('MongoDB Connected');
+  // MongoDB bağlantısı başarılı olduğunda model şemalarını güncelle
+  mongoose.set('strictQuery', false);
+  
+  // Piece modelini yeniden tanımla
+  const pieceSchema = new mongoose.Schema({
+    title: { type: String, required: true },
+    composer: { type: String },
+    audioUrls: {
+      general: String,
+      soprano: String,
+      alto: String,
+      tenor: String,
+      bass: String
+    },
+    pdfUrls: {
+      general: String,
+      soprano: String,
+      alto: String,
+      tenor: String,
+      bass: String
+    },
+    createdAt: { type: Date, default: Date.now }
+  });
+
+  // Eğer model zaten tanımlıysa, onu kaldır ve yeniden tanımla
+  try {
+    mongoose.deleteModel('Piece');
+  } catch (error) {
+    // Model henüz tanımlı değilse hata verecek, bu normal
+  }
+  mongoose.model('Piece', pieceSchema);
+})
+.catch((err) => {
+  console.error('MongoDB Connection Error:', err);
+  process.exit(1);
+});
 
 // VAPID anahtarlarını ayarlayın
 const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY;
@@ -92,7 +131,8 @@ const announcementRoutes = require('./routes/announcementRoutes');
 app.use('/api/announcements', announcementRoutes);
 const managementRoutes = require('./routes/managementRoutes');
 app.use('/api/management', managementRoutes);
-
+const pieceRoutes = require('./routes/pieceRoutes');
+app.use('/api/pieces', pieceRoutes);
 
 // Yeni Subscription Routes'ı Ekleyin
 const subscriptionRoutes = require('./routes/subscriptionRoutes');
@@ -154,10 +194,6 @@ cron.schedule('0 0 1 * *', async () => {
     console.error('Aidat kayıtları oluşturulurken hata:', error.message);
   }
 });
-
-
-
-
 
 // React Build Dosyalarını Sun (Backend klasöründen bir üst dizindeki build klasörüne erişiyoruz)
 app.use(express.static(path.join(__dirname, '../build')));

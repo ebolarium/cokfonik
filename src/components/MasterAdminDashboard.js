@@ -22,6 +22,7 @@ import PaymentsIcon from '@mui/icons-material/Payments';
 import PersonOffIcon from '@mui/icons-material/PersonOff';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import CampaignIcon from '@mui/icons-material/Campaign';
+import LibraryMusicIcon from '@mui/icons-material/LibraryMusic';
 
 const MasterAdminDashboard = () => {
   const navigate = useNavigate();
@@ -46,6 +47,12 @@ const MasterAdminDashboard = () => {
       description: 'Kullanıcı ekle, düzenle, sil',
       path: '/users',
       icon: <PeopleIcon fontSize="large" />
+    },
+    {
+      title: 'Müzik Yönetimi',
+      description: 'Parça ve nota yönetimi',
+      path: '/music-management',
+      icon: <LibraryMusicIcon fontSize="large" />
     },
     {
       title: 'Aidat Durumu',

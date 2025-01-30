@@ -1,7 +1,6 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   Box, 
-  Button, 
   Typography, 
   IconButton, 
   Select, 
@@ -9,47 +8,123 @@ import {
   FormControl,
   InputLabel,
   Slider,
-  Paper
+  Container,
+  Card,
+  CardContent,
+  CircularProgress
 } from '@mui/material';
 import {
   PlayArrow,
   Pause,
   Stop,
-  SkipPrevious,
-  SkipNext,
-  PictureAsPdf
+  PictureAsPdf,
+  MusicNote
 } from '@mui/icons-material';
 
 const MusicPlayer = () => {
-  const [currentPart, setCurrentPart] = useState('soprano');
+  const [pieces, setPieces] = useState([]);
+  const [selectedPiece, setSelectedPiece] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [loading, setLoading] = useState(false);
   const audioRef = useRef(null);
-
-  const parts = [
-    { id: 'soprano', name: 'Soprano', audioUrl: '', pdfUrl: '' },
-    { id: 'alto', name: 'Alto', audioUrl: '', pdfUrl: '' },
-    { id: 'tenor', name: 'Tenor', audioUrl: '', pdfUrl: '' },
-    { id: 'bass', name: 'Bas', audioUrl: '', pdfUrl: '' },
-  ];
-
-  const handlePartChange = (event) => {
-    setCurrentPart(event.target.value);
-    // Burada seçilen part'ın ses dosyasını yükleyebilirsiniz
+  const user = JSON.parse(localStorage.getItem('user'));
+  const [hasRecordedListen, setHasRecordedListen] = useState(false);
+  
+  // Part name normalization
+  const normalizePartName = (part) => {
+    const partMap = {
+      'Bas': 'bass',
+      'Tenor': 'tenor',
+      'Alto': 'alto',
+      'Soprano': 'soprano',
+      'Genel': 'general'
+    };
+    return partMap[part] || 'general';
   };
+  
+  const userPart = normalizePartName(user?.part);
 
-  const handlePlay = () => {
-    if (audioRef.current) {
-      audioRef.current.play();
-      setIsPlaying(true);
+  // Parçaları getir
+  const fetchPieces = async () => {
+    setLoading(true);
+    try {
+      console.log('Parçalar yükleniyor...');
+      
+      // Önce senkronizasyon yap
+      const syncResponse = await fetch(`${process.env.REACT_APP_API_URL}/pieces/sync`, {
+        method: 'POST'
+      });
+      
+      if (!syncResponse.ok) {
+        throw new Error('Senkronizasyon sırasında hata oluştu');
+      }
+      
+      console.log('Senkronizasyon tamamlandı, parçalar getiriliyor...');
+
+      // Sonra parçaları getir
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/pieces`);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Parçalar yüklenirken hata oluştu');
+      }
+      
+      const data = await response.json();
+      console.log(`${data.length} parça alındı, filtreleniyor...`);
+      
+      // Kullanıcının partına göre filtrele
+      const filteredPieces = data.filter(piece => {
+        // Kullanıcının kendi partı veya genel parça varsa göster
+        const hasUserPart = piece.audioUrls[userPart];
+        const hasGeneralPart = piece.audioUrls.general;
+        return hasUserPart || hasGeneralPart;
+      });
+
+      console.log(`${filteredPieces.length} parça kullanıcı için filtrelendi`);
+      setPieces(filteredPieces);
+    } catch (error) {
+      console.error('Parçalar yüklenirken detaylı hata:', error);
+      alert('Parçalar yüklenirken bir hata oluştu. Lütfen daha sonra tekrar deneyin.');
+      setPieces([]); // Hata durumunda parça listesini temizle
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handlePause = () => {
+  // Component mount olduğunda ve userPart değiştiğinde parçaları getir
+  useEffect(() => {
+    fetchPieces();
+  }, [userPart]);
+
+  // Parça seçildiğinde
+  const handlePieceSelect = (event) => {
+    const piece = pieces.find(p => p._id === event.target.value);
+    setSelectedPiece(piece);
+    if (audioRef.current && piece) {
+      try {
+        // Önce kullanıcının kendi partisindeki ses dosyasını kontrol et
+        const audioUrl = piece.audioUrls[userPart] || piece.audioUrls.general;
+        
+        if (!audioUrl) {
+          throw new Error('Bu parça için ses dosyası bulunamadı');
+        }
+
+        audioRef.current.src = audioUrl;
+        audioRef.current.load();
+        setIsPlaying(false);
+        setCurrentTime(0);
+      } catch (error) {
+        console.error('Ses dosyası yüklenirken hata:', error);
+        alert(error.message);
+      }
+    }
+  };
+
+  // Zaman güncellemesi
+  const handleTimeUpdate = () => {
     if (audioRef.current) {
-      audioRef.current.pause();
-      setIsPlaying(false);
+      setCurrentTime(audioRef.current.currentTime);
     }
   };
 
@@ -58,12 +133,43 @@ const MusicPlayer = () => {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
       setIsPlaying(false);
+      setHasRecordedListen(false);
     }
   };
 
-  const handleTimeUpdate = () => {
+  const handlePlay = async () => {
+    if (!audioRef.current || !selectedPiece) return;
+
+    // Check if we have a valid source
+    if (!audioRef.current.src) {
+      console.error('No audio source available');
+      return;
+    }
+
+    try {
+      // Her play'e basıldığında dinleme kaydı ekle
+      await addListeningRecord();
+      
+      const playPromise = audioRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            setIsPlaying(true);
+          })
+          .catch(error => {
+            console.error('Çalma hatası:', error);
+            setIsPlaying(false);
+          });
+      }
+    } catch (error) {
+      console.error('Dinleme kaydı eklenirken hata:', error);
+    }
+  };
+
+  const handlePause = () => {
     if (audioRef.current) {
-      setCurrentTime(audioRef.current.currentTime);
+      audioRef.current.pause();
+      setIsPlaying(false);
     }
   };
 
@@ -80,77 +186,255 @@ const MusicPlayer = () => {
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
+  const openPDF = () => {
+    if (selectedPiece?.pdfUrls?.general) {
+      window.open(selectedPiece.pdfUrls.general);
+    }
+  };
+
+  // Dinleme kaydı ekle
+  const addListeningRecord = async () => {
+    if (!selectedPiece || !user) {
+      console.error('Parça veya kullanıcı bilgisi eksik');
+      return;
+    }
+
+    try {
+      console.log('Dinleme kaydı gönderiliyor:', {
+        pieceId: selectedPiece._id,
+        userId: user._id,
+        part: userPart
+      });
+
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/pieces/${selectedPiece._id}/listen`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user._id,
+          part: userPart
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        console.error('Sunucu yanıt detayları:', data);
+        throw new Error(data.message || 'Dinleme kaydı eklenemedi');
+      }
+
+      console.log('Dinleme kaydı başarıyla eklendi:', data);
+
+      // Dinleme kaydı eklendiğinde event yayınla
+      const event = new CustomEvent('listeningRecordAdded');
+      window.dispatchEvent(event);
+    } catch (error) {
+      console.error('Dinleme kaydı eklenirken hata:', error);
+      throw error;
+    }
+  };
+
+  const getAvailableParts = (piece) => {
+    if (!piece?.audioUrls) return [];
+    return Object.entries(piece.audioUrls)
+      .filter(([_, url]) => url)
+      .map(([part]) => {
+        const partNameMap = {
+          'bass': 'Bas',
+          'tenor': 'Tenor',
+          'alto': 'Alto',
+          'soprano': 'Soprano',
+          'general': 'Genel'
+        };
+        return partNameMap[part] || part;
+      });
+  };
+
+  // Parça değiştiğinde dinleme kaydını sıfırla
+  useEffect(() => {
+    setHasRecordedListen(false);
+  }, [selectedPiece]);
+
   return (
-    <Paper elevation={3} sx={{ p: 3, maxWidth: 600, mx: 'auto', mt: 2 }}>
-      <Typography variant="h6" gutterBottom align="center">
-        Parça Adı
-      </Typography>
+    <Container maxWidth="xs" sx={{ py: 2 }}>
+      <Card 
+        elevation={0} 
+        sx={{ 
+          backgroundColor: 'transparent',
+          border: '1px solid rgba(0, 0, 0, 0.06)',
+          borderRadius: 3
+        }}
+      >
+        <CardContent sx={{ p: 2 }}>
+          <Typography 
+            variant="subtitle1" 
+            sx={{ 
+              mb: 2,
+              color: '#1a1a1a',
+              fontWeight: 500,
+              letterSpacing: '0.5px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 1
+            }}
+          >
+            <MusicNote sx={{ fontSize: 20 }} />
+            Müzik Çalar
+          </Typography>
 
-      <FormControl fullWidth sx={{ mb: 2 }}>
-        <InputLabel>Part Seçin</InputLabel>
-        <Select
-          value={currentPart}
-          onChange={handlePartChange}
-          label="Part Seçin"
-        >
-          {parts.map(part => (
-            <MenuItem key={part.id} value={part.id}>
-              {part.name}
-            </MenuItem>
-          ))}
-        </Select>
-      </FormControl>
+          <FormControl 
+            fullWidth 
+            size="small" 
+            sx={{ 
+              mb: 3,
+              '& .MuiOutlinedInput-root': {
+                borderRadius: 2,
+                backgroundColor: 'rgba(0, 0, 0, 0.02)',
+                '&:hover': {
+                  backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                }
+              }
+            }}
+          >
+            <InputLabel id="piece-select-label">Parça Seçiniz</InputLabel>
+            <Select
+              labelId="piece-select-label"
+              value={selectedPiece?._id || ''}
+              onChange={handlePieceSelect}
+              label="Parça Seçiniz"
+              disabled={loading}
+            >
+              {pieces.map((piece) => (
+                <MenuItem key={piece._id} value={piece._id}>
+                  {piece.title}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
 
-      <audio
-        ref={audioRef}
-        onTimeUpdate={handleTimeUpdate}
-        onLoadedMetadata={() => setDuration(audioRef.current.duration)}
-      />
+          {loading && (
+            <Box sx={{ display: 'flex', justifyContent: 'center', my: 2 }}>
+              <CircularProgress size={24} sx={{ color: '#1a1a1a' }} />
+            </Box>
+          )}
 
-      <Box sx={{ mb: 2 }}>
-        <Slider
-          value={currentTime}
-          max={duration}
-          onChange={handleSliderChange}
-          aria-label="time-indicator"
-        />
-        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-          <Typography variant="body2">{formatTime(currentTime)}</Typography>
-          <Typography variant="body2">{formatTime(duration)}</Typography>
-        </Box>
-      </Box>
+          <Box sx={{ 
+            backgroundColor: 'rgba(0, 0, 0, 0.02)',
+            borderRadius: 2,
+            p: 2
+          }}>
+            <audio
+              ref={audioRef}
+              onTimeUpdate={handleTimeUpdate}
+              onLoadedMetadata={() => setDuration(audioRef.current.duration)}
+              onEnded={() => setIsPlaying(false)}
+            />
 
-      <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2 }}>
-        <IconButton size="large">
-          <SkipPrevious />
-        </IconButton>
-        {!isPlaying ? (
-          <IconButton size="large" onClick={handlePlay}>
-            <PlayArrow />
-          </IconButton>
-        ) : (
-          <IconButton size="large" onClick={handlePause}>
-            <Pause />
-          </IconButton>
-        )}
-        <IconButton size="large" onClick={handleStop}>
-          <Stop />
-        </IconButton>
-        <IconButton size="large">
-          <SkipNext />
-        </IconButton>
-      </Box>
+            <Box sx={{ mb: 1 }}>
+              <Slider
+                value={currentTime}
+                max={duration}
+                onChange={handleSliderChange}
+                aria-label="time-indicator"
+                disabled={!selectedPiece}
+                sx={{
+                  color: '#1a1a1a',
+                  height: 2,
+                  padding: '13px 0',
+                  '& .MuiSlider-thumb': {
+                    width: 8,
+                    height: 8,
+                    transition: '0.2s',
+                    '&:hover': {
+                      boxShadow: '0 0 0 6px rgba(0, 0, 0, 0.08)',
+                    },
+                    '&.Mui-active': {
+                      boxShadow: '0 0 0 8px rgba(0, 0, 0, 0.12)',
+                    }
+                  },
+                  '& .MuiSlider-rail': {
+                    opacity: 0.2,
+                  }
+                }}
+              />
+              <Box sx={{ 
+                display: 'flex', 
+                justifyContent: 'space-between',
+                px: 0.5
+              }}>
+                <Typography variant="caption" sx={{ color: 'rgba(0, 0, 0, 0.6)' }}>
+                  {formatTime(currentTime)}
+                </Typography>
+                <Typography variant="caption" sx={{ color: 'rgba(0, 0, 0, 0.6)' }}>
+                  {formatTime(duration)}
+                </Typography>
+              </Box>
+            </Box>
 
-      <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center' }}>
-        <Button
-          variant="outlined"
-          startIcon={<PictureAsPdf />}
-          onClick={() => window.open(parts.find(p => p.id === currentPart)?.pdfUrl)}
-        >
-          Notaları Görüntüle
-        </Button>
-      </Box>
-    </Paper>
+            <Box sx={{ 
+              display: 'flex', 
+              justifyContent: 'center',
+              gap: 1,
+              mb: selectedPiece?.pdfUrls?.general ? 2 : 0
+            }}>
+              <IconButton 
+                onClick={isPlaying ? handlePause : handlePlay}
+                disabled={!selectedPiece}
+                sx={{ 
+                  color: '#1a1a1a',
+                  '&:hover': { 
+                    backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                  },
+                  '&:disabled': {
+                    color: 'rgba(0, 0, 0, 0.26)'
+                  },
+                  padding: 1
+                }}
+              >
+                {isPlaying ? 
+                  <Pause sx={{ fontSize: 28 }} /> : 
+                  <PlayArrow sx={{ fontSize: 28 }} />
+                }
+              </IconButton>
+              
+              <IconButton 
+                onClick={handleStop}
+                disabled={!selectedPiece}
+                sx={{ 
+                  color: '#1a1a1a',
+                  '&:hover': { 
+                    backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                  },
+                  '&:disabled': {
+                    color: 'rgba(0, 0, 0, 0.26)'
+                  },
+                  padding: 1
+                }}
+              >
+                <Stop sx={{ fontSize: 28 }} />
+              </IconButton>
+
+              {selectedPiece?.pdfUrls?.general && (
+                <IconButton
+                  onClick={openPDF}
+                  sx={{ 
+                    color: '#1a1a1a',
+                    '&:hover': { 
+                      backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                    },
+                    padding: 1
+                  }}
+                >
+                  <PictureAsPdf sx={{ fontSize: 28 }} />
+                </IconButton>
+              )}
+            </Box>
+          </Box>
+        </CardContent>
+      </Card>
+    </Container>
   );
 };
 
