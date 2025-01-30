@@ -468,7 +468,7 @@ const UserDashboard = () => {
     bgColor: '#e6e6ff',
   },
     {
-      title: 'Müzik Çalar',
+      title: 'Müzik Çalar (Beta)',
       path: '/midi-player',
       icon: <PlayCircleIcon style={{ fontSize: 50 }} />,
       bgColor: '#d9f7be',
