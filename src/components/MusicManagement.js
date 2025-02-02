@@ -262,7 +262,7 @@ const MusicManagement = () => {
   };
 
   return (
-    <Box sx={{ p: 2 }}>
+    <Box sx={{ p: 2, pb: { xs: '72px', sm: '80px' } }}>
       <Typography variant="h6" sx={{ mb: 2 }}>
         Müzik Yönetimi
       </Typography>
@@ -333,7 +333,11 @@ const MusicManagement = () => {
         </>
       ) : (
         <TabPanel value={currentTab} index={1}>
-          <Box sx={{ height: 400, width: '100%' }}>
+          <Box sx={{ 
+            height: 400, 
+            width: '100%',
+            mb: { xs: '72px', sm: '80px' }  // Bottom navbar için margin ekle
+          }}>
             {statsLoading ? (
               <Box display="flex" justifyContent="center" alignItems="center" height="100%">
                 <CircularProgress />

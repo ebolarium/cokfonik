@@ -441,12 +441,26 @@ const UserDashboard = () => {
     {
       title: 'Duyurular',
       path: '/announcements',
-      icon: (
-        <Badge badgeContent={unreadCount} color="error">
-          <NotificationsIcon style={{ fontSize: 50 }} />
-        </Badge>
-      ),
+      icon: <NotificationsIcon style={{ fontSize: 50 }} />,
       bgColor: '#fff8dc',
+      content: unreadCount > 0 ? (
+        <Box sx={{ 
+          display: 'flex', 
+          alignItems: 'center',
+          gap: 1
+        }}>
+          <Typography 
+            variant="body2" 
+            sx={{ 
+              color: '#e74c3c',
+              fontWeight: 500,
+              fontSize: '0.9rem',
+            }}
+          >
+            {unreadCount} Yeni
+          </Typography>
+        </Box>
+      ) : null
     },
     {
       title: 'Oyun',
