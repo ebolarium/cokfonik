@@ -122,6 +122,15 @@ const UserDashboard = () => {
   useEffect(() => {
     const checkUnpaidFees = async () => {
       try {
+        // Tarih kontrolü
+        const today = new Date();
+        const dayOfMonth = today.getDate();
+        
+        // Sadece ayın 20'si ile 25'i arasında göster
+        if (dayOfMonth < 20 || dayOfMonth > 25) {
+          return;
+        }
+
         const response = await fetch(`${process.env.REACT_APP_API_URL}/fees/check-unpaid/${user._id}`);
         if (!response.ok) throw new Error('API yanıtı başarılı değil.');
 
