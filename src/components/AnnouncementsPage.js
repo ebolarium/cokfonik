@@ -195,14 +195,22 @@ const AnnouncementsPage = () => {
                   <DeleteIcon />
                 </IconButton>
                 <IconButton
-  color={announcement.thumbUpBy?.includes(userId) ? 'primary' : 'default'}
-  onClick={(e) => {
-    e.stopPropagation();
-    thumbUpAnnouncement(announcement._id);
-  }}
->
-  <ThumbUpIcon />
-</IconButton>
+                  color="primary"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    thumbUpAnnouncement(announcement._id);
+                  }}
+                  sx={{
+                    color: announcement.thumbUpBy?.includes(userId) ? 'primary.main' : 'action.disabled'
+                  }}
+                >
+                  <ThumbUpIcon />
+                  {announcement.thumbUpBy?.length > 0 && (
+                    <Typography variant="caption" sx={{ ml: 0.5 }}>
+                      {announcement.thumbUpBy.length}
+                    </Typography>
+                  )}
+                </IconButton>
               </Box>
             </CardContent>
           </Card>
@@ -243,16 +251,22 @@ const AnnouncementsPage = () => {
                   {selectedAnnouncement.content}
                 </Typography>
                 <Box display="flex" justifyContent="space-between" mt={3}>
-                  <Button variant="contained" color="secondary" onClick={handleClose}>
+                  <Button variant="contained" color="primary" onClick={handleClose}>
                     Kapat
                   </Button>
                   <Button
-  variant="contained"
-  color={selectedAnnouncement.thumbUpBy?.includes(userId) ? 'primary' : 'default'}
-  onClick={() => thumbUpAnnouncement(selectedAnnouncement._id)}
->
-  {selectedAnnouncement.thumbUpBy?.includes(userId) ? '👍' : '👍'}
-</Button>
+                    variant="contained"
+                    color="primary"
+                    onClick={() => thumbUpAnnouncement(selectedAnnouncement._id)}
+                    sx={{
+                      bgcolor: selectedAnnouncement.thumbUpBy?.includes(userId) ? 'primary.main' : 'grey.400',
+                      '&:hover': {
+                        bgcolor: selectedAnnouncement.thumbUpBy?.includes(userId) ? 'primary.dark' : 'grey.500'
+                      }
+                    }}
+                  >
+                    👍 {selectedAnnouncement.thumbUpBy?.length || 0}
+                  </Button>
                 </Box>
               </>
             ) : (
