@@ -42,7 +42,16 @@ const FeeManagement = () => {
       const data = await response.json();
       console.log('Fetched fees from API:', data);
       if (Array.isArray(data)) {
+        // Kullanıcı ID'sine göre grupla
+        const groupedFees = data.reduce((acc, fee) => {
+          if (!acc[fee.userId._id]) {
+            acc[fee.userId._id] = [];
+          }
+          acc[fee.userId._id].push(fee);
+          return acc;
+        }, {});
         setFees(data);
+        console.log('Grouped fees:', groupedFees);
       } else {
         console.error('Unexpected API response for fees:', data);
       }

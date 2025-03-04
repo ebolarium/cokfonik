@@ -10,21 +10,26 @@ router.get('/last-six-months', async (req, res) => {
   try {
     const now = new Date();
     const sixMonthsAgo = new Date();
-    sixMonthsAgo.setMonth(now.getMonth() - 6);
+    sixMonthsAgo.setMonth(now.getMonth() - 5); // Son 6 ay için 5 ay geriye git
+
+    // Son 6 ayın tarihlerini oluştur
+    const months = [];
+    for (let i = 0; i < 6; i++) {
+      const date = new Date();
+      date.setMonth(now.getMonth() - i);
+      months.push({
+        month: date.toLocaleString('tr-TR', { month: 'long' }),
+        year: date.getFullYear()
+      });
+    }
 
     // Tüm aidatları getir
     const fees = await Fee.find({
-      $or: [
-        { 
-          year: sixMonthsAgo.getFullYear(),
-          month: sixMonthsAgo.toLocaleString('tr-TR', { month: 'long' })
-        },
-        { 
-          year: now.getFullYear(),
-          month: now.toLocaleString('tr-TR', { month: 'long' })
-        }
-      ]
-    }).populate('userId', 'name email');
+      $or: months.map(m => ({
+        year: m.year,
+        month: m.month
+      }))
+    }).populate('userId', 'name email part');
 
     if (!fees.length) {
       return res.status(404).json({ message: 'Son altı aya ait aidat bulunamadı.' });
