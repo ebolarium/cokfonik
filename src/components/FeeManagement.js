@@ -40,6 +40,7 @@ const FeeManagement = () => {
     try {
       const response = await fetch(`${process.env.REACT_APP_API_URL}/fees/last-six-months`);
       const data = await response.json();
+      console.log('Fetched fees from API:', data);
       if (Array.isArray(data)) {
         setFees(data);
       } else {
@@ -113,7 +114,7 @@ const FeeManagement = () => {
       const date = new Date();
       date.setMonth(now.getMonth() - i);
       return {
-        month: date.toLocaleString('tr-TR', { month: 'long' }).toLowerCase(),
+        month: date.toLocaleString('tr-TR', { month: 'long' }),
         year: date.getFullYear(),
       };
     }).reverse();
@@ -208,21 +209,31 @@ const FeeManagement = () => {
 
               <Box display="flex" gap={0.5} flexWrap="nowrap">
               {getLastSixMonths().map((monthYear, index) => {
-  const fee = userFees.find(
-    (f) =>
-      f.month.toLowerCase() === monthYear.month.toLowerCase() &&
-      f.year === monthYear.year
-  );
-  return (
-    <Tooltip title={`${monthYear.month} ${monthYear.year}`} key={index}>
-      <FeeBox
-        isPaid={fee?.isPaid || false}
-        isInactive={!fee}
-        onClick={() => fee && toggleFeeStatus(fee._id, fee.isPaid)}
-      />
-    </Tooltip>
-                  );
-                })}
+    const fee = userFees.find(
+      (f) => {
+        const matches = f.month.toLowerCase() === monthYear.month.toLowerCase() &&
+          f.year === monthYear.year;
+        console.log('Month comparison:', {
+          dbMonth: f.month,
+          displayMonth: monthYear.month,
+          year: f.year,
+          displayYear: monthYear.year,
+          matches,
+          isPaid: f.isPaid
+        });
+        return matches;
+      }
+    );
+    return (
+      <Tooltip title={`${monthYear.month} ${monthYear.year}`} key={index}>
+        <FeeBox
+          isPaid={fee?.isPaid || false}
+          isInactive={!fee}
+          onClick={() => fee && toggleFeeStatus(fee._id, fee.isPaid)}
+        />
+      </Tooltip>
+    );
+  })}
               </Box>
 
               <Divider sx={{ my: 1, borderColor: 'lightgray' }} />

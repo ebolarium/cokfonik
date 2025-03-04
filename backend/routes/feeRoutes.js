@@ -12,10 +12,17 @@ router.get('/last-six-months', async (req, res) => {
     const sixMonthsAgo = new Date();
     sixMonthsAgo.setMonth(now.getMonth() - 6);
 
+    // Tüm aidatları getir
     const fees = await Fee.find({
       $or: [
-        { year: sixMonthsAgo.getFullYear(), month: { $gte: sixMonthsAgo.toLocaleString('tr-TR', { month: 'long' }) } },
-        { year: now.getFullYear(), month: { $lte: now.toLocaleString('tr-TR', { month: 'long' }) } }
+        { 
+          year: sixMonthsAgo.getFullYear(),
+          month: sixMonthsAgo.toLocaleString('tr-TR', { month: 'long' })
+        },
+        { 
+          year: now.getFullYear(),
+          month: now.toLocaleString('tr-TR', { month: 'long' })
+        }
       ]
     }).populate('userId', 'name email');
 
