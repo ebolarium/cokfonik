@@ -210,7 +210,7 @@ const FeeManagement = () => {
               {getLastSixMonths().map((monthYear, index) => {
   const fee = userFees.find(
     (f) =>
-      f.month.toLowerCase() === monthYear.month &&
+      f.month.toLowerCase() === monthYear.month.toLowerCase() &&
       f.year === monthYear.year
   );
   return (
