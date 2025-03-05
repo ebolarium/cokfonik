@@ -241,7 +241,8 @@ const FeeManagement = () => {
 
               <Box display="flex" gap={0.5} flexWrap="nowrap">
               {getLastSixMonths().map((monthYear, index) => {
-    const fee = userFees.find(
+    // Önce tam eşleşme ara
+    let fee = userFees.find(
       (f) => {
         // Null kontrolü ekle
         if (!f || !f.month) {
@@ -252,22 +253,41 @@ const FeeManagement = () => {
         const normalizedDbMonth = f.month.charAt(0).toUpperCase() + f.month.slice(1).toLowerCase();
         const normalizedDisplayMonth = monthYear.month.charAt(0).toUpperCase() + monthYear.month.slice(1).toLowerCase();
         
-        const matches = normalizedDbMonth === normalizedDisplayMonth &&
-          f.year === monthYear.year;
-        
-        console.log('Month comparison:', {
-          dbMonth: f.month,
-          normalizedDbMonth,
-          displayMonth: monthYear.month,
-          normalizedDisplayMonth,
-          year: f.year,
-          displayYear: monthYear.year,
-          matches,
-          isPaid: f.isPaid
-        });
-        return matches;
+        // Tam eşleşme (ay ve yıl)
+        return normalizedDbMonth === normalizedDisplayMonth && f.year === monthYear.year;
       }
     );
+    
+    // Tam eşleşme bulunamadıysa, sadece ay eşleşmesine bak (yıl farklı olabilir)
+    if (!fee) {
+      fee = userFees.find(
+        (f) => {
+          if (!f || !f.month) {
+            return false;
+          }
+          
+          const normalizedDbMonth = f.month.charAt(0).toUpperCase() + f.month.slice(1).toLowerCase();
+          const normalizedDisplayMonth = monthYear.month.charAt(0).toUpperCase() + monthYear.month.slice(1).toLowerCase();
+          
+          // Sadece ay eşleşmesi
+          const monthMatches = normalizedDbMonth === normalizedDisplayMonth;
+          
+          console.log('Alternative month comparison:', {
+            dbMonth: f.month,
+            normalizedDbMonth,
+            displayMonth: monthYear.month,
+            normalizedDisplayMonth,
+            year: f.year,
+            displayYear: monthYear.year,
+            monthMatches,
+            isPaid: f.isPaid
+          });
+          
+          return monthMatches;
+        }
+      );
+    }
+    
     return (
       <Tooltip title={`${monthYear.month} ${monthYear.year}`} key={index}>
         <FeeBox

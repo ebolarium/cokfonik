@@ -40,10 +40,17 @@ router.get('/last-six-months', async (req, res) => {
 
     // Tüm aidatları getir
     const fees = await Fee.find({
-      $or: months.map(m => ({
-        year: m.year,
-        month: m.month
-      }))
+      $or: [
+        // Son 6 ay için spesifik ay ve yıl kombinasyonları
+        ...months.map(m => ({
+          year: m.year,
+          month: m.month
+        })),
+        // 2024 yılının tüm ayları için
+        { year: 2024 },
+        // 2025 yılının tüm ayları için
+        { year: 2025 }
+      ]
     }).populate({
       path: 'userId',
       select: 'name email part surname frozen',
