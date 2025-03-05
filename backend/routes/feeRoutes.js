@@ -14,9 +14,24 @@ router.get('/last-six-months', async (req, res) => {
 
     // Son 6 ayın tarihlerini oluştur
     const months = [];
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    
     for (let i = 0; i < 6; i++) {
-      const date = new Date();
-      date.setMonth(now.getMonth() - i);
+      // Ay hesaplaması
+      const monthIndex = currentMonth - i;
+      let year = currentYear;
+      
+      // Eğer ay indeksi negatifse, bir önceki yıla geçmemiz gerekir
+      if (monthIndex < 0) {
+        year = currentYear - 1;
+      }
+      
+      // JavaScript'te ay indeksi 0-11 arasında, negatif değerleri düzeltmek için
+      const adjustedMonthIndex = ((monthIndex % 12) + 12) % 12;
+      
+      const date = new Date(year, adjustedMonthIndex, 1);
+      
       months.push({
         month: date.toLocaleString('tr-TR', { month: 'long' }),
         year: date.getFullYear()

@@ -124,14 +124,31 @@ const FeeManagement = () => {
 
   const getLastSixMonths = () => {
     const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    
     const months = Array.from({ length: 6 }, (_, i) => {
-      const date = new Date();
-      date.setMonth(now.getMonth() - i);
+      // Ay hesaplaması
+      const monthIndex = currentMonth - i;
+      let year = currentYear;
+      
+      // Eğer ay indeksi negatifse, bir önceki yıla geçmemiz gerekir
+      if (monthIndex < 0) {
+        year = currentYear - 1;
+      }
+      
+      // JavaScript'te ay indeksi 0-11 arasında, negatif değerleri düzeltmek için
+      const adjustedMonthIndex = ((monthIndex % 12) + 12) % 12;
+      
+      const date = new Date(year, adjustedMonthIndex, 1);
+      
       return {
         month: date.toLocaleString('tr-TR', { month: 'long' }),
         year: date.getFullYear(),
       };
     }).reverse();
+    
+    console.log('Generated months:', months);
     return months;
   };
 
@@ -231,12 +248,18 @@ const FeeManagement = () => {
           return false;
         }
         
-        const matches = f.month.toLowerCase() === monthYear.month.toLowerCase() &&
+        // Ay isimlerini normalize et - ilk harfi büyük, geri kalanı küçük yap
+        const normalizedDbMonth = f.month.charAt(0).toUpperCase() + f.month.slice(1).toLowerCase();
+        const normalizedDisplayMonth = monthYear.month.charAt(0).toUpperCase() + monthYear.month.slice(1).toLowerCase();
+        
+        const matches = normalizedDbMonth === normalizedDisplayMonth &&
           f.year === monthYear.year;
         
         console.log('Month comparison:', {
           dbMonth: f.month,
+          normalizedDbMonth,
           displayMonth: monthYear.month,
+          normalizedDisplayMonth,
           year: f.year,
           displayYear: monthYear.year,
           matches,
