@@ -42,12 +42,17 @@ const FeeManagement = () => {
       const data = await response.json();
       console.log('Fetched fees from API:', data);
       if (Array.isArray(data)) {
-        // Kullanıcı ID'sine göre grupla
+        // Kullanıcı ID'sine göre grupla - null kontrolü ekle
         const groupedFees = data.reduce((acc, fee) => {
-          if (!acc[fee.userId._id]) {
-            acc[fee.userId._id] = [];
+          // userId null değilse işlem yap
+          if (fee.userId && fee.userId._id) {
+            if (!acc[fee.userId._id]) {
+              acc[fee.userId._id] = [];
+            }
+            acc[fee.userId._id].push(fee);
+          } else {
+            console.warn('Fee with null or invalid userId found:', fee);
           }
-          acc[fee.userId._id].push(fee);
           return acc;
         }, {});
         setFees(data);
@@ -131,7 +136,7 @@ const FeeManagement = () => {
   };
 
   const handleOpenModal = (userId) => {
-    const userFees = fees.filter((fee) => fee.userId?._id === userId);
+    const userFees = fees.filter((fee) => fee.userId && fee.userId._id === userId);
     setSelectedUserFees(userFees);
     setOpenModal(true);
   };
@@ -184,7 +189,8 @@ const FeeManagement = () => {
 
       <Box>
         {sortedUsers.map((user) => {
-          const userFees = fees.filter((fee) => fee.userId?._id === user._id);
+          // userId null kontrolü ekle
+          const userFees = fees.filter((fee) => fee.userId && fee.userId._id === user._id);
 
           return (
     <Box
@@ -220,8 +226,14 @@ const FeeManagement = () => {
               {getLastSixMonths().map((monthYear, index) => {
     const fee = userFees.find(
       (f) => {
+        // Null kontrolü ekle
+        if (!f || !f.month) {
+          return false;
+        }
+        
         const matches = f.month.toLowerCase() === monthYear.month.toLowerCase() &&
           f.year === monthYear.year;
+        
         console.log('Month comparison:', {
           dbMonth: f.month,
           displayMonth: monthYear.month,

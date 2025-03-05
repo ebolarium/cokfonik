@@ -29,13 +29,20 @@ router.get('/last-six-months', async (req, res) => {
         year: m.year,
         month: m.month
       }))
-    }).populate('userId', 'name email part');
+    }).populate({
+      path: 'userId',
+      select: 'name email part surname frozen',
+      match: { _id: { $exists: true } }
+    });
 
-    if (!fees.length) {
+    // userId null olan kayıtları filtrele
+    const validFees = fees.filter(fee => fee.userId !== null);
+
+    if (!validFees.length) {
       return res.status(404).json({ message: 'Son altı aya ait aidat bulunamadı.' });
     }
 
-    res.json(fees);
+    res.json(validFees);
   } catch (error) {
     console.error('Error fetching fees for last six months:', error);
     res.status(500).json({ message: 'Sunucu hatası oluştu.' });
