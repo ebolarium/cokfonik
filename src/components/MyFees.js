@@ -6,6 +6,21 @@ const MyFees = () => {
   const [unpaidCount, setUnpaidCount] = useState(0);
   const user = JSON.parse(localStorage.getItem('user')); // Kullanıcı bilgisi
 
+  // Ay isminin ilk harfini büyük, geri kalanını küçük yapan fonksiyon
+  const capitalizeMonth = (month) => {
+    if (!month) return '';
+    return month.charAt(0).toUpperCase() + month.slice(1).toLowerCase();
+  };
+
+  // Türkçe ay isimlerini sayısal değerlere çeviren fonksiyon
+  const getMonthNumber = (monthName) => {
+    const months = {
+      'ocak': 0, 'şubat': 1, 'mart': 2, 'nisan': 3, 'mayıs': 4, 'haziran': 5,
+      'temmuz': 6, 'ağustos': 7, 'eylül': 8, 'ekim': 9, 'kasım': 10, 'aralık': 11
+    };
+    return months[monthName.toLowerCase()] || 0;
+  };
+
   useEffect(() => {
     if (!user || !user._id) {
       alert('Oturum süresi doldu. Lütfen tekrar giriş yapın.');
@@ -17,7 +32,18 @@ const MyFees = () => {
       try {
         const response = await fetch(`${process.env.REACT_APP_API_URL}/fees/${user._id}`); // Kullanıcıya özel endpoint
         const data = await response.json();
-        setFees(data);
+        
+        // Tarihe göre sırala (en yeni en üstte)
+        const sortedFees = [...data].sort((a, b) => {
+          // Önce yıla göre karşılaştır
+          if (a.year !== b.year) {
+            return b.year - a.year; // Azalan sıralama (en yüksek yıl önce)
+          }
+          // Yıllar aynıysa, aya göre karşılaştır
+          return getMonthNumber(b.month) - getMonthNumber(a.month); // Azalan sıralama (en yüksek ay önce)
+        });
+        
+        setFees(sortedFees);
         
         // Ödenmemiş aidat sayısını hesapla
         const unpaidFees = data.filter(fee => !fee.isPaid);
@@ -60,7 +86,7 @@ const MyFees = () => {
         <TableBody>
           {fees.map((fee) => (
             <TableRow key={fee._id}>
-              <TableCell>{`${fee.month} ${fee.year}`}</TableCell>
+              <TableCell>{`${capitalizeMonth(fee.month)} ${fee.year}`}</TableCell>
               <TableCell>{fee.isPaid ? 'Ödendi' : 'Ödenmedi'}</TableCell>
             </TableRow>
           ))}
