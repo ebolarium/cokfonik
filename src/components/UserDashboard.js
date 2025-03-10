@@ -329,7 +329,7 @@ const UserDashboard = () => {
             });
 
             if (response.ok) {
-              console.log('Push aboneliği başarılı.');
+              //console.log('Push aboneliği başarılı.');
               const pushPermissionKey = `pushPermission_${user?._id}`;
               localStorage.setItem(pushPermissionKey, 'granted');
             } else {

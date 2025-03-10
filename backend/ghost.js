@@ -10,7 +10,7 @@ const mongoose = require('mongoose');
       useNewUrlParser: true,
       useUnifiedTopology: true
     });
-    console.log('MongoDB bağlantısı başarılı.');
+    //console.log('MongoDB bağlantısı başarılı.');
 
     // 2) attendances koleksiyonundaki userId değerlerini al
     const attendanceUserIds = await mongoose.connection.db
@@ -29,22 +29,22 @@ const mongoose = require('mongoose');
     });
 
     // 5) Sonuçları yazdır
-    console.log('Ghost userId listesi:', ghostIds);
-    console.log(`Ghost userId sayısı: ${ghostIds.length}`);
+    //console.log('Ghost userId listesi:', ghostIds);
+    //console.log(`Ghost userId sayısı: ${ghostIds.length}`);
 
     // 6) Bu "ghost" userId’lerin attendances içinde kaç kayıtla geçtiğini görelim
     const ghostCount = await mongoose.connection.db
       .collection('attendances')
       .countDocuments({ userId: { $in: ghostIds } });
 
-    console.log(`attendances koleksiyonunda "ghost" userId içeren kayıt sayısı: ${ghostCount}`);
+    //console.log(`attendances koleksiyonunda "ghost" userId içeren kayıt sayısı: ${ghostCount}`);
 
 
     await mongoose.connection.db
     .collection('attendances')
     .deleteMany({ userId: { $in: ghostIds } });
   
-  console.log('Ghost kayıtlar silindi.');
+  //console.log('Ghost kayıtlar silindi.');
 
 
   } catch (error) {
@@ -52,6 +52,6 @@ const mongoose = require('mongoose');
   } finally {
     // Bağlantıyı kapat
     await mongoose.disconnect();
-    console.log('MongoDB bağlantısı kapatıldı.');
+    //console.log('MongoDB bağlantısı kapatıldı.');
   }
 })();

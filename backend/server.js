@@ -65,7 +65,7 @@ mongoose.connect(process.env.MONGO_URI, {
   socketTimeoutMS: 45000,
 })
 .then(() => {
-  console.log('MongoDB Connected');
+  //console.log('MongoDB Connected');
   // MongoDB bağlantısı başarılı olduğunda model şemalarını güncelle
   mongoose.set('strictQuery', false);
   
@@ -189,7 +189,7 @@ cron.schedule('0 0 1 * *', async () => {
       }
     });
     await Promise.all(feePromises);
-    console.log('Yeni aidat kayıtları başarıyla oluşturuldu.');
+    //console.log('Yeni aidat kayıtları başarıyla oluşturuldu.');
   } catch (error) {
     console.error('Aidat kayıtları oluşturulurken hata:', error.message);
   }
@@ -204,4 +204,4 @@ app.get('*', (req, res) => {
 
 // Sunucuyu Dinleme
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => //console.log(`Server running on port ${PORT}`));

@@ -40,7 +40,7 @@ const FeeManagement = () => {
     try {
       const response = await fetch(`${process.env.REACT_APP_API_URL}/fees/last-six-months`);
       const data = await response.json();
-      console.log('Fetched fees from API:', data);
+      //console.log('Fetched fees from API:', data);
       if (Array.isArray(data)) {
         // Kullanıcı ID'sine göre grupla - null kontrolü ekle
         const groupedFees = data.reduce((acc, fee) => {
@@ -56,7 +56,7 @@ const FeeManagement = () => {
           return acc;
         }, {});
         setFees(data);
-        console.log('Grouped fees:', groupedFees);
+        //console.log('Grouped fees:', groupedFees);
       } else {
         console.error('Unexpected API response for fees:', data);
       }
@@ -148,7 +148,7 @@ const FeeManagement = () => {
       };
     }).reverse();
     
-    console.log('Generated months:', months);
+    //console.log('Generated months:', months);
     return months;
   };
 
@@ -272,7 +272,7 @@ const FeeManagement = () => {
           // Sadece ay eşleşmesi
           const monthMatches = normalizedDbMonth === normalizedDisplayMonth;
           
-          console.log('Alternative month comparison:', {
+          //console.log('Alternative month comparison:', {
             dbMonth: f.month,
             normalizedDbMonth,
             displayMonth: monthYear.month,

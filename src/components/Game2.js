@@ -94,7 +94,7 @@ const IntervalGame = () => {
     do {
       randomNote = currentNotes[Math.floor(Math.random() * currentNotes.length)];
     } while (randomNote === targetNote);
-    console.log('Selected note:', randomNote);
+    //console.log('Selected note:', randomNote);
 
 
     setTargetNote(randomNote);

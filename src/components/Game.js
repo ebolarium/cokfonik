@@ -125,7 +125,7 @@ const Game = () => {
         body: JSON.stringify({ userId: user._id, game: 'oyun1', score }),
       });
       if (response.ok) {
-        console.log("Skor başarıyla kaydedildi!");
+        //console.log("Skor başarıyla kaydedildi!");
         fetchTopScores();
       } else {
         console.error("Skor kaydedilirken hata oluştu.");

@@ -15,11 +15,11 @@ const MONGODB_URI = 'mongodb+srv://barisboga:951753@cluster0.9ove7.mongodb.net/c
       useNewUrlParser: true,
       useUnifiedTopology: true,
     });
-    console.log('MongoDB bağlantısı başarılı.');
+    //console.log('MongoDB bağlantısı başarılı.');
 
     // 2) Tüm Event dokümanlarını çek
     const allEvents = await Event.find();
-    console.log(`Toplam ${allEvents.length} Event bulundu.`);
+    //console.log(`Toplam ${allEvents.length} Event bulundu.`);
 
     let totalUpdated = 0;
 
@@ -42,7 +42,7 @@ const MONGODB_URI = 'mongodb+srv://barisboga:951753@cluster0.9ove7.mongodb.net/c
       // updateMany ile toplu güncelle
       const result = await Attendance.updateMany(filter, update);
       if (result.modifiedCount > 0) {
-        console.log(
+        //console.log(
           `Event [${eventDoc._id}] "${eventDoc.title}" (${eventDoc.date.toISOString()}): ` +
           `${result.modifiedCount} Attendance kaydı güncellendi.`
         );
@@ -51,7 +51,7 @@ const MONGODB_URI = 'mongodb+srv://barisboga:951753@cluster0.9ove7.mongodb.net/c
       totalUpdated += result.modifiedCount;
     }
 
-    console.log(`Toplam güncellenen Attendance kaydı: ${totalUpdated}`);
+    //console.log(`Toplam güncellenen Attendance kaydı: ${totalUpdated}`);
     
     // 4) Script’i sonlandır
     process.exit(0);

@@ -41,13 +41,13 @@ const syncWithCloudinary = async (forceSyncWithCloudinary = false) => {
   try {
     // Cache kontrolü
     if (!forceSyncWithCloudinary && isCacheValid()) {
-      console.log('Cache geçerli, senkronizasyon atlanıyor...');
+      //console.log('Cache geçerli, senkronizasyon atlanıyor...');
       return cloudinaryCache.pieces;
     }
 
     // Senkronizasyon zaten devam ediyorsa bekle
     if (cloudinaryCache.syncInProgress) {
-      console.log('Senkronizasyon zaten devam ediyor, bekleniyor...');
+      //console.log('Senkronizasyon zaten devam ediyor, bekleniyor...');
       while (cloudinaryCache.syncInProgress) {
         await new Promise(resolve => setTimeout(resolve, 100));
       }
@@ -55,20 +55,20 @@ const syncWithCloudinary = async (forceSyncWithCloudinary = false) => {
     }
 
     cloudinaryCache.syncInProgress = true;
-    console.log('Cloudinary senkronizasyonu başlıyor...');
+    //console.log('Cloudinary senkronizasyonu başlıyor...');
     
     // Tüm ses klasörlerinden dosyaları al
     const allAudioFiles = await Promise.all(
       Object.values(FOLDERS.PARTS).map(async part => {
         try {
-          console.log(`${part} klasörü için dosyalar alınıyor...`);
+          //console.log(`${part} klasörü için dosyalar alınıyor...`);
           const result = await cloudinary.api.resources({
             resource_type: 'video',
             type: 'upload',
             prefix: `${FOLDERS.AUDIO}/${part}`,
             max_results: 500
           });
-          console.log(`${part} klasöründe ${result.resources.length} dosya bulundu`);
+          //console.log(`${part} klasöründe ${result.resources.length} dosya bulundu`);
           return result;
         } catch (error) {
           console.error(`${part} klasörü için hata:`, error);
@@ -142,7 +142,7 @@ router.get('/', async (req, res) => {
     
     // Force sync parametresi varsa zorla senkronize et
     if (req.query.forceSync === 'true') {
-      console.log('Zorla senkronizasyon istendi...');
+      //console.log('Zorla senkronizasyon istendi...');
       await syncWithCloudinary(true);
     } else {
       // Normal durumda cache kullan
@@ -241,16 +241,16 @@ router.post('/upload', upload.single('file'), async (req, res) => {
 // Parça sil
 router.delete('/:id', async (req, res) => {
   try {
-    console.log(`Parça silme isteği: ${req.params.id}`);
+    //console.log(`Parça silme isteği: ${req.params.id}`);
     
     // Önce parçayı bul
     const piece = await Piece.findById(req.params.id);
     if (!piece) {
-      console.log('Parça bulunamadı');
+      //console.log('Parça bulunamadı');
       return res.status(404).json({ message: 'Parça bulunamadı' });
     }
 
-    console.log('Parça bulundu:', piece.title);
+    //console.log('Parça bulundu:', piece.title);
 
     try {
       // Cloudinary'den tüm part dosyalarını sil
@@ -258,10 +258,10 @@ router.delete('/:id', async (req, res) => {
         .filter(([_, url]) => url) // Sadece URL'i olan partları sil
         .map(([part, url]) => {
           const publicId = `${FOLDERS.AUDIO}/${part}/${piece.title}`;
-          console.log(`Cloudinary'den siliniyor: ${publicId}`);
+          //console.log(`Cloudinary'den siliniyor: ${publicId}`);
           return cloudinary.uploader.destroy(publicId, { resource_type: 'video' })
             .then(result => {
-              console.log(`${publicId} silindi:`, result);
+              //console.log(`${publicId} silindi:`, result);
               return result;
             })
             .catch(error => {
@@ -272,7 +272,7 @@ router.delete('/:id', async (req, res) => {
 
       // Cloudinary silme işlemlerini bekle
       const cloudinaryResults = await Promise.all(deletePromises);
-      console.log('Cloudinary silme sonuçları:', cloudinaryResults);
+      //console.log('Cloudinary silme sonuçları:', cloudinaryResults);
 
     } catch (cloudinaryError) {
       console.error('Cloudinary silme hatası:', cloudinaryError);
@@ -281,9 +281,9 @@ router.delete('/:id', async (req, res) => {
 
     try {
       // MongoDB'den sil - static metodu kullan
-      console.log('MongoDB\'den siliniyor...');
+      //console.log('MongoDB\'den siliniyor...');
       const deleteResult = await Piece.deletePieceById(req.params.id);
-      console.log('MongoDB silme sonucu:', deleteResult);
+      //console.log('MongoDB silme sonucu:', deleteResult);
 
       if (deleteResult.deletedCount === 0) {
         throw new Error('MongoDB\'den silme başarısız oldu');
@@ -293,7 +293,7 @@ router.delete('/:id', async (req, res) => {
       throw mongoError;
     }
 
-    console.log('Silme işlemi başarılı');
+    //console.log('Silme işlemi başarılı');
     res.json({ 
       message: 'Parça başarıyla silindi',
       title: piece.title
@@ -315,7 +315,7 @@ router.post('/:id/listen', async (req, res) => {
     const { userId, part } = req.body;
     const pieceId = req.params.id;
 
-    console.log('Dinleme kaydı ekleniyor:', { userId, pieceId, part });
+    //console.log('Dinleme kaydı ekleniyor:', { userId, pieceId, part });
 
     // Parçanın varlığını kontrol et
     const piece = await Piece.findById(pieceId);
@@ -338,10 +338,10 @@ router.post('/:id/listen', async (req, res) => {
       createdAt: new Date()
     });
 
-    console.log('Oluşturulan kayıt:', record);
+    //console.log('Oluşturulan kayıt:', record);
 
     await record.save();
-    console.log('Kayıt başarıyla kaydedildi');
+    //console.log('Kayıt başarıyla kaydedildi');
     
     res.status(201).json(record);
   } catch (error) {
@@ -436,14 +436,14 @@ router.post('/reset-listening-records', async (req, res) => {
     try {
       await ListeningRecord.collection.drop();
     } catch (dropError) {
-      console.log('Koleksiyon zaten yok veya silinemedi:', dropError);
+      //console.log('Koleksiyon zaten yok veya silinemedi:', dropError);
     }
 
     // Tüm indeksleri düşür
     try {
       await ListeningRecord.collection.dropIndexes();
     } catch (indexError) {
-      console.log('İndeksler düşürülemedi:', indexError);
+      //console.log('İndeksler düşürülemedi:', indexError);
     }
 
     // Koleksiyonu yeniden oluştur

@@ -50,7 +50,7 @@ const MusicPlayer = () => {
   const fetchPieces = async () => {
     setLoading(true);
     try {
-      console.log('Parçalar yükleniyor...');
+      //console.log('Parçalar yükleniyor...');
       
       // Önce senkronizasyon yap
       const syncResponse = await fetch(`${process.env.REACT_APP_API_URL}/pieces/sync`, {
@@ -61,7 +61,7 @@ const MusicPlayer = () => {
         throw new Error('Senkronizasyon sırasında hata oluştu');
       }
       
-      console.log('Senkronizasyon tamamlandı, parçalar getiriliyor...');
+      //console.log('Senkronizasyon tamamlandı, parçalar getiriliyor...');
 
       // Sonra parçaları getir
       const response = await fetch(`${process.env.REACT_APP_API_URL}/pieces`);
@@ -71,7 +71,7 @@ const MusicPlayer = () => {
       }
       
       const data = await response.json();
-      console.log(`${data.length} parça alındı, filtreleniyor...`);
+      //console.log(`${data.length} parça alındı, filtreleniyor...`);
       
       // Kullanıcının partına göre filtrele
       const filteredPieces = data.filter(piece => {
@@ -81,7 +81,7 @@ const MusicPlayer = () => {
         return hasUserPart || hasGeneralPart;
       });
 
-      console.log(`${filteredPieces.length} parça kullanıcı için filtrelendi`);
+      //console.log(`${filteredPieces.length} parça kullanıcı için filtrelendi`);
       setPieces(filteredPieces);
     } catch (error) {
       console.error('Parçalar yüklenirken detaylı hata:', error);
@@ -200,7 +200,7 @@ const MusicPlayer = () => {
     }
 
     try {
-      console.log('Dinleme kaydı gönderiliyor:', {
+      //console.log('Dinleme kaydı gönderiliyor:', {
         pieceId: selectedPiece._id,
         userId: user._id,
         part: userPart
@@ -224,7 +224,7 @@ const MusicPlayer = () => {
         throw new Error(data.message || 'Dinleme kaydı eklenemedi');
       }
 
-      console.log('Dinleme kaydı başarıyla eklendi:', data);
+      //console.log('Dinleme kaydı başarıyla eklendi:', data);
 
       // Dinleme kaydı eklendiğinde event yayınla
       const event = new CustomEvent('listeningRecordAdded');

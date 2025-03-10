@@ -224,7 +224,7 @@ const MusicManagement = () => {
     if (window.confirm('Bu parçayı silmek istediğinize emin misiniz?')) {
       try {
         setLoading(true);
-        console.log('Parça silme işlemi başlatılıyor:', pieceId);
+        //console.log('Parça silme işlemi başlatılıyor:', pieceId);
 
         const baseUrl = process.env.REACT_APP_API_URL;
         const response = await fetch(`${baseUrl}/pieces/${pieceId}`, {
@@ -247,7 +247,7 @@ const MusicManagement = () => {
           throw new Error(data.message || 'Silme işlemi başarısız oldu');
         }
 
-        console.log('Silme işlemi başarılı:', data);
+        //console.log('Silme işlemi başarılı:', data);
         
         // Başarılı silme işleminden sonra parçaları yeniden yükle
         await fetchPieces();

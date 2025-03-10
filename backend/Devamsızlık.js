@@ -23,14 +23,14 @@ const createAttendanceRecords = async () => {
       useUnifiedTopology: true 
     });
 
-    console.log('Veritabanına bağlanıldı.');
+    //console.log('Veritabanına bağlanıldı.');
 
     // Tüm kullanıcıları ve etkinlikleri alın
     const users = await User.find();
     const events = await Event.find();
 
     if (!users.length || !events.length) {
-      console.log('Kullanıcı veya etkinlik bulunamadı.');
+      //console.log('Kullanıcı veya etkinlik bulunamadı.');
       return;
     }
 
@@ -49,13 +49,13 @@ const createAttendanceRecords = async () => {
 
     // Kayıtları veritabanına ekleyin
     await Attendance.insertMany(attendanceRecords);
-    console.log('Tüm devamsızlık kayıtları başarıyla oluşturuldu.');
+    //console.log('Tüm devamsızlık kayıtları başarıyla oluşturuldu.');
   } catch (error) {
     console.error('Hata oluştu:', error.message);
   } finally {
     // Bağlantıyı kapat
     await mongoose.connection.close();
-    console.log('Veritabanı bağlantısı kapatıldı.');
+    //console.log('Veritabanı bağlantısı kapatıldı.');
   }
 };
 

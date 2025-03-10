@@ -81,7 +81,7 @@ const AnnouncementManagement = () => {
 
       if (response.ok) {
         const data = await response.json();
-        console.log("Duyuru oluşturuldu:", data);
+        //console.log("Duyuru oluşturuldu:", data);
         setTitle('');
         setContent('');
         fetchAnnouncements();
