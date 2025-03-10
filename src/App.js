@@ -13,6 +13,7 @@ import Login from './components/Login';
 import MasterAdminDashboard from './components/MasterAdminDashboard';
 import ManagementDashboard from './components/ManagementDashboard';
 import UserDashboard from './components/UserDashboard';
+import UserNewDashboard from './components/UserNewDashboard';
 import MyAttendance from './components/MyAttendance';
 import MyFees from './components/MyFees';
 import CalendarView from './components/CalendarView';
@@ -139,6 +140,10 @@ const App = () => {
           <Route
             path="/user-dashboard"
             element={<UserDashboard fetchUnreadAnnouncements={fetchUnreadAnnouncements} />}
+          />
+          <Route
+            path="/user-new-dashboard"
+            element={<UserNewDashboard fetchUnreadAnnouncements={fetchUnreadAnnouncements} />}
           />
           <Route path="/my-attendance" element={<MyAttendance />} />
           <Route path="/my-fees" element={<MyFees />} />
