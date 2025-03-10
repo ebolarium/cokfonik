@@ -201,9 +201,9 @@ const MusicPlayer = () => {
 
     try {
       //console.log('Dinleme kaydı gönderiliyor:', {
-      //  pieceId: selectedPiece._id,
-        //userId: user._id,
-        //part: userPart
+       // pieceId: selectedPiece._id,
+       // userId: user._id,
+       // part: userPart
       //});
 
       const response = await fetch(`${process.env.REACT_APP_API_URL}/pieces/${selectedPiece._id}/listen`, {

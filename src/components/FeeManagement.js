@@ -273,14 +273,14 @@ const FeeManagement = () => {
           const monthMatches = normalizedDbMonth === normalizedDisplayMonth;
           
           //console.log('Alternative month comparison:', {
-            //dbMonth: f.month,
+           // dbMonth: f.month,
             //normalizedDbMonth,
             //displayMonth: monthYear.month,
             //normalizedDisplayMonth,
             //year: f.year,
             //displayYear: monthYear.year,
-           // monthMatches,
-            isPaid: f.isPaid
+            //monthMatches,
+            //isPaid: f.isPaid
           //});
           
           return monthMatches;
