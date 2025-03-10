@@ -273,15 +273,15 @@ const FeeManagement = () => {
           const monthMatches = normalizedDbMonth === normalizedDisplayMonth;
           
           //console.log('Alternative month comparison:', {
-            dbMonth: f.month,
-            normalizedDbMonth,
-            displayMonth: monthYear.month,
-            normalizedDisplayMonth,
-            year: f.year,
-            displayYear: monthYear.year,
-            monthMatches,
+            //dbMonth: f.month,
+            //normalizedDbMonth,
+            //displayMonth: monthYear.month,
+            //normalizedDisplayMonth,
+            //year: f.year,
+            //displayYear: monthYear.year,
+           // monthMatches,
             isPaid: f.isPaid
-          });
+          //});
           
           return monthMatches;
         }
