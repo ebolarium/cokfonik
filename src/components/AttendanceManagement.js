@@ -18,6 +18,7 @@ import {
   TableSortLabel,
   TextField,
   Button,
+  CircularProgress,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import SaveIcon from '@mui/icons-material/Save';
@@ -81,6 +82,7 @@ const AttendanceManagement = () => {
   const [explanations, setExplanations] = useState({}); // { attendanceId: explanation }
   const [visibleExplanations, setVisibleExplanations] = useState({}); // { attendanceId: boolean }
   const [isLocked, setIsLocked] = useState(true);
+  const [loadingAttendances, setLoadingAttendances] = useState({}); // { attendanceId: boolean }
 
   const getEventType = (date) => {
     const event = events.find(
@@ -178,8 +180,11 @@ const AttendanceManagement = () => {
       excuse: nextStatus === 'MAZERETLI' ? excuse : null
     };
 
+    // Minimum spinner gösterim süresi için başlangıç zamanını kaydet
+    const startTime = Date.now();
+
     try {
-      await fetch(`${process.env.REACT_APP_API_URL}/attendance/${attendanceId}`, {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/attendance/${attendanceId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updateData),
@@ -198,9 +203,41 @@ const AttendanceManagement = () => {
         });
       }
       
-      fetchAttendances();
+      // API yanıtını al
+      const updatedAttendance = await response.json();
+      
+      // Minimum 500ms spinner gösterimi için
+      const elapsedTime = Date.now() - startTime;
+      const remainingTime = Math.max(0, 500 - elapsedTime);
+      
+      setTimeout(() => {
+        // Optimistik UI güncellemesi - sadece ilgili katılımı güncelle
+        setAttendances(prev => 
+          prev.map(att => 
+            att._id === attendanceId 
+              ? { ...att, status: nextStatus, excuse: nextStatus === 'MAZERETLI' ? excuse : null } 
+              : att
+          )
+        );
+        
+        // Spinner'ı kaldır
+        setLoadingAttendances(prev => ({
+          ...prev,
+          [attendanceId]: false
+        }));
+      }, remainingTime);
+      
     } catch (error) {
       console.error('Devamsızlık durumu güncellenirken hata oluştu:', error);
+      // Hata durumunda da spinner'ı kaldır
+      setTimeout(() => {
+        setLoadingAttendances(prev => ({
+          ...prev,
+          [attendanceId]: false
+        }));
+        // Hata durumunda tüm verileri yeniden yükle
+        fetchAttendances();
+      }, 500);
     }
   };
 
@@ -231,6 +268,16 @@ const AttendanceManagement = () => {
 
   const handleAttendanceClick = (attendance) => {
     if (isLocked) return;
+    
+    // Zaten yükleniyor ise, işlemi engelle
+    if (loadingAttendances[attendance._id]) return;
+    
+    // Yükleme durumunu true olarak ayarla
+    setLoadingAttendances(prev => ({
+      ...prev,
+      [attendance._id]: true
+    }));
+    
     toggleAttendanceStatus(attendance._id, attendance.status);
     
     if (attendance.status === 'GELDI') {
@@ -414,10 +461,27 @@ const AttendanceManagement = () => {
             key={attendance._id}
           >
             <AttendanceBoxWrapper>
-              <AttendanceBox
-                status={attendance.status}
-                onClick={() => handleAttendanceClick(attendance)}
-              />
+              {loadingAttendances[attendance._id] ? (
+                <Box
+                  sx={{
+                    width: 20,
+                    height: 20,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    margin: '2px 0',
+                    borderRadius: 5,
+                    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+                  }}
+                >
+                  <CircularProgress size={16} thickness={5} />
+                </Box>
+              ) : (
+                <AttendanceBox
+                  status={attendance.status}
+                  onClick={() => handleAttendanceClick(attendance)}
+                />
+              )}
               {attendance.status === 'MAZERETLI' && visibleExplanations[attendance._id] && (
                 <ExplanationBox>
                   <TextField
