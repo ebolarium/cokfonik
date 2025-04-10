@@ -18,7 +18,8 @@ import {
   Pause,
   Stop,
   PictureAsPdf,
-  MusicNote
+  MusicNote,
+  Loop
 } from '@mui/icons-material';
 
 const MusicPlayer = () => {
@@ -28,6 +29,7 @@ const MusicPlayer = () => {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [isLooping, setIsLooping] = useState(false);
   const audioRef = useRef(null);
   const user = JSON.parse(localStorage.getItem('user'));
   const [hasRecordedListen, setHasRecordedListen] = useState(false);
@@ -180,6 +182,14 @@ const MusicPlayer = () => {
     }
   };
 
+  // Loop düğmesi işleyicisi
+  const handleLoopToggle = () => {
+    if (audioRef.current) {
+      audioRef.current.loop = !isLooping;
+      setIsLooping(!isLooping);
+    }
+  };
+
   const formatTime = (time) => {
     const minutes = Math.floor(time / 60);
     const seconds = Math.floor(time % 60);
@@ -256,6 +266,13 @@ const MusicPlayer = () => {
     setHasRecordedListen(false);
   }, [selectedPiece]);
 
+  // Parça değiştiğinde loop durumunu güncelle
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.loop = isLooping;
+    }
+  }, [selectedPiece, isLooping]);
+
   return (
     <Container maxWidth="xs" sx={{ py: 2 }}>
       <Card 
@@ -329,7 +346,16 @@ const MusicPlayer = () => {
               ref={audioRef}
               onTimeUpdate={handleTimeUpdate}
               onLoadedMetadata={() => setDuration(audioRef.current.duration)}
-              onEnded={() => setIsPlaying(false)}
+              onEnded={() => {
+                if (!isLooping) {
+                  setIsPlaying(false);
+                } else {
+                  // Loop aktifse ve müzik bittiyse kullanıcı dinleme kaydını tekrar ekleyelim
+                  addListeningRecord().catch(error => 
+                    console.error('Loop sırasında dinleme kaydı eklenirken hata:', error)
+                  );
+                }
+              }}
             />
 
             <Box sx={{ mb: 1 }}>
@@ -414,6 +440,24 @@ const MusicPlayer = () => {
                 }}
               >
                 <Stop sx={{ fontSize: 28 }} />
+              </IconButton>
+
+              {/* Loop Düğmesi */}
+              <IconButton 
+                onClick={handleLoopToggle}
+                disabled={!selectedPiece}
+                sx={{ 
+                  color: isLooping ? '#4caf50' : '#1a1a1a',  // Loop aktifse yeşil, değilse siyah
+                  '&:hover': { 
+                    backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                  },
+                  '&:disabled': {
+                    color: 'rgba(0, 0, 0, 0.26)'
+                  },
+                  padding: 1
+                }}
+              >
+                <Loop sx={{ fontSize: 28 }} />
               </IconButton>
 
               {selectedPiece?.pdfUrls?.general && (
