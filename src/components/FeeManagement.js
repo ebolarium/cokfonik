@@ -12,9 +12,12 @@ import {
   List,
   ListItem,
   ListItemText,
+  CircularProgress,
 } from '@mui/material';
 import { styled } from '@mui/system';
 import CloseIcon from '@mui/icons-material/Close';
+import LockIcon from '@mui/icons-material/Lock';
+import LockOpenIcon from '@mui/icons-material/LockOpen';
 
 const FeeBox = styled('div')(({ isPaid, isInactive }) => ({
   width: 20,
@@ -28,6 +31,14 @@ const FeeBox = styled('div')(({ isPaid, isInactive }) => ({
   },
 }));
 
+const FeeBoxWrapper = styled('div')({
+  display: 'flex',
+  alignItems: 'center',
+  gap: '4px',
+  position: 'relative',
+  minHeight: '24px',
+});
+
 const FeeManagement = () => {
   const [fees, setFees] = useState([]);
   const [users, setUsers] = useState([]);
@@ -35,6 +46,8 @@ const FeeManagement = () => {
   const [selectedUserFees, setSelectedUserFees] = useState([]);
   const [order, setOrder] = useState('asc');
   const [orderBy, setOrderBy] = useState('name');
+  const [isLocked, setIsLocked] = useState(true); // Kilit durumu için state
+  const [loadingFees, setLoadingFees] = useState({}); // { feeId: boolean } yükleme durumları
 
   const fetchFees = async () => {
     try {
@@ -109,16 +122,66 @@ const FeeManagement = () => {
     fetchFees();
   }, []);
 
+  const handleFeeClick = (fee) => {
+    // Kilit açık değilse veya kutucuk zaten yükleniyorsa işlem yapma
+    if (isLocked || !fee || loadingFees[fee._id]) return;
+    
+    // Yükleme durumunu başlat
+    setLoadingFees(prev => ({
+      ...prev,
+      [fee._id]: true
+    }));
+    
+    // Durumu değiştir
+    toggleFeeStatus(fee._id, fee.isPaid);
+  };
+
   const toggleFeeStatus = async (feeId, isPaid) => {
+    // Minimum spinner gösterim süresi için başlangıç zamanını kaydet
+    const startTime = Date.now();
+    
     try {
-      await fetch(`${process.env.REACT_APP_API_URL}/fees/${feeId}`, {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/fees/${feeId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isPaid: !isPaid }),
       });
-      fetchFees();
+      
+      const updatedFee = await response.json();
+      
+      // Minimum 500ms spinner gösterimi için
+      const elapsedTime = Date.now() - startTime;
+      const remainingTime = Math.max(0, 500 - elapsedTime);
+      
+      setTimeout(() => {
+        // Optimistik UI güncellemesi - sadece ilgili aidatı güncelle
+        setFees(prev => 
+          prev.map(f => 
+            f._id === feeId 
+              ? { ...f, isPaid: !isPaid } 
+              : f
+          )
+        );
+        
+        // Spinner'ı kaldır
+        setLoadingFees(prev => ({
+          ...prev,
+          [feeId]: false
+        }));
+      }, remainingTime);
+      
     } catch (error) {
       console.error('Error toggling fee status:', error);
+      
+      // Hata durumunda da spinner'ı kaldır
+      setTimeout(() => {
+        setLoadingFees(prev => ({
+          ...prev,
+          [feeId]: false
+        }));
+        // Hata durumunda tüm verileri yeniden yükle
+        fetchFees();
+      }, 500);
     }
   };
 
@@ -182,6 +245,23 @@ const FeeManagement = () => {
       <Typography variant="h5" sx={{ mb: 2, textAlign: 'center' }}>
         Aidat Yönetimi
       </Typography>
+
+      {/* Kilit butonu */}
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+        <IconButton 
+          onClick={() => setIsLocked(!isLocked)}
+          color={isLocked ? "error" : "success"}
+          sx={{ 
+            border: 1, 
+            borderColor: 'grey.300',
+            '&:hover': {
+              backgroundColor: isLocked ? 'error.light' : 'success.light',
+            }
+          }}
+        >
+          {isLocked ? <LockIcon /> : <LockOpenIcon />}
+        </IconButton>
+      </Box>
 
       <Grid container spacing={1} sx={{ mb: 2, fontWeight: 'bold', textAlign: 'center' }}>
         <Grid item xs={6}>
@@ -272,17 +352,6 @@ const FeeManagement = () => {
           // Sadece ay eşleşmesi
           const monthMatches = normalizedDbMonth === normalizedDisplayMonth;
           
-          //console.log('Alternative month comparison:', {
-           // dbMonth: f.month,
-            //normalizedDbMonth,
-            //displayMonth: monthYear.month,
-            //normalizedDisplayMonth,
-            //year: f.year,
-            //displayYear: monthYear.year,
-            //monthMatches,
-            //isPaid: f.isPaid
-          //});
-          
           return monthMatches;
         }
       );
@@ -290,11 +359,30 @@ const FeeManagement = () => {
     
     return (
       <Tooltip title={`${monthYear.month} ${monthYear.year}`} key={index}>
-        <FeeBox
-          isPaid={fee?.isPaid || false}
-          isInactive={!fee}
-          onClick={() => fee && toggleFeeStatus(fee._id, fee.isPaid)}
-        />
+        <FeeBoxWrapper>
+          {loadingFees[fee?._id] ? (
+            <Box
+              sx={{
+                width: 20,
+                height: 20,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '1px',
+                borderRadius: 5,
+                backgroundColor: 'rgba(0, 0, 0, 0.1)',
+              }}
+            >
+              <CircularProgress size={16} thickness={5} />
+            </Box>
+          ) : (
+            <FeeBox
+              isPaid={fee?.isPaid || false}
+              isInactive={!fee}
+              onClick={() => fee && handleFeeClick(fee)}
+            />
+          )}
+        </FeeBoxWrapper>
       </Tooltip>
     );
   })}
